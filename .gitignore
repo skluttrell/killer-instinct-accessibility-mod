@@ -1,0 +1,10 @@
+# game-derived data (localization text, PAK tables, captured payloads): regenerate locally, never redistribute
+data/
+# build outputs, logs, caches
+07_dll/build/
+__pycache__/
+*.pyc
+*.log
+*.png
+# vendored dependency's own git metadata
+07_dll/deps/minhook/.git/
