@@ -15,6 +15,7 @@ of `agent.js` and `narrator.py`.
 | `src/narrator.cpp` | the narration model on nlohmann::json (localization, state stacks, character select, controller config, popups, hotkeys) |
 | `src/strings.cpp` | `strings_en.tsv` loader, CRC32 (zlib) key hashing |
 | `src/speech.cpp` | prism.dll loader + speech worker thread (the UI thread never waits on the screen reader) |
+| `data/fighter_appearance.json` | hand-written physical descriptions of the fighters (Ctrl+Shift+A), default + retro costume |
 | `deps/` | MinHook (git clone), nlohmann/json single header |
 | `build.ps1` | build script; output in `build\` |
 
@@ -31,8 +32,12 @@ and forwards the call to `C:\Windows\System32\dinput8.dll`.
 
 ## Use
 Speech starts with "Killer Instinct narrator ready". Hotkeys (global): Ctrl+Shift+R repeat, Ctrl+Shift+D description
-of the focused item, Ctrl+Shift+T ticker / MOTD, Ctrl+Shift+V cycle verbosity (0 label, 1 + position, 2 + description),
-Ctrl+Shift+Q narrator on/off, Ctrl+Shift+U unload the DLL (development). Settings in `kiaccess\kiaccess.ini`
+of the focused item, Ctrl+Shift+A physical appearance of the fighter on Character Select (the one under the cursor, or
+the chosen one; on the costume stage the retro costume gets its own text; Ctrl+Shift+D does the same there since
+fighters have no description), Ctrl+Shift+T ticker / MOTD, Ctrl+Shift+V cycle verbosity (0 label, 1 + position,
+2 + description), Ctrl+Shift+Q narrator on/off, Ctrl+Shift+U unload the DLL (development). The appearance texts are
+hand-written in `data\fighter_appearance.json` in this folder (copied into `kiaccess\data` by the build; keyed by the game's internal fighter codes, see `fighter_names.json`;
+`default` and optional `retro` per fighter): edit them freely, the file is read at start. Settings in `kiaccess\kiaccess.ini`
 (`verbosity`, `speech`, `log_events`, `dump_populate`). Every utterance goes to `kiaccess\speech.log` with the hook
 to speech latency.
 

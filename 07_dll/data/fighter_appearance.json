@@ -1,0 +1,111 @@
+{
+ "_comment": "Physical appearance of each fighter for the Ctrl+Shift+A hotkey on Character Select. Keys are the game's internal fighter codes (see fighter_names.json). 'default' describes the default costume; 'retro' (optional) the retro costume. Hand-written, not from the game files: edit freely.",
+ "random": {
+  "default": "Random select. Not a fighter: a tile with a question mark. The game picks a fighter for you."
+ },
+ "jago": {
+  "default": "Jago, a Tibetan warrior monk. A tall, heavily muscled man with light brown skin, bare chest and arms. His long black hair is tied back in a ponytail, and a dark blue cloth mask covers his nose and mouth, leaving only his eyes showing. He wears loose dark blue martial-arts trousers with wrapped shins, a sash with a tiger-stripe pattern, and cloth wrapped around his forearms. He carries a long curved single-edged sword.",
+  "retro": "Retro costume, the look from the original 1994 game: bare chest, lighter blue trousers, a blue headband with a long black ponytail, and a plain blue mask over the lower face."
+ },
+ "sabrewulf": {
+  "default": "Sabrewulf, a werewolf. A hulking beast standing on two legs, hunched forward, covered in matted grey-blue fur with bare, scarred patches. He has a long wolf muzzle full of fangs, pointed ears, glowing yellow eyes, and huge clawed hands. He wears only torn dark trousers and looks starved and feral.",
+  "retro": "Retro costume: the original cartoon-like werewolf with bright blue fur, a thick mane, and tattered blue jeans."
+ },
+ "glacius": {
+  "default": "Glacius, an alien made of living ice. A tall, slender humanoid of translucent blue-white crystal, with no clothing and no hair, a smooth elongated head, glowing pale eyes and a faint light inside his chest. He glides across the ground on a trail of ice instead of walking, and can reshape his arms into blades and spikes.",
+  "retro": "Retro costume: the original look, a brighter blue crystal body with a more human, muscular shape."
+ },
+ "thunder": {
+  "default": "Thunder, a Nez Perce warrior. A huge, broad-shouldered man with brown skin and a bare, tattooed chest. He wears a headdress of eagle feathers that hangs down his back, red and white face paint across his eyes, leather and fur on his arms and legs, and carries two tomahawks, one in each hand.",
+  "retro": "Retro costume: the original look with a full feathered war bonnet, bare chest, and a fringed leather outfit."
+ },
+ "shago": {
+  "default": "Shadow Jago, a demonic shadow of Jago. The same tall muscular build and masked warrior outfit as Jago, but his skin is black and deep purple with glowing veins, his eyes shine white, the mask looks like a fanged demon face, and wisps of purple shadow energy stream off his body. He carries the same curved sword."
+ },
+ "sadira": {
+  "default": "Sadira, a Thai assassin with the powers of a spider. A slim, athletic woman with pale skin and long black hair. She wears a sleek dark bodysuit in black and purple with armoured pieces, a hood pushed back, and curved blades strapped to her wrists. She leaps and hangs from strands of webbing and summons spiders.",
+  "retro": "Retro costume: a lighter outfit in purple with bare arms and midriff and her hair worn loose."
+ },
+ "orchid": {
+  "default": "Black Orchid, a secret agent. An athletic woman with pale skin and long dark hair tied back. She wears a green cropped jacket over a black top, green and black leggings and tall boots, and fights with two green glowing light batons, one in each hand. Her shadow attacks summon a green ghostly tiger.",
+  "retro": "Retro costume: the original 1994 look, a green high-cut leotard, green boots and loose long hair, with the same two batons."
+ },
+ "spinal": {
+  "default": "Spinal, a living skeleton. A human skeleton of yellowed bone with a grinning skull, glowing green eye sockets and green ghostly flames inside the ribcage. He wears a tattered pirate coat and a ragged hood, carries a curved cutlass sword in one hand and a round shield with a face on it in the other, and crouches and skitters rather than walks.",
+  "retro": "Retro costume: the original look, a plain grinning skeleton with a round shield and sword and no coat."
+ },
+ "fulgore": {
+  "default": "Fulgore, an Ultratech combat cyborg. A tall humanoid robot in dark steel and silver armour plating, with a smooth faceplate and glowing red eyes, a crest on the helmet and a bundle of cables hanging from the back of his head like a ponytail. Energy blades extend from the backs of his forearms, and a laser cannon opens from his chest.",
+  "retro": "Retro costume: the original bulkier design, gold and silver armour with a blockier head and the same glowing eyes."
+ },
+ "tjcombo": {
+  "default": "TJ Combo, a disgraced heavyweight boxer. A tall, powerfully built Black man with a shaved head and a short beard. He wears a red sleeveless hooded top open over his bare chest, red and white trousers, boxing hand wraps instead of gloves, and a championship belt.",
+  "retro": "Retro costume: the original 1990s look with a flat-top haircut, a tank top, boxing shorts and full boxing gloves."
+ },
+ "maya": {
+  "default": "Maya, an Amazonian monster hunter. An athletic woman with brown skin and long dark hair worn in a braid. She wears jungle-warrior gear of leather, gold plates and feathers, with painted markings on her face and a bare midriff. She carries two golden daggers, one in each hand, and throws them at her opponent.",
+  "retro": "Retro costume: the look from Killer Instinct 2, a gold headpiece and a green two-piece outfit."
+ },
+ "gauze": {
+  "default": "Kan-Ra, a cursed Babylonian sorcerer. A withered, mummy-like figure: a gaunt, hunched man with leathery brown skin, wrapped in ragged yellowed bandages that float and move on their own. His face is sunken and skull-like with glowing eyes, his fingers are long and bony, and he wears gold jewellery and a tattered cloak. Sand and scarab beetles swirl around him.",
+  "retro": "Retro costume: a classic mummy in clean white bandages with gold Egyptian trim and a headdress."
+ },
+ "riptor": {
+  "default": "Riptor, a genetically engineered dinosaur. A raptor-like dinosaur standing on two legs, taller than a man, with orange-brown scales and dark stripes, a long tail, clawed feet, and a long snout full of teeth. Metal cybernetic plates and implants are grafted onto her body, and the tip of her tail is mechanical and shoots fire.",
+  "retro": "Retro costume: the original look, green and yellow scales with no implants."
+ },
+ "nox": {
+  "default": "Omen, the herald of Gargos. A demonic spirit made of shadow: a lean humanoid body of black and dark blue energy, with a horned, skull-like head, glowing blue-white eyes, long clawed fingers, and tendrils of shadow streaming from his head and shoulders. He hovers above the ground rather than standing."
+ },
+ "aganos": {
+  "default": "Aganos, an ancient war golem and the biggest fighter on the roster. A colossal figure, more than twice the height of a man, built from boulders and bronze plates bound together with vines and roots, with moss growing on him. His face is a round bronze mask with glowing eyes, his arms and shoulders are enormous, and his legs are short. He carries boulders to throw and can build stone walls."
+ },
+ "hisako": {
+  "default": "Hisako, a vengeful Japanese ghost. A pale, barefoot young woman in a long, tattered white burial kimono, her skin dead-white with grey and purple tones. Long black hair hangs over her face and hides most of it. She moves in jerky, floating steps and carries a naginata, a long pole with a curved blade on the end.",
+  "retro": "Retro costume: Hisako as she was in life, a human girl in dark red samurai armour with her hair tied back, carrying the same naginata."
+ },
+ "cinder": {
+  "default": "Cinder, a man turned into living fire. A humanoid figure made of flame: an orange and yellow fiery body with a grinning face, flames flickering off his head like hair, and dark charred patches on his skin. He wears no clothing. He floats and dashes with trails of fire behind him.",
+  "retro": "Retro costume: the original look, a simpler figure of red and orange flame."
+ },
+ "aria": {
+  "default": "ARIA, the artificial intelligence that runs Ultratech. A sleek android with a slender, feminine body of white and silver plating with glowing orange lines, a smooth head with a glowing visor instead of a face, and floating pieces of armour. She switches between three bodies: a winged flying body, a heavy body, and a body with blade arms, and the unused bodies hover nearby as drones."
+ },
+ "flipper": {
+  "default": "Kilgore, an abandoned Fulgore prototype. A bulky, war-worn robot in dull green and rusted metal, with a glowing red eye slit, exposed wiring and steam venting from his joints. Instead of hands he has a rotating minigun on each arm, and he has a cracked, older design than Fulgore."
+ },
+ "kimwu": {
+  "default": "Kim Wu, a Korean-American college student and dragon guardian. A young woman with East Asian features and long dark hair in a braid. She wears a modern outfit of a cropped jacket with a dragon design, leggings and sneakers, and fights with nunchaku, two sticks joined by a chain, that glow with blue dragon energy.",
+  "retro": "Retro costume: the look from Killer Instinct 2, a yellow and blue traditional Chinese outfit with a dragon motif and loose long hair."
+ },
+ "tusk": {
+  "default": "Tusk, an immortal barbarian. A gigantic, hugely muscular man with pale skin, long blond hair and a beard, his bare chest and arms covered in scars and tattoos. He wears a fur and leather kilt and boots, and carries a two-handed sword as long as he is tall.",
+  "retro": "Retro costume: the look from Killer Instinct 2, long blond hair, blue war paint, bare chest and fur boots."
+ },
+ "judge": {
+  "default": "The Arbiter, a guest fighter from Halo. A Sangheili alien, over seven feet tall, with grey reptilian skin, a long neck, and a head whose jaw splits into four mandibles instead of a mouth. His legs bend backwards like a bird's. He wears ornate silver and gold alien armour, carries an energy sword of two curved blades of glowing blue plasma, a carbine rifle, and throws plasma grenades."
+ },
+ "prince": {
+  "default": "Rash, a guest fighter from Battletoads. A man-sized humanoid toad with green warty skin, a huge wide mouth, big eyes behind black sunglasses, and bulging cartoon muscles. He wears a spiked collar, spiked wristbands, a belt and dark shorts, and his limbs turn into giant boots, horns and a wrecking ball when he attacks."
+ },
+ "wombat": {
+  "default": "Shin Hisako, Hisako restored to life. A young Japanese woman with long black hair tied back, alive and healthy, with pale skin. She wears white and red robes with dark armour plates, and carries a katana sword surrounded by ghostly blue spirit energy."
+ },
+ "mira": {
+  "default": "Mira, Maya's twin sister turned vampire. A slender woman with dead-pale grey skin, long black hair, red eyes and fangs. She wears dark gothic armour of leather, bone and red cloth, her hands end in claws, and she turns into a swarm of bats when she moves."
+ },
+ "gargos": {
+  "default": "Gargos, the Shadow Lord. A huge winged demon, far taller than a man, with grey-purple stone-like skin, large bat wings, horns curving back from his head, glowing eyes and a muscular torso. His hands and feet are clawed, he wears dark armour and a loincloth, and he hovers above the ground and summons minions.",
+  "retro": "Retro costume: the look from Killer Instinct 2, a classic grey stone gargoyle with a bulkier shape."
+ },
+ "grub": {
+  "default": "General RAAM, a guest fighter from Gears of War. A gigantic Locust general, over eight feet tall, with grey-white scaly armoured skin, a bald head, small sharp eyes and a broad mouth of jagged teeth. He wears heavy dark armour plates and a tattered cloak, carries an enormous serrated sword, and a swarm of small flying creatures called Kryll follows him."
+ },
+ "panda": {
+  "default": "Eyedol, a two-headed warlord. A hulking ogre-like demon with grey-green skin, massive muscles, goat-like hooved legs and horns. His skull has been split and joined back together, so his single huge head shows two distinct halves, one a one-eyed warrior and one a sorcerer. He carries a giant stone club studded with skulls.",
+  "retro": "Retro costume: the original 1994 look, a cyclops ogre with two separate heads side by side on one body."
+ },
+ "salmon": {
+  "default": "Eagle, Thunder's younger brother. A lean, athletic Native American man with brown skin and long black hair. He wears a mix of modern tactical gear and traditional clothing, with mechanical implants left from his time as an Ultratech prisoner. He fights with a bow and arrows, and a robotic bird shaped like an eagle flies beside him and attacks on his command."
+ }
+}

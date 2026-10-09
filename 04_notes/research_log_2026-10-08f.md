@@ -27,3 +27,13 @@ User decision: Phase 2 now; verbosity 1 is fine as a default (labels are short).
 ## Next
 - User test with NVDA (installed and running now).
 - Store / lobbies / Shadow Lords readers; first-run generation of `strings_en.tsv` from the PAK; packaging.
+
+## Addendum (evening): fighter appearance hotkey
+- Ctrl+Shift+A on Character Select speaks a physical description of the fighter under the cursor / chosen
+  (`07_dll/data/fighter_appearance.json`, hand-written, tracked in git unlike `data/`, `default` + optional `retro` per fighter code; Omen, ARIA, Kilgore,
+  Aganos, the guests, Shin Hisako and Mira have default text only). On the costume stage, costume index 1 (retro) picks
+  the retro text. Ctrl+Shift+D falls through to it on Character Select. Off that screen the hotkey says where it works.
+- Tracked in `Narrator`: `cs_fighter_code_[side]` (set on focus and on AS_PlayerPickedFighter), `cs_costume_[side]`
+  (AS_PlayerPickedCostume), `cs_desc_side_` = side spoken about last.
+- Verified live by injection (Jago, Sabrewulf, Glacius; Glacius default and retro costume; off-screen message), then
+  installed into the game folder after a clean exit. Escape on the costume stage leaves Character Select entirely.

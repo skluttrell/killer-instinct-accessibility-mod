@@ -19,6 +19,7 @@ New-Item -ItemType Directory -Force (Join-Path $kd "data") | Out-Null
 $proj = Split-Path -Parent $root
 Copy-Item (Join-Path $proj "data\strings_en.tsv") (Join-Path $kd "data\strings_en.tsv") -Force
 if (Test-Path (Join-Path $proj "data\fighter_names.json")) { Copy-Item (Join-Path $proj "data\fighter_names.json") (Join-Path $kd "data\fighter_names.json") -Force }
+Copy-Item (Join-Path $root "data\fighter_appearance.json") (Join-Path $kd "data\fighter_appearance.json") -Force
 $prism = "$env:APPDATA\Python\Python310\site-packages\prism\_native\prism.dll"
 if (Test-Path $prism) { Copy-Item $prism (Join-Path $kd "prism.dll") -Force }
 if (-not (Test-Path (Join-Path $kd "kiaccess.ini"))) { Copy-Item (Join-Path $root "kiaccess.ini") (Join-Path $kd "kiaccess.ini") }

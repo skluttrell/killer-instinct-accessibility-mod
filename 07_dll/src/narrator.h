@@ -22,6 +22,7 @@ public:
     // hotkeys
     void repeat();
     void read_desc();
+    void read_appearance();                // Ctrl+Shift+A: physical appearance of the fighter on Character Select
     void read_ticker();
     void cycle_verbosity();
 
@@ -42,6 +43,9 @@ private:
     std::string ticker_, motd_, current_swf_;
     std::map<int, std::string> cs_stage_{{0, "fighter"}, {1, "fighter"}};
     std::map<int, json> cs_colors_;
+    std::map<int, std::string> cs_fighter_code_;   // side -> fighter code under the cursor / chosen (lower case)
+    std::map<int, int> cs_costume_;                // side -> costume index on the costume stage and after
+    int cs_desc_side_ = 0;                         // side the appearance hotkey describes: the one spoken about last
     std::map<std::string, std::string> cs_last_;   // "fighter|0" etc. -> text / key
     int cs_active_ = 0;
     std::map<std::string, std::string> last_probe_; // "swf|probe" -> text
@@ -52,6 +56,7 @@ private:
     bool hasSkip_ = false;
     std::vector<std::string> mm_state_;
     json fighter_names_ = json::object();
+    json fighter_appearance_ = json::object();   // code -> {"default": text, "retro": text} (data\fighter_appearance.json)
     std::wstring names_path_;
 
     void learn_fighter_names(const json& data);

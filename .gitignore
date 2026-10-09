@@ -1,5 +1,5 @@
 # game-derived data (localization text, PAK tables, captured payloads): regenerate locally, never redistribute
-data/
+/data/
 # build outputs, logs, caches
 07_dll/build/
 __pycache__/

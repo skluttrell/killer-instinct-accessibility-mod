@@ -20,12 +20,12 @@ static HANDLE s_hotkeyThread = nullptr;
 static DWORD s_hotkeyThreadId = 0;
 static bool s_initialized = false;
 
-// ---- hotkeys: Ctrl+Shift+R repeat, D description, T ticker, V verbosity, Q toggle narration, U unload (development) ----
-enum { HK_REPEAT = 1, HK_DESC, HK_TICKER, HK_VERBOSITY, HK_TOGGLE, HK_UNLOAD };
+// ---- hotkeys: Ctrl+Shift+R repeat, D description, A fighter appearance, T ticker, V verbosity, Q toggle narration, U unload (development) ----
+enum { HK_REPEAT = 1, HK_DESC, HK_APPEARANCE, HK_TICKER, HK_VERBOSITY, HK_TOGGLE, HK_UNLOAD };
 static void unloadSelf();
 
 static DWORD WINAPI hotkeyThread(LPVOID) {
-    const std::pair<int, int> keys[] = {{HK_REPEAT, 'R'}, {HK_DESC, 'D'}, {HK_TICKER, 'T'}, {HK_VERBOSITY, 'V'}, {HK_TOGGLE, 'Q'}, {HK_UNLOAD, 'U'}};
+    const std::pair<int, int> keys[] = {{HK_REPEAT, 'R'}, {HK_DESC, 'D'}, {HK_APPEARANCE, 'A'}, {HK_TICKER, 'T'}, {HK_VERBOSITY, 'V'}, {HK_TOGGLE, 'Q'}, {HK_UNLOAD, 'U'}};
     for (auto& k : keys)
         if (!RegisterHotKey(nullptr, k.first, MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT, k.second)) logLine("hotkey registration failed: " + std::to_string(k.first));
     MSG msg;
@@ -35,6 +35,7 @@ static DWORD WINAPI hotkeyThread(LPVOID) {
         switch ((int)msg.wParam) {
             case HK_REPEAT: s_nar->repeat(); break;
             case HK_DESC: s_nar->read_desc(); break;
+            case HK_APPEARANCE: s_nar->read_appearance(); break;
             case HK_TICKER: s_nar->read_ticker(); break;
             case HK_VERBOSITY: s_nar->cycle_verbosity(); break;
             case HK_TOGGLE: {

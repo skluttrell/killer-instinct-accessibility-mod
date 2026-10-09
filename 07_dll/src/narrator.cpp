@@ -128,6 +128,10 @@ void Narrator::loadData() {
         json j = json::parse(txt, nullptr, false);
         if (j.is_object()) fighter_names_ = j;
     }
+    if (readFile(dataDir() + L"data\\fighter_appearance.json", txt)) {
+        json j = json::parse(txt, nullptr, false);
+        if (j.is_object()) fighter_appearance_ = j;
+    } else logLine("warning: data\\fighter_appearance.json missing, appearance hotkey disabled");
     // last known Populate payloads (the DLL may be loaded after a screen populated, e.g. when injected)
     WIN32_FIND_DATAW fd;
     std::wstring pat = dataDir() + L"data\\populate_*.json";
@@ -225,6 +229,9 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
             if (swf == "MainMenu.swf") { std::string st = jstr(data, "InitialState"); mm_state_ = {st.empty() ? "SinglePlayer" : st}; }
             if (swf == "CharacterSelect.swf") {
                 cs_stage_ = {{0, "fighter"}, {1, "fighter"}};
+                cs_fighter_code_.clear();
+                cs_costume_.clear();
+                cs_desc_side_ = 0;
                 cs_active_ = 0;
                 cs_last_.clear();
             }
@@ -568,11 +575,16 @@ void Narrator::on_charselect_ei(const std::string& fn, const std::string& js, in
     }
     if (fn == "AS_PlayerPickedFighter") {
         cs_stage_[side] = "costume";
+        if (!fname.empty()) cs_fighter_code_[side] = lower(fname);
+        cs_costume_.erase(side);
+        cs_desc_side_ = side;
         std::string disp = fname.empty() ? "Fighter" : fighterName(lower(fname), fname);
         say(p2 + disp + " chosen. Costume", true, t);
     } else if (fn == "AS_PlayerPickedCostume") {
         const json& costumes = jget(jget(data, "CostumeSelection"), fname.c_str());
         const json& ci = jget(sel, "CostumeIndex");
+        if (jisInt(ci)) cs_costume_[side] = ci.get<int>();
+        cs_desc_side_ = side;
         std::string text;
         int n = costumes.is_array() ? (int)costumes.size() : 0;
         if (jisInt(ci) && ci.get<int>() >= 0 && ci.get<int>() < n && costumes[ci.get<int>()].is_object()) {
@@ -606,6 +618,7 @@ void Narrator::on_charselect_ei(const std::string& fn, const std::string& js, in
         cs_last_[lk] = text;
     } else if (fn == "AS_ResetPlayerSelection") {
         cs_stage_[side] = "fighter";
+        cs_costume_.erase(side);
         if (side == 0) cs_active_ = 0;
         cs_last_.erase("fighter|" + std::to_string(side));
         say(p2 + "Back to fighter select", true, t);
@@ -627,6 +640,7 @@ void Narrator::on_charselect_focus(const json& rec) {
     json e = cs_fighter(idx);
     std::string text = cs_fighter_text(e);
     if (text.empty()) text = "fighter " + jtostr(idx);
+    if (e.is_object()) { cs_fighter_code_[side] = lower(jstr(e, "name")); cs_desc_side_ = side; }
     const json& fl = jget(jget(populate_, "CharacterSelect.swf"), "FighterSelection");
     if (fl.is_array() && !fl.empty() && jisInt(idx) && verbosity_ >= 1) text += ", " + std::to_string(idx.get<int>() + 1) + " of " + std::to_string(fl.size());
     if (why == "PlayNegativeP" + std::to_string(side + 1)) text += ", locked";
@@ -892,7 +906,25 @@ void Narrator::on_focus(const json& rec) {
 void Narrator::repeat() { say(last_text_.empty() ? "nothing to repeat" : last_text_, true); }
 void Narrator::read_desc() {
     std::string d = jstr(last_focus_, "desc");
+    if (d.empty() && current_swf_ == "CharacterSelect.swf") { read_appearance(); return; }
     say(d.empty() ? "no description" : d, true);
+}
+void Narrator::read_appearance() {
+    if (current_swf_ != "CharacterSelect.swf") { say("appearance descriptions are available on the character select screen", true); return; }
+    int side = cs_desc_side_;
+    auto it = cs_fighter_code_.find(side);
+    if (it == cs_fighter_code_.end() || it->second.empty()) { say("no fighter selected", true); return; }
+    const std::string& code = it->second;
+    const json& entry = jget(fighter_appearance_, code.c_str());
+    std::string text, costume = "default";
+    if (cs_stage_[side] != "fighter" && cs_costume_.count(side) && cs_costume_[side] == 1) costume = "retro";
+    if (entry.is_string()) text = entry.get<std::string>();
+    else if (entry.is_object()) {
+        text = jstr(entry, costume.c_str());
+        if (text.empty() && costume == "retro") { text = jstr(entry, "default"); if (!text.empty()) text += " No description of the retro costume yet."; }
+    }
+    if (text.empty()) text = "no appearance description for " + fighterName(code, code);
+    say((side == 1 ? "Player 2: " : "") + text, true);
 }
 void Narrator::read_ticker() { say(!ticker_.empty() ? ticker_ : (!motd_.empty() ? motd_ : "no news"), true); }
 void Narrator::cycle_verbosity() {
