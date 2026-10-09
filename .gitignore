@@ -8,3 +8,5 @@ __pycache__/
 *.png
 # vendored dependency's own git metadata
 07_dll/deps/minhook/.git/
+# release packages (zips are attached to GitHub releases, not tracked)
+/Github_releases/
