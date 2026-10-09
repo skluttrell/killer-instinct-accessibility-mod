@@ -6,6 +6,7 @@
 #include "gfx.h"
 #include "hooks.h"
 #include "narrator.h"
+#include "pak.h"
 #include "snapshot.h"
 #include "speech.h"
 #include "strings.h"
@@ -55,12 +56,32 @@ static DWORD WINAPI hotkeyThread(LPVOID) {
     return 0;
 }
 
+// The localization TSV is generated from the game's own PAK on first run (and again after a game update changes GLOBAL.PAK)
+// so the mod never ships the game's text.
+static bool stringsTsvStale(const std::wstring& tsv, const std::wstring& pak) {
+    WIN32_FILE_ATTRIBUTE_DATA a{}, b{};
+    if (!GetFileAttributesExW(tsv.c_str(), GetFileExInfoStandard, &a)) return true;          // missing
+    if (!GetFileAttributesExW(pak.c_str(), GetFileExInfoStandard, &b)) return false;         // no PAK (injected into something else): keep what we have
+    return CompareFileTime(&b.ftLastWriteTime, &a.ftLastWriteTime) > 0;                      // PAK newer than TSV
+}
+
 static DWORD WINAPI initThread(LPVOID) {
     CreateDirectoryW(dataDir().c_str(), nullptr);
     loadConfig();
     logLine("=== kiaccess starting ===");
+    const std::wstring tsv = dataDir() + L"data\\strings_en.tsv";
+    const std::wstring pak = exeDir() + L"PAK\\DX11\\GLOBAL.PAK";
+    if (stringsTsvStale(tsv, pak)) {
+        CreateDirectoryW((dataDir() + L"data").c_str(), nullptr);
+        int n = 0;
+        std::string err;
+        int64_t t0 = nowMs();
+        if (pak::generateStringsTsv(pak, tsv, n, err))
+            logLine("generated data\\strings_en.tsv from PAK\\DX11\\GLOBAL.PAK: " + std::to_string(n) + " strings in " + std::to_string(nowMs() - t0) + " ms");
+        else logLine("could not generate data\\strings_en.tsv: " + err);
+    }
     s_strings = new Strings();
-    if (!s_strings->load(dataDir() + L"data\\strings_en.tsv")) logLine("warning: data\\strings_en.tsv missing, keys will be spoken raw");
+    if (!s_strings->load(tsv)) logLine("warning: data\\strings_en.tsv missing, keys will be spoken raw");
     else logLine("strings: " + std::to_string(s_strings->size()));
     s_nar = new Narrator(*s_strings);
     s_nar->setVerbosity(g_cfg.verbosity);

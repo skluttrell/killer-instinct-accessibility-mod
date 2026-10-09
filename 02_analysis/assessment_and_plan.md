@@ -44,7 +44,7 @@ Prototype first in Python + Frida (`05_tools/frida_focus_invoke.py` already has 
 ### Phase 2: C++ DLL + Prism, proxy-loaded via dinput8.dll - WORKING (2026-10-08, `07_dll/`)
 - [x] MinHook detours, GFx::Value API, SCREENS table and narrator ported; exe hash gate + AOB signatures; Prism speech thread; hotkeys; verified live by injection.
 - [x] Installed as the dinput8.dll proxy in the game folder and verified from a cold Steam start (2026-10-08 16:19).
-- [ ] Packaging / first-run generation of `strings_en.tsv` from the PAK (currently shipped from `data/`).
+- [x] First-run generation of `strings_en.tsv` from `PAK\DX11\GLOBAL.PAK` (`07_dll/src/pak.cpp`, verified from a cold start 2026-10-09); the mod no longer ships game text. [ ] Packaging (release zip).
 - Same hooks with MinHook (dispatcher 0x5dfe50, MovieRoot::Invoke 0x1122ef0, MovieImpl::Advance 0xe4a700) plus the GFx::Value API entry points (0x1150a00, 0x11502e0, 0x350bd0); AOB signatures + exe hash gate; no Frida dependency for users.
 
 ### Phase 3: Depth

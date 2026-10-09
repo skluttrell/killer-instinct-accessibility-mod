@@ -6,7 +6,7 @@ $build = Join-Path $root "build"
 New-Item -ItemType Directory -Force $build | Out-Null
 $vcvars = "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
 if (-not (Test-Path $vcvars)) { $vcvars = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat" }
-$src = @("src\dllmain.cpp", "src\common.cpp", "src\gfx.cpp", "src\strings.cpp", "src\speech.cpp", "src\snapshot.cpp", "src\narrator.cpp", "src\hooks.cpp",
+$src = @("src\dllmain.cpp", "src\common.cpp", "src\gfx.cpp", "src\strings.cpp", "src\speech.cpp", "src\snapshot.cpp", "src\narrator.cpp", "src\hooks.cpp", "src\pak.cpp",
          "deps\minhook\src\buffer.c", "deps\minhook\src\hook.c", "deps\minhook\src\trampoline.c", "deps\minhook\src\hde\hde64.c")
 $srcList = ($src | ForEach-Object { '"' + (Join-Path $root $_) + '"' }) -join " "
 $cmd = "call `"$vcvars`" >nul 2>&1 && cd /d `"$build`" && cl /nologo /O2 /MT /EHsc /std:c++17 /W3 /DWIN32_LEAN_AND_MEAN /DNDEBUG /I`"$root\deps\minhook\include`" $srcList /link /DLL /OUT:kiaccess.dll /DEF:`"$root\src\exports.def`" user32.lib bcrypt.lib"
@@ -17,7 +17,7 @@ Copy-Item (Join-Path $build "kiaccess.dll") (Join-Path $build "dinput8.dll") -Fo
 $kd = Join-Path $build "kiaccess"
 New-Item -ItemType Directory -Force (Join-Path $kd "data") | Out-Null
 $proj = Split-Path -Parent $root
-Copy-Item (Join-Path $proj "data\strings_en.tsv") (Join-Path $kd "data\strings_en.tsv") -Force
+# strings_en.tsv is not copied: the DLL generates it from the game's PAK\DX11\GLOBAL.PAK on first run (src\pak.cpp)
 if (Test-Path (Join-Path $proj "data\fighter_names.json")) { Copy-Item (Join-Path $proj "data\fighter_names.json") (Join-Path $kd "data\fighter_names.json") -Force }
 Copy-Item (Join-Path $root "data\fighter_appearance.json") (Join-Path $kd "data\fighter_appearance.json") -Force
 $prism = "$env:APPDATA\Python\Python310\site-packages\prism\_native\prism.dll"

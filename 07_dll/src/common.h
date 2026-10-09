@@ -29,6 +29,7 @@ extern std::recursive_mutex g_lock;   // guards the narrator (UI thread hooks vs
 
 std::wstring moduleDir();          // directory of this DLL (with trailing backslash)
 std::wstring dataDir();            // moduleDir + L"kiaccess\\"
+std::wstring exeDir();             // directory of the game exe (the process), with trailing backslash
 std::string utf8(const std::wstring& w);
 std::wstring wide(const std::string& s);
 int64_t nowMs();                   // steady clock, milliseconds

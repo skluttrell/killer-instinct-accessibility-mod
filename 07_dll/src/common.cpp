@@ -133,3 +133,13 @@ std::string replaceAll(std::string s, const std::string& from, const std::string
 }
 
 }  // namespace ki
+
+namespace ki {
+std::wstring exeDir() {
+    wchar_t buf[MAX_PATH];
+    DWORD n = GetModuleFileNameW(nullptr, buf, MAX_PATH);
+    std::wstring p(buf, n);
+    size_t k = p.find_last_of(L"\\/");
+    return k == std::wstring::npos ? L"" : p.substr(0, k + 1);
+}
+}  // namespace ki

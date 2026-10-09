@@ -1,5 +1,5 @@
 {
- "_comment": "Physical appearance of each fighter for the Ctrl+Shift+A hotkey on Character Select. Keys are the game's internal fighter codes (see fighter_names.json). 'default' describes the default costume; 'retro' (optional) the retro costume. Hand-written, not from the game files: edit freely.",
+ "_comment": "Physical appearance of each fighter for the Ctrl+Shift+A hotkey on Character Select. Keys are the game's internal fighter codes (see fighter_names.json). 'default' describes the default costume; 'retro' (optional) the retro costume. Hand-written, not from the game files: edit freely. Every fighter except Omen has a retro costume in the game (see the 'Retro <name>' strings in strings_en.tsv); costume index 1 on the costume stage is the retro one.",
  "random": {
   "default": "Random select. Not a fighter: a tile with a question mark. The game picks a fighter for you."
  },
@@ -20,7 +20,8 @@
   "retro": "Retro costume: the original look with a full feathered war bonnet, bare chest, and a fringed leather outfit."
  },
  "shago": {
-  "default": "Shadow Jago, a demonic shadow of Jago. The same tall muscular build and masked warrior outfit as Jago, but his skin is black and deep purple with glowing veins, his eyes shine white, the mask looks like a fanged demon face, and wisps of purple shadow energy stream off his body. He carries the same curved sword."
+  "default": "Shadow Jago, a demonic shadow of Jago. The same tall muscular build and masked warrior outfit as Jago, but his skin is black and deep purple with glowing veins, his eyes shine white, the mask looks like a fanged demon face, and wisps of purple shadow energy stream off his body. He carries the same curved sword.",
+  "retro": "Retro costume: Shadow Jago in Jago's original 1994 outfit, bare chest, a headband and a plain mask over the lower face, but with black and purple shadow skin, glowing white eyes and shadow energy streaming off him."
  },
  "sadira": {
   "default": "Sadira, a Thai assassin with the powers of a spider. A slim, athletic woman with pale skin and long black hair. She wears a sleek dark bodysuit in black and purple with armoured pieces, a hood pushed back, and curved blades strapped to her wrists. She leaps and hangs from strands of webbing and summons spiders.",
@@ -55,10 +56,12 @@
   "retro": "Retro costume: the original look, green and yellow scales with no implants."
  },
  "nox": {
-  "default": "Omen, the herald of Gargos. A demonic spirit made of shadow: a lean humanoid body of black and dark blue energy, with a horned, skull-like head, glowing blue-white eyes, long clawed fingers, and tendrils of shadow streaming from his head and shoulders. He hovers above the ground rather than standing."
+  "default": "Omen, the herald of Gargos. A demonic spirit made of shadow: a lean humanoid body of black and dark blue energy, with a horned, skull-like head, glowing blue-white eyes, long clawed fingers, and tendrils of shadow streaming from his head and shoulders. He hovers above the ground rather than standing.",
+  "retro": "Omen has no retro costume in the game."
  },
  "aganos": {
-  "default": "Aganos, an ancient war golem and the biggest fighter on the roster. A colossal figure, more than twice the height of a man, built from boulders and bronze plates bound together with vines and roots, with moss growing on him. His face is a round bronze mask with glowing eyes, his arms and shoulders are enormous, and his legs are short. He carries boulders to throw and can build stone walls."
+  "default": "Aganos, an ancient war golem and the biggest fighter on the roster. A colossal figure, more than twice the height of a man, built from boulders and bronze plates bound together with vines and roots, with moss growing on him. His face is a round bronze mask with glowing eyes, his arms and shoulders are enormous, and his legs are short. He carries boulders to throw and can build stone walls.",
+  "retro": "Retro costume: Aganos as an ancient Greek bronze colossus, a weathered statue-like body of bronze and pale stone with a crested Greek warrior helmet for a head, instead of the mossy boulders."
  },
  "hisako": {
   "default": "Hisako, a vengeful Japanese ghost. A pale, barefoot young woman in a long, tattered white burial kimono, her skin dead-white with grey and purple tones. Long black hair hangs over her face and hides most of it. She moves in jerky, floating steps and carries a naginata, a long pole with a curved blade on the end.",
@@ -69,10 +72,12 @@
   "retro": "Retro costume: the original look, a simpler figure of red and orange flame."
  },
  "aria": {
-  "default": "ARIA, the artificial intelligence that runs Ultratech. A sleek android with a slender, feminine body of white and silver plating with glowing orange lines, a smooth head with a glowing visor instead of a face, and floating pieces of armour. She switches between three bodies: a winged flying body, a heavy body, and a body with blade arms, and the unused bodies hover nearby as drones."
+  "default": "ARIA, the artificial intelligence that runs Ultratech. A sleek android with a slender, feminine body of white and silver plating with glowing orange lines, a smooth head with a glowing visor instead of a face, and floating pieces of armour. She switches between three bodies: a winged flying body, a heavy body, and a body with blade arms, and the unused bodies hover nearby as drones.",
+  "retro": "Retro costume: a classic old-fashioned science-fiction robot, a chrome and gold android with a sculpted metal face and a helmet shaped like a short bob haircut, in the style of the robot from the film Metropolis."
  },
  "flipper": {
-  "default": "Kilgore, an abandoned Fulgore prototype. A bulky, war-worn robot in dull green and rusted metal, with a glowing red eye slit, exposed wiring and steam venting from his joints. Instead of hands he has a rotating minigun on each arm, and he has a cracked, older design than Fulgore."
+  "default": "Kilgore, an abandoned Fulgore prototype. A bulky, war-worn robot in dull green and rusted metal, with a glowing red eye slit, exposed wiring and steam venting from his joints. Instead of hands he has a rotating minigun on each arm, and he has a cracked, older design than Fulgore.",
+  "retro": "Retro costume: Kilgore as a 1950s style tin robot, boxy silver and red metal with rivets, a dome head with a single visor, and the same minigun arms."
  },
  "kimwu": {
   "default": "Kim Wu, a Korean-American college student and dragon guardian. A young woman with East Asian features and long dark hair in a braid. She wears a modern outfit of a cropped jacket with a dragon design, leggings and sneakers, and fights with nunchaku, two sticks joined by a chain, that glow with blue dragon energy.",
@@ -83,29 +88,35 @@
   "retro": "Retro costume: the look from Killer Instinct 2, long blond hair, blue war paint, bare chest and fur boots."
  },
  "judge": {
-  "default": "The Arbiter, a guest fighter from Halo. A Sangheili alien, over seven feet tall, with grey reptilian skin, a long neck, and a head whose jaw splits into four mandibles instead of a mouth. His legs bend backwards like a bird's. He wears ornate silver and gold alien armour, carries an energy sword of two curved blades of glowing blue plasma, a carbine rifle, and throws plasma grenades."
+  "default": "The Arbiter, a guest fighter from Halo. A Sangheili alien, over seven feet tall, with grey reptilian skin, a long neck, and a head whose jaw splits into four mandibles instead of a mouth. His legs bend backwards like a bird's. He wears ornate silver and gold alien armour, carries an energy sword of two curved blades of glowing blue plasma, a carbine rifle, and throws plasma grenades.",
+  "retro": "Retro costume: the Arbiter's armour from Halo 2, an older and bulkier suit of dull silver and bronze plates with a wider helmet crest, carrying the same energy sword."
  },
  "prince": {
-  "default": "Rash, a guest fighter from Battletoads. A man-sized humanoid toad with green warty skin, a huge wide mouth, big eyes behind black sunglasses, and bulging cartoon muscles. He wears a spiked collar, spiked wristbands, a belt and dark shorts, and his limbs turn into giant boots, horns and a wrecking ball when he attacks."
+  "default": "Rash, a guest fighter from Battletoads. A man-sized humanoid toad with green warty skin, a huge wide mouth, big eyes behind black sunglasses, and bulging cartoon muscles. He wears a spiked collar, spiked wristbands, a belt and dark shorts, and his limbs turn into giant boots, horns and a wrecking ball when he attacks.",
+  "retro": "Retro costume: Rash as he looked in the original 1991 Battletoads game, a simpler cartoon toad in brighter green with a brown belt, brown knee pads and wristbands and no sunglasses."
  },
  "wombat": {
-  "default": "Shin Hisako, Hisako restored to life. A young Japanese woman with long black hair tied back, alive and healthy, with pale skin. She wears white and red robes with dark armour plates, and carries a katana sword surrounded by ghostly blue spirit energy."
+  "default": "Shin Hisako, Hisako restored to life. A young Japanese woman with long black hair tied back, alive and healthy, with pale skin. She wears white and red robes with dark armour plates, and carries a katana sword surrounded by ghostly blue spirit energy.",
+  "retro": "Retro costume: Shin Hisako in a Shinto shrine maiden outfit, a white kimono top with wide sleeves over long red pleated trousers, her hair tied with a ribbon, carrying the same katana."
  },
  "mira": {
-  "default": "Mira, Maya's twin sister turned vampire. A slender woman with dead-pale grey skin, long black hair, red eyes and fangs. She wears dark gothic armour of leather, bone and red cloth, her hands end in claws, and she turns into a swarm of bats when she moves."
+  "default": "Mira, Maya's twin sister turned vampire. A slender woman with dead-pale grey skin, long black hair, red eyes and fangs. She wears dark gothic armour of leather, bone and red cloth, her hands end in claws, and she turns into a swarm of bats when she moves.",
+  "retro": "Retro costume: Mira as a classic gothic vampire noblewoman, a long dark Victorian gown with a high collar and a cape, her hair worn up, with the same pale skin, red eyes and fangs."
  },
  "gargos": {
   "default": "Gargos, the Shadow Lord. A huge winged demon, far taller than a man, with grey-purple stone-like skin, large bat wings, horns curving back from his head, glowing eyes and a muscular torso. His hands and feet are clawed, he wears dark armour and a loincloth, and he hovers above the ground and summons minions.",
   "retro": "Retro costume: the look from Killer Instinct 2, a classic grey stone gargoyle with a bulkier shape."
  },
  "grub": {
-  "default": "General RAAM, a guest fighter from Gears of War. A gigantic Locust general, over eight feet tall, with grey-white scaly armoured skin, a bald head, small sharp eyes and a broad mouth of jagged teeth. He wears heavy dark armour plates and a tattered cloak, carries an enormous serrated sword, and a swarm of small flying creatures called Kryll follows him."
+  "default": "General RAAM, a guest fighter from Gears of War. A gigantic Locust general, over eight feet tall, with grey-white scaly armoured skin, a bald head, small sharp eyes and a broad mouth of jagged teeth. He wears heavy dark armour plates and a tattered cloak, carries an enormous serrated sword, and a swarm of small flying creatures called Kryll follows him.",
+  "retro": "Retro costume: General RAAM in his heavier armour from the earlier Gears of War games, thicker segmented plates in dark grey and a helmet covering most of his head, with the same serrated sword."
  },
  "panda": {
   "default": "Eyedol, a two-headed warlord. A hulking ogre-like demon with grey-green skin, massive muscles, goat-like hooved legs and horns. His skull has been split and joined back together, so his single huge head shows two distinct halves, one a one-eyed warrior and one a sorcerer. He carries a giant stone club studded with skulls.",
   "retro": "Retro costume: the original 1994 look, a cyclops ogre with two separate heads side by side on one body."
  },
  "salmon": {
-  "default": "Eagle, Thunder's younger brother. A lean, athletic Native American man with brown skin and long black hair. He wears a mix of modern tactical gear and traditional clothing, with mechanical implants left from his time as an Ultratech prisoner. He fights with a bow and arrows, and a robotic bird shaped like an eagle flies beside him and attacks on his command."
+  "default": "Eagle, Thunder's younger brother. A lean, athletic Native American man with brown skin and long black hair. He wears a mix of modern tactical gear and traditional clothing, with mechanical implants left from his time as an Ultratech prisoner. He fights with a bow and arrows, and a robotic bird shaped like an eagle flies beside him and attacks on his command.",
+  "retro": "Retro costume: Eagle in a traditional 1990s style, bare chest with war paint, a feathered headband with long loose hair, fringed leather trousers and a wooden bow, without the modern tactical gear and implants."
  }
 }

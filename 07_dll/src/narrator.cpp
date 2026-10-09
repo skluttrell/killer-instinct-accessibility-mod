@@ -227,6 +227,12 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
             if (g_cfg.dumpPopulate) writeFile(dataDir() + L"data\\populate_" + wide(replaceAll(swf, ".swf", "")) + L".json", data.dump(1));
             if (swf == "OptionsMenu.swf") options_state_ = {jtruthy(jget(data, "GraphicsOptionOnly")) ? "Graphics" : "Main"};
             if (swf == "MainMenu.swf") { std::string st = jstr(data, "InitialState"); mm_state_ = {st.empty() ? "SinglePlayer" : st}; }
+            if (swf == "StartScreen.swf") {
+                // cold start: the first screen arrives without a LoadDestination, so announce it here (on-screen text: "PRESS MENU / SPACE")
+                current_swf_ = swf;
+                hasLast_ = false;
+                say("Start screen. Press Menu or Space", true);
+            }
             if (swf == "CharacterSelect.swf") {
                 cs_stage_ = {{0, "fighter"}, {1, "fighter"}};
                 cs_fighter_code_.clear();

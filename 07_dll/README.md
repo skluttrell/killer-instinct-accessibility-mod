@@ -14,6 +14,7 @@ of `agent.js` and `narrator.py`.
 | `src/snapshot.cpp` | per-screen reader table (JSON literal) + index-mode / scan-mode snapshots -> the same JSON records the Frida agent produced |
 | `src/narrator.cpp` | the narration model on nlohmann::json (localization, state stacks, character select, controller config, popups, hotkeys) |
 | `src/strings.cpp` | `strings_en.tsv` loader, CRC32 (zlib) key hashing |
+| `src/pak.cpp` | read-only PAK_ v4 record lookup + type-26 string table decoder: regenerates `kiaccess\data\strings_en.tsv` from the game's own `PAK\DX11\GLOBAL.PAK` on first run (and again when the PAK is newer than the TSV, i.e. after a game update), so the mod ships none of the game's text |
 | `src/speech.cpp` | prism.dll loader + speech worker thread (the UI thread never waits on the screen reader) |
 | `data/fighter_appearance.json` | hand-written physical descriptions of the fighters (Ctrl+Shift+A), default + retro costume |
 | `deps/` | MinHook (git clone), nlohmann/json single header |
@@ -22,7 +23,8 @@ of `agent.js` and `narrator.py`.
 ## Build
 `powershell -ExecutionPolicy Bypass -File build.ps1` (needs the MSVC Build Tools 2019/2022 x64). Produces
 `build\kiaccess.dll`, `build\dinput8.dll` (identical) and the runtime folder `build\kiaccess\`:
-`kiaccess.ini`, `prism.dll`, `data\strings_en.tsv`, `data\fighter_names.json`, `speech.log` (written at run time).
+`kiaccess.ini`, `prism.dll`, `data\fighter_names.json`, `data\fighter_appearance.json`; `data\strings_en.tsv` and `speech.log`
+are written at run time (the TSV is generated from the game's PAK on the first start, 16,472 strings in about 10 ms).
 
 ## Install
 Copy `dinput8.dll` and the `kiaccess\` folder next to `KILLERINSTINCTX64_R.EXE`
@@ -51,6 +53,13 @@ Read-only with respect to the game and its files: no memory writes besides MinHo
 functions; the GFx calls are the engine's public Value API on the UI thread; nothing is sent anywhere. Unknown game
 builds are handled by the signature scan; if a signature is missing the narrator logs it and stays disabled (the
 proxy still forwards DirectInput so the game runs normally).
+
+## Verified live (2026-10-09)
+Three cold Steam starts with the proxy DLL: first start with no `strings_en.tsv` present generated it from
+`PAK\DX11\GLOBAL.PAK` in 10 ms (byte-identical to the Python-decoded table) and narrated the landing page, popups,
+toasts, the Store and the exit confirmation from it; second start kept the existing TSV (PAK older); third start
+announced "Start screen. Press Menu or Space" 14 s after launch (the start screen is populated without a
+`LoadDestination`, so it was silent before). Clean exit each time via the landing page's Exit tile.
 
 ## Verified live (2026-10-08)
 Injected into the running game: start screen, landing page, main menu with all states, Dojo, Character Select (both
