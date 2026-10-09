@@ -1,38 +1,81 @@
-# Killer Instinct: Anniversary Edition - Blind Accessibility Mod
+Killer Instinct Accessibility Mod
+v.0.1.0
 
-Goal: add screen-reader access (menu narration, character select, practice/training text, Shadow Lords text,
-online lobbies) to Killer Instinct on Steam. The free base app (577940) and the Anniversary Edition DLC (2625580)
-share one executable and one set of paks, so work on the free build covers both.
+Purpose:
 
-Status 2026-10-08 (sixth session): **Phase 2 DLL working.** `07_dll/` builds `kiaccess.dll` (C++, MinHook + Prism),
-loaded by the game as a `dinput8.dll` proxy; it is a direct port of the Phase 1 narrator and was verified live on the
-same screens (main menu states, Dojo, Character Select, Stage Select, practice pause menu, Command List, Controller
-config, popups, match results). Phase 1 (`06_narrator/`, Python + Frida) stays as the development harness. Not yet
-read: store, lobbies, Shadow Lords (need sign-in). See `07_dll/README.md` and `04_notes/research_log_2026-10-08f.md`.
+Adds screen reader output to the menus of Killer Instinct (Steam version, free base game and Anniversary Edition), spoken descriptions of each fighter's appearance, and an opponent radar sound during matches.
 
-## Folder map
+Known Issues:
 
-| Folder | What is in it |
-|---|---|
-| `01_research/` | Web findings, **`local_inspection_2026-10-08.md`** (binary/asset facts) and **`live_session_2026-10-08.md`** (hook points, live traffic) |
-| `02_analysis/` | Approach options, pitfalls, and the **revised plan** |
-| `03_resources/` | Link index and tool shopping list |
-| `04_notes/` | Open questions, verification checklist (A/B ticked), daily research logs |
-| `05_tools/` | Our scripts: PAK/strings/SWF tools, Capstone xref/disasm/RTTI/Lua-binding finders, Frida discovery hooks, key sender, screenshot, Prism ctypes wrapper |
-| `06_narrator/` | Phase 1 narrator prototype (`narrator.py` + `agent.js`), see its README |
-| `07_dll/` | **Phase 2: `kiaccess.dll`** (C++ port, MinHook + Prism, dinput8 proxy), see its README |
-| `data/` | Locally derived game data (string table, pak tables, screen list, Shadow Lords XML, AS3 listings). Do not redistribute. |
+* This is the first TEST BUILD. The mod writes kiaccess\speech.log in your Killer Instinct folder each session with every announcement. If anything goes wrong, please attach that file to your bug report.
+* The Store, online lobbies and Shadow Lords screens are not read yet beyond their basic layout. The Store currently announces only "Store, bundles, item 1" and not the item names.
+* The fighter appearance descriptions were written from memory of the game and have not yet been reviewed by a sighted person.
+* The opponent radar assumes you are Player 1 playing against the CPU. There is no radar for Player 2.
+* The opponent radar was verified from the game's position data, but the sound itself has not been listened to by a player yet. Please report whether the pulse, its panning and its pitch are useful.
+* Announcements are always in English. The mod reads the game's English text table regardless of the language set in the game.
+* For about 10 seconds after the landing page appears, the game shows a sync popup and a "Free Rotating Fighter" toast that swallow key presses. Wait for them to be announced before navigating.
+* Only the Steam version of Killer Instinct is supported. The Microsoft Store / Xbox app version is not.
+* If a future game update changes the executable so that the mod can no longer find its hook points, the narrator stays silent and writes the reason to kiaccess\speech.log. The game itself still runs normally.
 
-## Key facts (verified)
-- Win32 x64, DirectX 11, unsigned exe, no anti-cheat, imports `dinput8.dll` (easy proxy-load).
-- UI = Scaleform GFx 4.3 + ActionScript 3; 60 screens listed in `ScreensDefinition.xml`; each screen = CFX movie + encrypted Lua script.
-- All 16,472 English UI strings decoded; table hash = CRC32(lowercase key); 2,246 keys resolved.
-- Verified live: AS3 -> Lua dispatcher at RVA 0x5dfe50, Lua -> AS3 calls at `AS3::MovieRoot::Invoke` 0x1122ef0 (`root.Invoke(swf, func, json)` on ForegroundShell.swf), localization resolver at 0x1a9640. Hooking these three gives screen, navigation, payload text and every displayed string.
-- Focus: `root.GetSWFRefFromString(swf)` then `GetSelectionIndex()` via the GFx object interface (0x1150a00), on the UI thread; screens without a getter are scanned by button `currentLabel`. Per-frame tick for deferred reads: `GFx::MovieImpl::Advance` 0xe4a700 (vtable 0x203dd38 slot 24). See `01_research/live_session_2026-10-08.md` section 7 and `06_narrator/README.md`.
-- Shadow Lords dialogue, briefings and dossiers are plain XML.
-- In-match audio is already blind-playable (hard-panned cues, HUD volume slider); menus are the gap.
+New in this version:
 
-## Start here
-1. `02_analysis/assessment_and_plan.md` - the recommendation and the next-step decision.
-2. `01_research/local_inspection_2026-10-08.md` - everything we know about the binary and assets.
-3. `04_notes/verification_checklist.md` - section C is the next work.
+* First release. Menu narration for: start screen, landing page, main menu and all of its states, Options, popups and toasts, Character Select (both sides, including the costume stage), Stage Select, loading screen, practice and versus pause menus, Command List (paging and move notation), Controller configuration (rows, rebinding flow, quit and discard popups), Dojo, Trials, match results and the exit confirmation.
+* Fighter appearance: Ctrl+Shift+A on Character Select describes the physical appearance of the fighter under the cursor, with separate text for the retro costume. The texts live in kiaccess\data\fighter_appearance.json and can be edited freely.
+* Opponent radar: a soft stereo pulse during a fight tells you where the opponent is. It is panned to the side the opponent is on, repeats faster the closer the opponent is, and rises in pitch when the opponent leaves the ground. Ctrl+Shift+P turns it on or off.
+* The mod ships none of the game's text. On the first start it builds its text table from the game's own files (about 10 milliseconds) and rebuilds it automatically after a game update.
+* Verbosity levels: label only, label and position ("3 of 5"), or label, position and description.
+* Speech goes through a separate thread, so the game never waits on the screen reader.
+
+Install:
+
+* Install Killer Instinct from Steam. The base game is free; the Anniversary Edition DLC is optional and works the same way.
+https://store.steampowered.com/app/577940/Killer_Instinct/
+https://store.steampowered.com/app/2625580/Killer_Instinct_Anniversary_Edition/
+Note: this mod does not cover the Microsoft Store / Xbox app version of the game.
+* Run your screen reader. The mod speaks through the Prism speech library, which talks to the running screen reader. It has been tested with NVDA.
+* Copy and paste dinput8.dll and the kiaccess folder (containing kiaccess.ini, prism.dll and the data folder) into the following folder, next to KILLERINSTINCTX64_R.EXE:
+"C:\Program Files (x86)\Steam\steamapps\common\Killer Instinct\"
+* Launch the game from Steam. You will hear "Killer Instinct narrator ready" shortly after launch, then "Start screen. Press Menu or Space" once the game has loaded.
+* To uninstall, delete dinput8.dll from the game folder. The kiaccess folder can be deleted too.
+
+Keys
+
+All hotkeys work anywhere in the game:
+
+Ctrl+Shift+R: Repeat the last announcement.
+Ctrl+Shift+D: Read the description of the focused item.
+Ctrl+Shift+A: On Character Select, describe the physical appearance of the fighter under the cursor, or the chosen fighter. On the costume stage the retro costume gets its own text. Ctrl+Shift+D does the same there, since fighters have no description.
+Ctrl+Shift+T: Read the ticker / message of the day.
+Ctrl+Shift+V: Cycle verbosity: 0 label only, 1 label and position, 2 label, position and description.
+Ctrl+Shift+Q: Narrator on or off.
+Ctrl+Shift+P: Opponent radar on or off.
+
+Getting into a fight:
+
+Start screen: press Space.
+Landing page: Shadow Lords, Single Player, Multiplayer, Store, Exit. Wait for the sync popup and the rotating fighter toast to pass before pressing keys.
+Single Player opens the main menu (Fight, Master and so on). A daily rewards panel may pop up; Escape closes it.
+Master, then Practice, leads to Character Select. Each side confirms fighter, costume and accessories with Enter. Loading takes 20 to 45 seconds.
+In Practice, Escape opens the pause menu, which has tabs (Pause Menu, Dummy Options, Practice Options, Theme). Q and E switch tabs.
+To exit the game: on the landing page, press Down until "Exit, 5 of 5", then Enter, then Enter again to confirm.
+
+Opponent radar:
+
+During a fight a short pulse plays while the fight clock is running. It is silent on the loading screen, while paused and in every menu.
+Pan: the pulse comes from the side the opponent is on, harder the further away.
+Rate: the pulse repeats faster the closer the opponent is, from 650 milliseconds at 7 game units or more down to 120 milliseconds at point blank. Fighters start a round 3 units apart; the corners of the stage are about 9 apart.
+Pitch: 440 Hz with the opponent on the ground, rising one octave at a height of 2 units, which is about the top of a normal jump.
+
+Settings:
+
+Settings are in kiaccess\kiaccess.ini in the game folder and are read when the game starts.
+verbosity: 0, 1 or 2 (see Ctrl+Shift+V).
+speech: 0 disables speech output; speech.log is still written.
+radar: 1 starts the radar on, 0 off.
+radar_volume: 0 to 100.
+radar_range, radar_height, radar_min_ms, radar_max_ms, radar_base_hz: tune the radar's distance scale, height scale, pulse rate and base pitch.
+log_events: 1 logs every engine event to speech.log (large; for development only).
+
+Safety:
+
+The mod is read-only with respect to the game and its files. It only observes the game's user interface and match state, never writes to them, and sends nothing over the network. The game has no anti-cheat.
