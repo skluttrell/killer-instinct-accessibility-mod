@@ -44,3 +44,34 @@ landing page itself does nothing.
   `kiaccess\data\fighter_appearance.json` and an install note (no game data inside).
 - Store / lobbies / Shadow Lords readers (the Store narrated "Store, bundles, item 1" today: the item labels still need a reader).
 - User test with NVDA; sighted review of the appearance texts.
+
+## Addendum: opponent radar (user request, same day)
+User asked for a radar pulse: pans to the opponent's side (relative to the player), faster when closer, higher when the
+opponent is airborne, tone synthesized like the FFVII-Access `tones.cpp` (waveOut, per-call 16-bit sine buffer with
+fades). Decisions: pan = opponent relative to Player 1; Player 1 vs CPU only (no second radar for Player 2).
+- Data: the Lua bindings `Opponent_GetPosX/Y/Z` (0x6e3ac0/0x6e3b30/0x6e3bb0) read `match = *[0x27de140]` (getter
+  0x9d7240, valid when `[match+0x48] & 0x8000`), slot `i*0xd0`, 3x4 transform at +0x3e0, translation X +0x3ec, Y +0x3fc,
+  Z +0x40c. `GetRoundElapsedTime` (0x6ef910) reads `round = *[0x27d85f0]` (getter 0x74d520, same flag): elapsed =
+  `[+0x370]-[+0x368]` frames or the float `[+0x938]` when `[+0x374]` is set (practice). Both getters got AOB signatures
+  (`matchState`, `roundState`); the DLL decodes the RIP-relative global from the getter's first instruction.
+- Measured in Practice (Jago vs Fulgore): round start X +1.5 (P1, left of screen) / -1.5 (P2, right); walking back (A)
+  raises X to 4.56 at the corner, so screen-right is -X; Y is up (dummy set to Jump peaks at 1.96); Z = 1.0 lane. Both
+  transforms are zero in the front end (the match flag is set there anyway), garbage for the first second of the loading
+  screen (opp Z 30.85) and the intro places fighters below the floor (Y -0.63), so: zero gate for menus, a 3 s sliding
+  floor for the height, and the pulse runs only while one of the three clock words changed in the last 400 ms (`+0x370`
+  is static during a fight; `+0x938` advances ~0.52/s in practice). Verified: stopped through loading, running in the
+  fight, stopped 0.7 s after pause, running on resume.
+- Sound: 90 ms stereo pulse, sine + 0.35 x 2nd harmonic, 4 ms attack, 30 ms exponential release, constant-power pan
+  `0.35 + 0.65 * d` toward the opponent, interval 120-650 ms over 0-7 units, pitch 440 Hz x 2^(height/2.0). Volume squared
+  like FFVII-Access. Own thread; blocking waveOut play then sleep. Hotkey Ctrl+Shift+P; ini `radar*` keys.
+- The user's keyboard binds (read from the Controller screen): up W, down S, left A, right D, LP 2, MP 3, HP 7, LK J,
+  MK 1, HK E, 3P 6, 3K W (W is bound twice: up and HK+MK+LK; W did not jump in the test), taunt 9. Movement keys are
+  needed for in-match tests; arrows only work in menus.
+- Practice menu: Escape pauses into a tabbed menu (Q/E switch tabs: Pause Menu, Dummy Options, Practice Options, Theme;
+  the tab is remembered). Dummy Options -> Action cycles Stand/Crouch/Jump/CPU/Human/Record with Left/Right. Restored
+  to Stand and Health Max to 100% after the test.
+- **Exit crash fixed.** The game wrote a crash dump at every exit (`%LOCALAPPDATA%\CrashDumps`, also on 2026-10-08)
+  right after the DLL logged `=== game exiting ===`. Parsed with the `minidump` Python package + a linker map
+  (`build.ps1` now passes `/MAP`): the fault is `abort` <- `terminate` <- the atexit destructor of `speech.cpp`'s static
+  `std::thread s_worker`, run by our CRT during `DLL_PROCESS_DETACH` at process exit while the thread was still
+  joinable (we deliberately do not join at process exit). Fix: `speech::abandon()` detaches it in that branch.

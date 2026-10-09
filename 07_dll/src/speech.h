@@ -11,6 +11,7 @@ void speak(const std::string& text, bool interrupt);
 void stop();
 std::string backendName();
 void shutdown();
+void abandon();   // process exit: the worker thread is already dead; detach it so the static std::thread's destructor does not terminate()
 
 }  // namespace speech
 }  // namespace ki

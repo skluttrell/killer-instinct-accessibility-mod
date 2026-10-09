@@ -31,7 +31,7 @@ packages, so run them with plain `python`. `G` = `C:\Program Files (x86)\Steam\s
 | `frida_focus_invoke.py <log> [sec]` (frida) | **Working C2/C3 probe**: hooks dispatcher + `MovieRoot::Invoke` (all Lua->AS3 JSON) and reads `GetSelectionIndex()` in-process after every scroll. Base of the Phase 1 narrator. Run only one Frida probe at a time. |
 | `memscan.py` | Read-only memory search/watch without Frida |
 | `sendkeys.py up down enter esc space q e ctrl+shift+r wait:N ...` | Drive the game window with synthesized keys (Escape = back, Space = menu/start, Q/E = LB/RB page tabs; modifiers `ctrl+shift+x` for the narrator hotkeys; 200 ms hold, shorter presses get dropped by popups) |
-| `aob_sigs.py <exe>` (capstone) | Unique byte signatures for the six hook RVAs -> `07_dll/sigs.json` + `07_dll/src/sigs.h` |
+| `aob_sigs.py <exe>` (capstone) | Unique byte signatures for the hook and getter RVAs (6 hooks + matchState + roundState) -> `07_dll/sigs.json` + `07_dll/src/sigs.h` |
 | `inject.py <dll>` | Development loader: CreateRemoteThread(LoadLibraryW) into the running game (the shipped mod is the dinput8 proxy) |
 | `frida_advance_probe.py [sec]` (frida) | Hooks all 71 MovieImpl vtable slots for a few seconds: call rate, thread, and which slot encloses the dispatcher (found `Advance` = slot 24, RVA 0xe4a700) |
 | `screenshot.ps1 out.png` | Half-size screen capture for orientation |

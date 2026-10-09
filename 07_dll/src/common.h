@@ -23,6 +23,16 @@ struct Config {
     bool speech = true;
     bool logEvents = false;     // log every ei/inv event (large log)
     bool dumpPopulate = false;  // write data/populate_<swf>.json for reader development
+    // opponent radar (radar.cpp)
+    bool radar = true;          // pulse on at start (Ctrl+Shift+P toggles)
+    int radarVolume = 50;       // 0-100, squared like FFVII-Access tones
+    double radarRange = 7.0;    // horizontal distance (game units) at which the pulse is slowest (round start = 3.0, corner to corner = 9)
+    double radarHeight = 2.0;   // opponent height above the ground (game units) for the full octave rise
+    int radarMinMs = 120, radarMaxMs = 650;   // pulse interval at point blank / at radarRange
+    double radarBaseHz = 440;   // pitch with the opponent on the ground
+    int radarAxisH = 0, radarAxisV = 1;       // which transform axis is screen-horizontal / up (0 X, 1 Y, 2 Z)
+    bool radarFlip = false;     // swap left/right if the world X axis runs right-to-left on screen
+    bool radarDebug = false;    // log positions once a second
 };
 extern Config g_cfg;
 extern std::recursive_mutex g_lock;   // guards the narrator (UI thread hooks vs. hotkey thread)

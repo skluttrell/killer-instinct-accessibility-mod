@@ -1,5 +1,6 @@
 #include "hooks.h"
 #include "gfx.h"
+#include "radar.h"
 #include "snapshot.h"
 #include "sigs.h"
 #include "../deps/minhook/include/MinHook.h"
@@ -84,6 +85,8 @@ bool resolveAddresses() {
         else if (n == "objGetMember") gfx::g_fn.objGetMember = addr;
         else if (n == "valueRelease") gfx::g_fn.valueRelease = addr;
         else if (n == "advance") gfx::g_fn.advance = addr;
+        else if (n == "matchState") radar::setMatchGetter(addr);
+        else if (n == "roundState") radar::setRoundGetter(addr);
         if (!known) logLine(n + " found at +0x" + [](uintptr_t v) { char b[32]; snprintf(b, sizeof b, "%llx", (unsigned long long)v); return std::string(b); }(addr - base));
     }
     return true;

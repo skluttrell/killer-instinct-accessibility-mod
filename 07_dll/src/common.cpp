@@ -85,7 +85,25 @@ void loadConfig() {
         else if (k == "speech") g_cfg.speech = v != "0";
         else if (k == "log_events") g_cfg.logEvents = v != "0";
         else if (k == "dump_populate") g_cfg.dumpPopulate = v != "0";
+        else if (k == "radar") g_cfg.radar = v != "0";
+        else if (k == "radar_volume") g_cfg.radarVolume = atoi(v.c_str());
+        else if (k == "radar_range") g_cfg.radarRange = atof(v.c_str());
+        else if (k == "radar_height") g_cfg.radarHeight = atof(v.c_str());
+        else if (k == "radar_min_ms") g_cfg.radarMinMs = atoi(v.c_str());
+        else if (k == "radar_max_ms") g_cfg.radarMaxMs = atoi(v.c_str());
+        else if (k == "radar_base_hz") g_cfg.radarBaseHz = atof(v.c_str());
+        else if (k == "radar_axis_h") g_cfg.radarAxisH = atoi(v.c_str());
+        else if (k == "radar_axis_v") g_cfg.radarAxisV = atoi(v.c_str());
+        else if (k == "radar_flip") g_cfg.radarFlip = v != "0";
+        else if (k == "radar_debug") g_cfg.radarDebug = v != "0";
     }
+    if (g_cfg.radarRange <= 0) g_cfg.radarRange = 7.0;
+    if (g_cfg.radarHeight <= 0) g_cfg.radarHeight = 2.0;
+    if (g_cfg.radarMinMs < 60) g_cfg.radarMinMs = 60;
+    if (g_cfg.radarMaxMs < g_cfg.radarMinMs) g_cfg.radarMaxMs = g_cfg.radarMinMs;
+    if (g_cfg.radarBaseHz < 100 || g_cfg.radarBaseHz > 4000) g_cfg.radarBaseHz = 440;
+    if (g_cfg.radarAxisH < 0 || g_cfg.radarAxisH > 2) g_cfg.radarAxisH = 0;
+    if (g_cfg.radarAxisV < 0 || g_cfg.radarAxisV > 2) g_cfg.radarAxisV = 1;
     if (g_cfg.verbosity < 0) g_cfg.verbosity = 0;
     if (g_cfg.verbosity > 2) g_cfg.verbosity = 2;
 }

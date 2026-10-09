@@ -7,6 +7,7 @@
 #include "hooks.h"
 #include "narrator.h"
 #include "pak.h"
+#include "radar.h"
 #include "snapshot.h"
 #include "speech.h"
 #include "strings.h"
@@ -22,11 +23,11 @@ static DWORD s_hotkeyThreadId = 0;
 static bool s_initialized = false;
 
 // ---- hotkeys: Ctrl+Shift+R repeat, D description, A fighter appearance, T ticker, V verbosity, Q toggle narration, U unload (development) ----
-enum { HK_REPEAT = 1, HK_DESC, HK_APPEARANCE, HK_TICKER, HK_VERBOSITY, HK_TOGGLE, HK_UNLOAD };
+enum { HK_REPEAT = 1, HK_DESC, HK_APPEARANCE, HK_TICKER, HK_VERBOSITY, HK_TOGGLE, HK_RADAR, HK_UNLOAD };
 static void unloadSelf();
 
 static DWORD WINAPI hotkeyThread(LPVOID) {
-    const std::pair<int, int> keys[] = {{HK_REPEAT, 'R'}, {HK_DESC, 'D'}, {HK_APPEARANCE, 'A'}, {HK_TICKER, 'T'}, {HK_VERBOSITY, 'V'}, {HK_TOGGLE, 'Q'}, {HK_UNLOAD, 'U'}};
+    const std::pair<int, int> keys[] = {{HK_REPEAT, 'R'}, {HK_DESC, 'D'}, {HK_APPEARANCE, 'A'}, {HK_TICKER, 'T'}, {HK_VERBOSITY, 'V'}, {HK_TOGGLE, 'Q'}, {HK_RADAR, 'P'}, {HK_UNLOAD, 'U'}};
     for (auto& k : keys)
         if (!RegisterHotKey(nullptr, k.first, MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT, k.second)) logLine("hotkey registration failed: " + std::to_string(k.first));
     MSG msg;
@@ -39,6 +40,12 @@ static DWORD WINAPI hotkeyThread(LPVOID) {
             case HK_APPEARANCE: s_nar->read_appearance(); break;
             case HK_TICKER: s_nar->read_ticker(); break;
             case HK_VERBOSITY: s_nar->cycle_verbosity(); break;
+            case HK_RADAR: {
+                bool on = !radar::enabled();
+                radar::setEnabled(on);
+                s_nar->say(on ? "radar on" : "radar off", true);
+                break;
+            }
             case HK_TOGGLE: {
                 bool on = !hooks::enabled();
                 hooks::setEnabled(on);
@@ -94,6 +101,7 @@ static DWORD WINAPI initThread(LPVOID) {
     snap::init();
     if (!hooks::install(s_nar)) { logLine("hooks not installed: narrator disabled"); return 1; }
     logLine("hooks installed");
+    if (radar::start()) logLine(std::string("radar thread started (") + (g_cfg.radar ? "on" : "off") + ")");
     s_hotkeyThread = CreateThread(nullptr, 0, hotkeyThread, nullptr, 0, &s_hotkeyThreadId);
     s_initialized = true;
     s_nar->say("Killer Instinct narrator ready", true);
@@ -103,6 +111,7 @@ static DWORD WINAPI initThread(LPVOID) {
 static void shutdown() {
     if (!s_initialized) return;
     s_initialized = false;
+    radar::stop();
     hooks::uninstall();
     speech::shutdown();
     logLine("=== kiaccess stopped ===");
@@ -146,9 +155,11 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID reserved) {
         DisableThreadLibraryCalls(hModule);
         CreateThread(nullptr, 0, ki::initThread, nullptr, 0, nullptr);
     } else if (reason == DLL_PROCESS_DETACH) {
-        // reserved != NULL means the process is terminating: other threads are already gone, do not unhook or join
+        // reserved != NULL means the process is terminating: other threads are already gone, do not unhook or join.
+        // The CRT then destroys our statics; a still-joinable std::thread would call std::terminate -> abort (seen as
+        // a crash dump on every game exit until 2026-10-09), so the speech worker is detached first.
         if (reserved == nullptr) ki::shutdown();
-        else ki::logLine("=== game exiting ===");
+        else { ki::speech::abandon(); ki::logLine("=== game exiting ==="); }
     }
     return TRUE;
 }

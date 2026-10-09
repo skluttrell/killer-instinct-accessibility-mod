@@ -116,5 +116,10 @@ void shutdown() {
     s_ctx = nullptr;
 }
 
+void abandon() {
+    s_running = false;
+    if (s_worker.joinable()) s_worker.detach();
+}
+
 }  // namespace speech
 }  // namespace ki

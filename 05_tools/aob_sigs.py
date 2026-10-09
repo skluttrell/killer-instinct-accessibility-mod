@@ -30,7 +30,7 @@ md = Cs(CS_ARCH_X86, CS_MODE_64)
 md.detail = True
 
 RVAS = {"dispatcher": 0x5dfe50, "rootInvoke": 0x1122ef0, "objInvoke": 0x1150a00, "objGetMember": 0x11502e0,
-        "valueRelease": 0x350bd0, "advance": 0xe4a700}
+        "valueRelease": 0x350bd0, "advance": 0xe4a700, "matchState": 0x9d7240, "roundState": 0x74d520}
 
 
 def signature(rva, maxlen=48):

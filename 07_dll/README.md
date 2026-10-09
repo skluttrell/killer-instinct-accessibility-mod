@@ -16,6 +16,7 @@ of `agent.js` and `narrator.py`.
 | `src/strings.cpp` | `strings_en.tsv` loader, CRC32 (zlib) key hashing |
 | `src/pak.cpp` | read-only PAK_ v4 record lookup + type-26 string table decoder: regenerates `kiaccess\data\strings_en.tsv` from the game's own `PAK\DX11\GLOBAL.PAK` on first run (and again when the PAK is newer than the TSV, i.e. after a game update), so the mod ships none of the game's text |
 | `src/speech.cpp` | prism.dll loader + speech worker thread (the UI thread never waits on the screen reader) |
+| `src/radar.cpp` | opponent radar: a stereo pulse synthesized like the FFVII-Access tones (waveOut, 16-bit PCM, fades) on its own thread; reads both fighters' transforms from the match state the game's own `Opponent_GetPosX/Y/Z` Lua bindings use, gated by the practice/round clock so it is silent on the loading screen, while paused and in menus |
 | `data/fighter_appearance.json` | hand-written physical descriptions of the fighters (Ctrl+Shift+A), default + retro costume |
 | `deps/` | MinHook (git clone), nlohmann/json single header |
 | `build.ps1` | build script; output in `build\` |
@@ -37,11 +38,25 @@ Speech starts with "Killer Instinct narrator ready". Hotkeys (global): Ctrl+Shif
 of the focused item, Ctrl+Shift+A physical appearance of the fighter on Character Select (the one under the cursor, or
 the chosen one; on the costume stage the retro costume gets its own text; Ctrl+Shift+D does the same there since
 fighters have no description), Ctrl+Shift+T ticker / MOTD, Ctrl+Shift+V cycle verbosity (0 label, 1 + position,
-2 + description), Ctrl+Shift+Q narrator on/off, Ctrl+Shift+U unload the DLL (development). The appearance texts are
+2 + description), Ctrl+Shift+Q narrator on/off, Ctrl+Shift+P opponent radar on/off, Ctrl+Shift+U unload the DLL (development). The appearance texts are
 hand-written in `data\fighter_appearance.json` in this folder (copied into `kiaccess\data` by the build; keyed by the game's internal fighter codes, see `fighter_names.json`;
 `default` and optional `retro` per fighter): edit them freely, the file is read at start. Settings in `kiaccess\kiaccess.ini`
-(`verbosity`, `speech`, `log_events`, `dump_populate`). Every utterance goes to `kiaccess\speech.log` with the hook
+(`verbosity`, `speech`, `log_events`, `dump_populate`, and the `radar_*` keys below). Every utterance goes to `kiaccess\speech.log` with the hook
 to speech latency.
+
+### Opponent radar
+During a fight a soft two-harmonic pulse (90 ms, 4 ms attack, 30 ms release) tells you where the opponent is relative
+to you as Player 1: it is panned to the side the opponent is on (harder the further away), it repeats faster the
+closer the opponent is (`radar_max_ms` 650 ms at `radar_range` 7 units or more, down to `radar_min_ms` 120 ms at point
+blank; fighters start a round 3 units apart, the corners are about 9 apart), and it rises in pitch when the opponent
+leaves the ground (`radar_base_hz` 440 on the ground, up one octave at `radar_height` 2 units, about the top of a normal
+jump). `radar=0` starts it off, `radar_volume` 0-100 (squared, like the FFVII-Access tones), `radar_debug=1` logs both
+positions once a second. It is silent on the loading screen, while the game is paused and in every menu: it only runs
+while the fight clock advances. Player 2's side is deliberately not sonified (user decision 2026-10-09: two radars at once
+would be too much). Data source: the match-state object the game's `Opponent_GetPosX/Y/Z` Lua bindings read
+(per-player slot 0xd0 bytes, transform at +0x3e0 with the translation in +0x3ec/+0x3fc/+0x40c; screen-right is -X, Y is up),
+and the round-state object behind `GetRoundElapsedTime` (+0x368/+0x370 frame words, +0x938 practice clock). Both are
+found through their getter functions (`matchState`, `roundState` signatures) and only read, never written.
 
 ## Development loop (no game restart)
 1. `python 05_tools\inject.py 07_dll\build\kiaccess.dll` loads the DLL into the running game.
@@ -53,6 +68,13 @@ Read-only with respect to the game and its files: no memory writes besides MinHo
 functions; the GFx calls are the engine's public Value API on the UI thread; nothing is sent anywhere. Unknown game
 builds are handled by the signature scan; if a signature is missing the narrator logs it and stays disabled (the
 proxy still forwards DirectInput so the game runs normally).
+
+## Verified live (2026-10-09, radar)
+Practice, Jago vs a Fulgore dummy, driven from the terminal with `sendkeys.py` and `radar_debug=1`: positions start at
+X +1.5 / -1.5, walking back (A) raised Player 1's X to 4.56 at the corner, walking forward (D) lowered it; a dummy set to
+Jump peaked at Y 1.96; the pulse interval went 347 -> 650 ms with distance and the pitch 440 -> 867 Hz with height; the
+fight clock stayed stopped through the loading screen (positions are garbage there), started with the fight, stopped
+within 0.7 s of pausing and resumed immediately; positions read zero in the front end. Only Player 1 is assumed human.
 
 ## Verified live (2026-10-09)
 Three cold Steam starts with the proxy DLL: first start with no `strings_en.tsv` present generated it from
