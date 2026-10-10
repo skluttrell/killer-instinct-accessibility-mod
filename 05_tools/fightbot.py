@@ -59,6 +59,8 @@ def foreground():
     user32.SetForegroundWindow(hwnd)
     user32.AttachThreadInput(tid_me, tid_fg, False)
     time.sleep(0.3)
+    if user32.GetForegroundWindow() != hwnd:
+        sys.exit("refusing to send keys: the game is not the foreground window")
 
 
 if __name__ == "__main__":

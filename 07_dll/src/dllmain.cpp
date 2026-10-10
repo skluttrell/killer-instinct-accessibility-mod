@@ -124,6 +124,7 @@ static DWORD WINAPI initThread(LPVOID) {
     snap::init();
     if (!hooks::install(s_nar)) { logLine("hooks not installed: narrator disabled"); return 1; }
     logLine("hooks installed");
+    radar::setMatchLiveCallback([](int32_t levelId) { std::lock_guard<std::recursive_mutex> g(g_lock); if (s_nar) s_nar->on_match_live(levelId); });
     if (radar::start()) logLine(std::string("radar thread started (") + (g_cfg.radar ? "on" : "off") + ")");
     s_hotkeyThread = CreateThread(nullptr, 0, hotkeyThread, nullptr, 0, &s_hotkeyThreadId);
     s_initialized = true;

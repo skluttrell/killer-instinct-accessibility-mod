@@ -18,6 +18,7 @@ public:
     void on_ei(const std::string& script, const std::string& fn, const std::string& js, int64_t t);
     void on_inv(const std::string& swf, const std::string& fn, const std::string& js);
     void on_focus(const json& rec);
+    void on_match_live(int32_t levelId);   // from the radar thread (under g_lock): announce the stage when it was not chosen explicitly
 
     // hotkeys
     void repeat();

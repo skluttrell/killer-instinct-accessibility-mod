@@ -178,3 +178,18 @@ game ran. The hotkey thread now waits with `MsgWaitForMultipleObjects` (200 ms) 
 (`dllmain.cpp`). Verified with `05_tools/hotkey_probe.py`: another process can register Ctrl+Shift+R after an Alt+Tab
 away from the game and cannot once the game is back in front; the in-game repeat key still works. Testing note:
 `SetForegroundWindow` to another process and minimizing the game do not move the focus away from the game, Alt+Tab does.
+
+## Stage announcement (2026-10-10 afternoon)
+`GetLevelId` (RVA 0x68b020, now the `levelState` signature) returns `[*[0x27d5318] + 0xbfc]`, which is CRC32 of the
+level path exactly as the Stage Select payload spells it (`levels\stage_11_maya\stage_11_maya` -> -476706460; verified on
+City of Dawn, then Random -> -120101589 = Shadow Tiger's Lair). The radar thread logs it when the match goes live and
+calls the narrator, which maps it through the Stage Select payload or the built-in table and says "Stage: X" unless
+Stage Select already named that stage. Verified: "Loading. Jago versus Fulgore" then "Stage: SHADOW TIGER'S LAIR" 1.5 s
+later on a Random pick.
+Notes: attaching Frida to the game during a match (level_probe.py) made the process vanish without a crash dump; use
+the DLL's own log for in-match reads. The crash dumps in %LOCALAPPDATA%\CrashDumps are all from 2026-10-09 (one per
+game exit that morning; the exit-crash fix was added later that day). `sendkeys.py` and `fightbot.py` now refuse to
+send when the game is not the foreground window (a key chain had typed into the user's Notepad).
+Colours: the game has no colour names or swatches; each colour is a baked texture (`characters\<f>\<f>_cm_variationN`
+in SPLIT_CHAR_<F>.PAK, a custom container, not DDS, format undecoded). Per-colour descriptions therefore cannot be
+derived from data without decoding that container; awaiting the user's choice.

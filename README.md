@@ -13,7 +13,6 @@ Known Issues:
 * The fighter appearance descriptions were written from memory of the game and have not yet been reviewed by a sighted person.
 * The opponent radar assumes you are Player 1 playing against the CPU. There is no radar for Player 2.
 * The opponent radar pauses during the "Ready, Fight" intro of a round and for up to 3 seconds after a round ends. Please keep reporting whether the pulse, its panning and its pitch are useful.
-* When you pick Random on Stage Select, the mod cannot tell you which stage was chosen; nothing in the game's menu data names it.
 * The fighter appearance descriptions cover the default colour of each costume only; the colour you choose is announced by number.
 * Announcements are always in English. The mod reads the game's English text table regardless of the language set in the game.
 * For about 10 seconds after the landing page appears, the game shows a sync popup and a "Free Rotating Fighter" toast that swallow key presses. Wait for them to be announced before navigating.
@@ -30,6 +29,7 @@ New in this version:
 * The music menu on Stage Select (also the Y button) is read: track name, whether it is the current one, and its position. Press Down once after opening it to hear the list.
 * Character Select announces each fighter's level and the level of the next unlock.
 * The Command List reads each move's description (ender types, Instinct effects, Combo Assist explanations) at normal verbosity, not only at the highest one.
+* The stage is announced as a fight loads ("Stage: Shadow Tiger's Lair") whenever it was not picked by name on Stage Select, so a Random pick, Shadow Lords missions and ladder fights tell you where you are.
 
 New in v0.2.0:
 

@@ -640,6 +640,44 @@ void Narrator::on_stage_changed(const std::string& js, int64_t t) {
     say(text, true, t);
 }
 
+// ---- stage of the match that just loaded ----
+// The level object the GetLevelId Lua binding reads holds CRC32 of the level path (lower case, as in the Stage Select
+// payload: "levels\stage_11_maya\stage_11_maya" -> -476706460, measured 2026-10-10). The table below is the Stage
+// Select list of that day; a Stage Select payload seen in this session takes precedence.
+static const std::pair<const char*, const char*> STAGE_LEVELS[] = {
+    {"levels\\stage_01_jago\\stage_01_jago", "STAGE_TIGERSLAIR"}, {"levels\\stage_02_glacius\\stage_02_glacius", "STAGE_CRASHSITE"},
+    {"levels\\stage_03_sabrewulf\\stage_03_sabrewulf", "STAGE_ALCHEMICAL_LAB"}, {"levels\\stage_04_thunder\\stage_04_thunder", "STAGE_DEVILSLANDING"},
+    {"levels\\stage_05_sadira\\stage_05_sadira", "STAGE_ASSASINSCAVE"}, {"levels\\stage_06_orchid\\stage_06_orchid", "STAGE_REBELOUTPOST"},
+    {"levels\\stage_07_spinal\\stage_07_spinal", "STAGE_SHIPWRECKSHORE"}, {"levels\\stage_08_fulgore\\stage_08_fulgore", "STAGE_ULTRATECHINDUSTRIES"},
+    {"levels\\stage_09_shadow_jago\\stage_09_shadow_jago", "STAGE_SHADOWTIGERLAIR"}, {"levels\\stage_10_tjcombo\\stage_10_tjcombo", "STAGE_DOWNTOWNDEMOLITION"},
+    {"levels\\stage_11_maya\\stage_11_maya", "STAGE_MAYA"}, {"levels\\stage_12_gauze\\stage_12_gauze", "STAGE_GAUZE"},
+    {"levels\\stage_13_riptor\\stage_13_riptor", "STAGE_RIPTOR"}, {"levels\\stage_14_aganos\\stage_14_aganos", "STAGE_AGANOS"},
+    {"levels\\stage_15_hisako\\stage_15_hisako", "STAGE_HISAKO"}, {"levels\\stage_16_cinder\\stage_16_cinder", "STAGE_CINDER"},
+    {"levels\\stage_17_aria\\stage_17_aria", "STAGE_ARIA"}, {"levels\\stage_18_judge\\stage_18_judge", "STAGE_JUDGE"},
+    {"levels\\stage_19_kimwu\\stage_19_kimwu", "STAGE_KIMWU"}, {"levels\\stage_20_tusk\\stage_20_tusk", "STAGE_TUSK"},
+    {"levels\\stage_21_astrofield\\stage_21_astrofield", "STAGE_ASTROFIELD"}, {"levels\\stage_00\\stage_00", "STAGE_TRAINING"},
+    {"levels\\stage_00_black\\stage_00_black", "STAGE_BLACK"},
+};
+
+void Narrator::on_match_live(int32_t levelId) {
+    if (!levelId) return;
+    uint32_t want = (uint32_t)levelId;
+    std::string key;
+    const json& stages = jget(jget(populate_, "StageSelect.swf"), "Stages");
+    if (stages.is_array()) for (const auto& s : stages) {
+        std::string lvl = jstr(s, "level");
+        if (!lvl.empty() && Strings::crc32(lower(lvl)) == want) { key = jstr(s, "name"); break; }
+    }
+    if (key.empty()) for (auto& p : STAGE_LEVELS) if (Strings::crc32(p.first) == want) { key = p.second; break; }
+    if (key.empty()) { logLine("stage: unknown level id " + std::to_string(levelId)); return; }
+    std::string name = S.resolve(key);
+    if (name.empty() || name == key) return;
+    // say it unless Stage Select already announced this very stage (Random, Shadow Lords and ladders never did)
+    std::string chosen = lower(last_probe_["StageSelect.swf|stage"]);
+    if (!chosen.empty() && startsWith(chosen, lower(name).c_str())) return;
+    say("Stage: " + name, false);
+}
+
 // ---- command list (event-driven: EntrySelected {MoveIndex}; moves from the RefreshPage payload) ----
 void Narrator::on_move_selected(const std::string& js, int64_t t) {
     json j = json::parse(js, nullptr, false, true);

@@ -25,7 +25,8 @@ const uint32_t FLAG_LIVE = 0x8000;
 // activity, so the pulse only stops when both the timer and the fighters are frozen for 3 s (pause, round end, menus).
 const int PULSE_MS = 90, STALL_MS = 3000;
 
-uintptr_t s_global = 0, s_roundGlobal = 0;
+uintptr_t s_global = 0, s_roundGlobal = 0, s_levelGlobal = 0;
+static void (*s_onMatchLive)(int32_t) = nullptr;   // narrator hook for the stage announcement
 std::atomic<bool> s_enabled{true}, s_run{false};
 HANDLE s_thread = nullptr;
 
@@ -125,7 +126,17 @@ DWORD WINAPI thread(LPVOID) {
         if (live) live = readPos(m, 0, me) && readPos(m, 1, opp);
         // the flag is already set in the front end with both transforms zeroed; fighters never share the origin in a match
         if (live && me.v[0] == 0 && me.v[1] == 0 && me.v[2] == 0 && opp.v[0] == 0 && opp.v[1] == 0 && opp.v[2] == 0) live = false;
-        if (live != wasLive) { logLine(live ? "radar: match state live" : "radar: match state gone"); wasLive = live; }
+        if (live != wasLive) {
+            logLine(live ? "radar: match state live" : "radar: match state gone");
+            if (live) {
+                int32_t id = levelId();
+                char lb[64];
+                snprintf(lb, sizeof lb, "radar: level id %d", (int)id);
+                logLine(lb);
+                if (s_onMatchLive) s_onMatchLive(id);
+            }
+            wasLive = live;
+        }
         // the fight clock: still on the loading screen, during a pause and in menus
         bool running = true;
         uint32_t clock[3] = {0, 0, 0};
@@ -191,6 +202,14 @@ static uintptr_t decodeGlobal(uintptr_t fn, const char* what) {
 }
 
 void setMatchGetter(uintptr_t fn) { s_global = decodeGlobal(fn, "match-state"); if (!s_global) logLine("radar: disabled"); }
+void setLevelGetter(uintptr_t fn) { s_levelGlobal = decodeGlobal(fn, "level"); }
+void setMatchLiveCallback(void (*cb)(int32_t)) { s_onMatchLive = cb; }
+int32_t levelId() {
+    uintptr_t lv = 0;
+    int32_t id = 0;
+    if (s_levelGlobal && readT(s_levelGlobal, lv) && lv && readT(lv + 0xbfc, id)) return id;
+    return 0;
+}
 void setRoundGetter(uintptr_t fn) { s_roundGlobal = decodeGlobal(fn, "round-state"); if (!s_roundGlobal) logLine("radar: no fight clock, the pulse will also run while paused"); }
 
 bool start() {

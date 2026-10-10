@@ -14,6 +14,11 @@ void setMatchGetter(uintptr_t fn);
 // Same shape, for the round-state object GetRoundElapsedTime/GetRoundStartTime read: its frame counter at +0x370 only
 // advances while the fight runs (not on the loading screen, not while paused), which is what gates the pulse.
 void setRoundGetter(uintptr_t fn);
+// Same shape, for the level object the GetLevelId Lua binding reads: the int at +0xbfc identifies the loaded stage
+// (a hash; matched against the stage list by the narrator, so Random stages can be announced).
+void setLevelGetter(uintptr_t fn);
+int32_t levelId();            // 0 when unavailable
+void setMatchLiveCallback(void (*cb)(int32_t levelId));   // called from the radar thread when a match becomes live
 bool start();                 // starts the pulse thread (no-op without a decoded match global)
 void stop();
 void setEnabled(bool on);     // Ctrl+Shift+P

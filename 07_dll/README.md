@@ -59,6 +59,10 @@ Also read (beta report 1, 2026-10-10): the game settings popup on Character Sele
 is no longer the current screen because its movie stays loaded), the music menu on Stage Select (`mcMusicSelect.
 mcTrackText{i}` with positions from `Lua_PopulateMusicOptions`), the fighter level on Character Select (from the player
 card entries, next to the fighter names), Command List descriptions at verbosity 1, and the full match statistics.
+The stage of a loading match is announced from the level object the `GetLevelId` Lua binding reads (`levelState`
+signature; the int at +0xbfc is CRC32 of the level path, e.g. `levels\stage_11_maya\stage_11_maya`), matched against
+the Stage Select payload or the built-in table in `narrator.cpp`, and spoken only when Stage Select did not already
+name that stage (Random, Shadow Lords, ladders). The radar thread raises it through `radar::setMatchLiveCallback`.
 The radar gate treats "clock words and fighter positions unchanged for 3 s" as paused: a normal match's timer only
 ticks about every two seconds (Practice has a per-frame float clock), which made the old 400 ms gate flap.
 

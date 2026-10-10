@@ -87,6 +87,7 @@ bool resolveAddresses() {
         else if (n == "advance") gfx::g_fn.advance = addr;
         else if (n == "matchState") radar::setMatchGetter(addr);
         else if (n == "roundState") radar::setRoundGetter(addr);
+        else if (n == "levelState") radar::setLevelGetter(addr);
         if (!known) logLine(n + " found at +0x" + [](uintptr_t v) { char b[32]; snprintf(b, sizeof b, "%llx", (unsigned long long)v); return std::string(b); }(addr - base));
     }
     return true;

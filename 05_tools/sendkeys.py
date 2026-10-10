@@ -77,6 +77,10 @@ if __name__ == "__main__":
     buf = ctypes.create_unicode_buffer(256)
     user32.GetWindowTextW(now, buf, 256)
     print("window:", title, "| foreground now:", buf.value, "| ok" if now == hwnd else "| NOT FOREGROUND")
+    if now != hwnd:
+        # Windows refused to bring the game to the front (another window is active): sending now would type into that
+        # window instead (2026-10-10: a key chain went into the user's Notepad). Refuse rather than guess.
+        sys.exit("refusing to send keys: the game is not the foreground window")
     MODS = {"ctrl": 0x11, "shift": 0x10, "alt": 0x12}
     for k in sys.argv[1:]:
         if k.startswith("wait:"):
