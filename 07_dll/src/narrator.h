@@ -59,6 +59,7 @@ private:
     bool hasSkip_ = false;
     std::vector<std::string> mm_state_;
     json fighter_names_ = json::object();
+    std::map<std::string, std::string> fighter_levels_;   // code -> "level 3, next unlock at level 5" (from the player card entries)
     json fighter_appearance_ = json::object();   // code -> {"default": text, "retro": text} (data\fighter_appearance.json)
     std::wstring names_path_;
 
@@ -68,6 +69,7 @@ private:
     json sl_prompts_ = json::object();     // tutorial prompt state -> string keys (data\sl_prompts.json, from the GA_FTUE classes)
     json encounter_;                       // last War Room encounter popup payload (title, description, options / rewards / results)
     std::string barracks_pending_;         // centre fighter reported before the Barracks screen was shown (spoken with the screen name)
+    json music_options_;                   // Stage Select music menu options (Lua_PopulateMusicOptions arrives before the screen's own Populate)
     std::string ga_summary(const std::string& swf);   // what to say after the screen name
     void on_ga_focus(const std::string& swf, const json& rec, const std::string& base_why, bool deferred, int64_t t);
     void on_preload_dialogue(int64_t t);

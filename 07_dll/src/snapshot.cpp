@@ -91,7 +91,10 @@ static const char* SCREENS_JSON = R"JSON({
     "fighters": {"when": "mcWarRoom_Loadout.mcCharacterPopup.visible", "item": "mcWarRoom_Loadout.mcCharacterPopup.mcCharacter_{i}", "count": 3,
        "fields": {"state": "currentLabel", "visible": "visible"}}}},
  "CommandList.swf": {"indexFn": "GetSelectionIndex"},
- "StageSelect.swf": {"custom": "none"},
+ "StageSelect.swf": {"scan": true, "probe": {"musicState": "mcMusicSelect.currentLabel"}, "groups": {
+    "music": {"item": "mcMusicSelect.mcTrackText{i}", "count": 15, "fields": {"label": "mcText.txtItem.text", "state": "currentLabel", "visible": "visible"}}}},
+ "GameSettingsPopUp.swf": {"scan": true, "groups": {"settings": {"item": "mcGSPopUpText.mcBtn{i}", "count": 3,
+    "fields": {"label": "mcTxt.TxtItem.text", "value": "mcValue.TxtItem.text", "state": "currentLabel", "visible": "visible"}}}},
  "MultiplayerLobby.swf": {"indexFn": "GetSelectionIndex"}
 })JSON";
 

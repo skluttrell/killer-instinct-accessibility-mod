@@ -20,6 +20,7 @@ static const std::map<std::string, std::string> SCREEN_NAMES = {
     {"GA_WarRoom.swf", "War Room"}, {"GA_Barracks.swf", "Barracks"}, {"GA_Emporium.swf", "Emporium"}, {"GA_SpiritLair.swf", "Spirit Lair"},
     {"GA_PreLoad.swf", "Versus screen"}, {"GA_MatchRewards.swf", "Match rewards"}, {"GA_Loadout_Popup.swf", "Loadout"}, {"GA_Archives.swf", "Archives"},
     {"GA_WrapUp.swf", "Wrap up"}, {"GA_Leaderboard.swf", "Shadow Lords leaderboard"}, {"GA_Daily_Rewards.swf", "Daily rewards"}, {"GA_FTUE.swf", "Tutorial"},
+    {"GameSettingsPopUp.swf", "Game settings"},
 };
 
 // Input tokens the game replaces with the player's bound key when it renders a popup ("LIGHT_PUNCH" -> "[J]"); we read the attack name.
@@ -185,7 +186,7 @@ void Narrator::loadData() {
 
 void Narrator::learn_fighter_names(const json& data) {
     bool changed = false;
-    static const std::regex reImg(R"(/(\w+)\.dds$)"), reTitle(R"(^&?(.+?) - Lvl)");
+    static const std::regex reImg(R"(/(\w+)\.dds$)"), reTitle(R"(^&?(.+?) - Lvl\s*(\d+))"), reUnlock(R"(Lvl\s*(\d+))");
     for (const char* side : {"Player1Info", "Player2Info"}) {
         const json& entries = jget(jget(jget(data, side), "Expanded"), "Entries");
         if (!entries.is_array()) continue;
@@ -195,6 +196,11 @@ void Narrator::learn_fighter_names(const json& data) {
             if (std::regex_search(img, m, reImg) && std::regex_search(title, t, reTitle)) {
                 std::string code = lower(m[1].str());
                 if (fighterName(code, "") != t[1].str()) { fighter_names_[code] = t[1].str(); changed = true; }
+                // the fighter's level and next colour / accessory unlock (beta report 2026-10-10: levels were not read)
+                std::string lvl = "level " + t[2].str(), nx = jstr(e, "NextUnlockLevel");
+                std::smatch u;
+                if (std::regex_search(nx, u, reUnlock)) lvl += ", next unlock at level " + u[1].str();
+                fighter_levels_[code] = lvl;
             }
         }
     }
@@ -369,6 +375,10 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
             if (!s.empty() && s != k) parts.push_back(s);
         }
         say("Popup. " + join(parts, ". ") + ". " + key_labels_["ABUTTON"] + ": Continue", true);
+    } else if (swf == "StageSelect.swf" && fn == "Lua_PopulateMusicOptions" && data.is_object()) {
+        // the music menu (Y on Stage Select): track list with the current choice; the focused track is read from the screen
+        music_options_ = jget(data, "MusicOptions");   // kept apart: the screen's own Lua_Populate follows and would replace it
+        last_probe_.erase(swf + "|music");
     } else if (swf == "GA_WarRoom.swf" && fn == "ShowDaysPassedPopup" && data.is_object()) {
         std::string d = S.resolve(jget(data, "currentDay"));
         if (!d.empty()) say(d, true);   // "TURN 3"
@@ -451,7 +461,7 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
 }
 
 void Narrator::say_match_outcome(const json& data) {
-    std::vector<std::string> parts{"Match results"};
+    std::vector<std::string> parts{"Match results"}, stats;
     const json& w = jget(data, "Winner");
     if (jisInt(w) && (w.get<int>() == 0 || w.get<int>() == 1)) parts.push_back("Player " + std::to_string(w.get<int>() + 1) + " wins");
     for (int side = 0; side < 2; side++) {
@@ -460,17 +470,21 @@ void Narrator::say_match_outcome(const json& data) {
         if (!jtruthy(jget(data, sk.c_str())) || !st.is_object()) continue;
         std::string streak = strip(S.resolve(jget(st, "WinStreak")));
         if (!streak.empty()) parts.push_back(streak);
-        if (verbosity_ >= 2) {
-            for (const char* cat : {"Hero", "Offense", "Defense", "Combos", "Variety"}) {
-                const json& c = jget(st, cat);
-                if (!c.is_object()) continue;
-                std::vector<std::string> ms;
-                const json& metrics = jget(c, "metrics");
-                if (metrics.is_array()) for (const auto& m : metrics) if (m.is_object()) ms.push_back(S.resolve(jget(m, "key")) + " " + S.resolve(jget(m, "stat")));
-                if (!ms.empty()) { std::string ck = S.resolve(jget(c, "key")); parts.push_back((ck.empty() ? std::string(cat) : ck) + ": " + join(ms, ", ")); }
-            }
+        std::string xp = strip(S.resolve(jget(st, "TotalEarnedXP")));
+        if (!xp.empty() && xp != "0") parts.push_back(xp + " XP");
+        // the five stat groups (Hero, Offense, Defense, Combos, Style) with their metrics: spoken at verbosity 1 and 2
+        // (beta report 2026-10-10 asked for them), and kept for Ctrl+Shift+D at every verbosity
+        for (const char* cat : {"Hero", "Offense", "Defense", "Combos", "Variety"}) {
+            const json& c = jget(st, cat);
+            if (!c.is_object()) continue;
+            std::vector<std::string> ms;
+            const json& metrics = jget(c, "metrics");
+            if (metrics.is_array()) for (const auto& m : metrics) if (m.is_object()) ms.push_back(S.resolve(jget(m, "key")) + " " + S.resolve(jget(m, "stat")));
+            if (!ms.empty()) { std::string ck = S.resolve(jget(c, "key")); stats.push_back((ck.empty() ? std::string(cat) : ck) + ": " + join(ms, ", ")); }
         }
     }
+    last_focus_ = json{{"swf", "MatchOutcome.swf"}, {"label", parts.size() > 1 ? parts[1] : parts[0]}, {"desc", join(stats, ". ")}};
+    if (verbosity_ >= 1) for (auto& s : stats) parts.push_back(s);
     say(join(parts, ". "), true);
 }
 
@@ -521,6 +535,11 @@ void Narrator::on_ei(const std::string& script, const std::string& fn, const std
             if (!startsWith(dest, "GA_")) ga_announced_.clear();
             say(screenName(dest), true, t);
         }
+    } else if (script == "GameSettingsPopUp" && fn == "ScreenShown" && current_swf_ != "GameSettingsPopUp.swf") {
+        // the game settings popup (Y on Character Select) has no LoadDestination of its own and stays loaded afterwards
+        current_swf_ = "GameSettingsPopUp.swf";
+        hasLast_ = false;
+        say("Game settings", true, t);
     } else if (fn == "ScreenShown" && startsWith(script, "GA_") && script != "GA_FTUE") {
         // Shadow Lords loads all of its screens at once and switches between them itself (no LoadDestination)
         std::string swf = script + ".swf";
@@ -637,7 +656,7 @@ void Narrator::on_move_selected(const std::string& js, int64_t t) {
     if (jtruthy(jget(m, "Favorite"))) text += ", key move";
     if (verbosity_ >= 1) text += ", " + std::to_string(i + 1) + " of " + std::to_string(moves.size());
     std::string desc = isNone(jget(m, "Description")) ? "" : S.resolve("#" + jtostr(jget(m, "Description")));
-    if (!desc.empty() && desc != name && verbosity_ >= 2) text += ". " + desc;
+    if (!desc.empty() && desc != name && verbosity_ >= 1) text += ". " + desc;   // ender types, instinct effects (beta report 2026-10-10)
     last_focus_ = json{{"swf", "CommandList.swf"}, {"index", i}, {"label", name}, {"desc", desc}, {"value", cmd}};
     say(text, !cmd_group_spoken_, t);
     cmd_group_spoken_ = false;
@@ -733,6 +752,7 @@ std::string Narrator::cs_fighter_text(const json& e) {
         if (text == "CHARACTER_" + upper(name)) text = name;
     }
     if (jtruthy(jget(e, "isRandom"))) text = "Random";
+    else if (verbosity_ >= 1) { auto lv = fighter_levels_.find(lower(name)); if (lv != fighter_levels_.end()) text += ", " + lv->second; }
     std::vector<std::string> flags;
     const std::pair<const char*, const char*> fk[] = {{"purchased", "not purchased"}, {"installed", "not installed"}, {"released", "not released"}, {"selectable", "locked"}};
     for (auto& kv : fk) { const json& v = jget(e, kv.first); if (v.is_boolean() && !v.get<bool>()) flags.push_back(kv.second); }
@@ -943,7 +963,39 @@ void Narrator::on_focus(const json& rec) {
         if (!deferred) on_charselect_focus(rec);
         return;
     }
-    if (isNone(jget(rec, "index")) || swf == "StageSelect.swf" || swf == "CommandList.swf") return;
+    if (swf == "GameSettingsPopUp.swf" && current_swf_ != swf) return;   // the popup's movie stays loaded after it closes
+    if (swf == "StageSelect.swf") {
+        // the stage itself is event-driven (StageSelectionChanged); only the music menu (Y) is read from the screen
+        const json& mg = jget(jget(rec, "groups"), "music");
+        if (!mg.is_object() || !jget(mg, "index").is_number()) return;
+        json lab = clean(jget(mg, "label"));
+        if (isNone(lab)) return;
+        std::string text = sv(lab);
+        // position from the option list, not from the 15 on-screen slots (most of them are empty but "visible")
+        const json& opts = music_options_;
+        std::string pos;
+        auto norm = [](std::string s) { std::string o; for (char ch : s) if (isalnum((unsigned char)ch)) o += (char)toupper((unsigned char)ch); return o; };
+        if (opts.is_array()) for (size_t i = 0; i < opts.size(); i++) {
+            const json& o = opts[i];
+            // the option carries a string key ("STAGE_DEFAULT_THEME"); compare it, resolved or not, with the on-screen text
+            std::string key = jstr(o, "name"), res = S.resolve(jget(o, "name"));
+            std::string k2 = norm(startsWith(key, "STAGE_") ? key.substr(6) : key);
+            if (norm(res) != norm(text) && k2 != norm(text)) continue;
+            if (jtruthy(jget(o, "isSelected"))) text += ", current";
+            if (jget(o, "isEnabled").is_boolean() && !jget(o, "isEnabled").get<bool>()) text += ", locked";
+            pos = std::to_string(i + 1) + " of " + std::to_string(opts.size());
+            break;
+        }
+        if (verbosity_ >= 1 && !pos.empty()) text += ", " + pos;
+        std::string mk = swf + "|music";
+        if (last_probe_[mk] == text) return;
+        bool first = last_probe_.find(mk) == last_probe_.end();
+        last_probe_[mk] = text;
+        last_focus_ = json{{"swf", swf}, {"label", sv(lab)}, {"desc", ""}};
+        say((first ? "Music. " : "") + text, true, t);
+        return;
+    }
+    if (isNone(jget(rec, "index")) || swf == "CommandList.swf") return;
     const json& probe = jget(rec, "probe");
     if (swf == "ControllerConfig.swf") { on_controller_focus(rec, probe, deferred); return; }
     if (startsWith(swf, "GA_")) { on_ga_focus(swf, rec, base_why, deferred, t); return; }

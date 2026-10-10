@@ -52,6 +52,14 @@ attack name. A popup repopulated with identical text within 3 s is spoken once (
 every frame). Shadow Lords screens (`GA_*.swf`) are loaded together and switched by the mode itself, so they are
 announced from their `ScreenShown` event rather than from `LoadDestination`.
 
+Also read (beta report 1, 2026-10-10): the game settings popup on Character Select (`GameSettingsPopUp.swf`, scan of
+`mcGSPopUpText.mcBtn{i}`; announced from `LoadDestinationComplete` since it has no `LoadDestination`, ignored once it
+is no longer the current screen because its movie stays loaded), the music menu on Stage Select (`mcMusicSelect.
+mcTrackText{i}` with positions from `Lua_PopulateMusicOptions`), the fighter level on Character Select (from the player
+card entries, next to the fighter names), Command List descriptions at verbosity 1, and the full match statistics.
+The radar gate treats "clock words and fighter positions unchanged for 3 s" as paused: a normal match's timer only
+ticks about every two seconds (Practice has a per-frame float clock), which made the old 400 ms gate flap.
+
 ### Shadow Lords
 The mode keeps its state in the Populate / Refresh payloads and navigates inside ActionScript, so the readers trigger
 on the mode's own sound events and read the display objects a frame later (`ga_summary`, `on_ga_focus`,

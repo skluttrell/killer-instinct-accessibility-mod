@@ -141,3 +141,32 @@ be used as a gate; the tab strip's "Active" label and the focus labels are the r
 Still open: pack reveal cards, Emporium purchase/craft popups, Barracks artifact list and inventory popup, Spirit Lair
 pet details / recharge popups, Archives, leaderboard, daily rewards panel, cinematic subtitles, guided prompt
 verification with speech (the state table is in place), `fightbot.py` is a test tool only.
+
+## Beta report 1 (Sightless Kombat, 2026-10-10) and the fixes
+Report in `beta_tester_reports/sightless_kombat-beta_testing_report_1-sat-oct-10-2026.txt`. Order approved by the user:
+radar, post-match stats, then the Character Select / Stage Select items, then Command List descriptions, then colours.
+1. Radar irregular in normal fights: the gate "clock words unchanged for 400 ms = paused" flapped because the round
+   timer only ticks about every two real seconds in a match (Practice and the Dojo have a float clock that moves every
+   frame). Measured 12:08: running 0.3-0.7 s, stopped 1.6 s. Fix: 3000 ms stall and fighter movement counts as activity
+   (`radar.cpp`). Verified 12:24: gate open continuously from the round's first tick to the KO (77 s); the pre-round
+   intro still toggles it, which is harmless.
+2. Post-match stats: all five groups (Hero, Offense, Defense, Combos, Style) with their metrics are spoken at verbosity
+   1 and 2, kept for Ctrl+Shift+D at every verbosity; XP earned added. Verified ("Match results. Player 2 wins. 32 XP.
+   Hero: Average Combo Damage ... Style: ... Most Stylish Combo 0").
+3. Game settings popup (Y on Character Select, key R on this keyboard): `GameSettingsPopUp.swf`, three buttons
+   `mcGSPopUpText.mcBtn{i}` with `mcTxt.TxtItem` / `mcValue.TxtItem`, FocusedLoop label; scan reader. Verified "Time
+   Limit, 99, 1 of 2", "Difficulty, Beginner, 2 of 2", value changes "Infinite" / "99". The popup has no LoadDestination
+   of its own (only LoadDestinationComplete), and its movie stays loaded after it closes, so it is announced from
+   LoadDestinationComplete and ignored when it is not the current screen.
+4. Music menu (Y on Stage Select): `mcMusicSelect.mcTrackText{i}` (15 slots, FocusedLoop), options from
+   `Lua_PopulateMusicOptions {MusicOptions:[{name, id, isSelected, isEnabled}]}` whose names are string keys
+   (`STAGE_DEFAULT_THEME`); position from the option list. Nothing fires when the menu opens (pure AS3), so the first
+   track is heard on the first Up/Down. Verified the tracks; the position fix is in the build after 12:24.
+5. Fighter level on Character Select: from the player-card payload's `Expanded.Entries[].Title` ("Jago - Lvl 1") and
+   `NextUnlockLevel`, learned next to the fighter names. Verified "Jago, level 1, next unlock at level 5, 2 of 30".
+6. Command List descriptions: the RefreshPage payload has a `Description` hash per move; it was only spoken at
+   verbosity 2, now at 1 as well. Live check pending (the CPU ends a versus match in about 75 s; pause first).
+7. Random stage: nothing in the UI traffic names the stage once Random is chosen (the loading screen payload has only
+   the two fighters' thumbnails). Would need the stage id from the match state; not done.
+8. Colour variants in the appearance texts: content work, awaiting the user's decision (announce the colour number and
+   add per-colour notes gradually, or write all variants).

@@ -1,0 +1,9 @@
+Sightless Kombat's feature/bug report
+• the character descriptions currently don't take into account what changes colour-wise when you select alternative colours.,
+• The menu when Y on controllers is pressed during character selection, which includes elements such as difficulty, does not narrate,
+• In a standard Player VS CPU fight (i.e. outside of the dojo), the pulses for the player radar are not regular enough to be useful for players that need them, they should loop but instead play with a large amount of silence in between.  In the Dojo lessons I played, however, they seemed to work as intended.,
+• I'm not sure if the random stage is displayed to a sighted viewer, but if you select random as your stage of choice, on loading into a fight you have no idea of what stage you're on other than through the music. Might be good to check this.,
+• The post-match results screens only list the player that won and the wins, but should list a larger number of other stats as well if memory serves.,
+• The music menu, accessed with Y on the stage select screen, doesn't read when you move up and down between the options.,
+• The move lists accessed in the pause menu do not currently read any accompanying descriptions of moves, such as the type of enders or the effects of the character's Instinct.,
+• character levels, which should I believe be visible on the character select screen, do not read. Each character has their own level, which dictates when you can unlock certain colours, for instance (the final one being unlocked at level 50).

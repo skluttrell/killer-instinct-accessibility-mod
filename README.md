@@ -1,5 +1,5 @@
 Killer Instinct Accessibility Mod
-v.0.2.0
+v.0.2.1
 
 Purpose:
 
@@ -12,13 +12,25 @@ Known Issues:
 * The Store and online lobbies are not read yet beyond their basic layout. The Store currently announces only "Store, bundles, item 1" and not the item names.
 * The fighter appearance descriptions were written from memory of the game and have not yet been reviewed by a sighted person.
 * The opponent radar assumes you are Player 1 playing against the CPU. There is no radar for Player 2.
-* The opponent radar was verified from the game's position data, but the sound itself has not been listened to by a player yet. Please report whether the pulse, its panning and its pitch are useful.
+* The opponent radar pauses during the "Ready, Fight" intro of a round and for up to 3 seconds after a round ends. Please keep reporting whether the pulse, its panning and its pitch are useful.
+* When you pick Random on Stage Select, the mod cannot tell you which stage was chosen; nothing in the game's menu data names it.
+* The fighter appearance descriptions cover the default colour of each costume only; the colour you choose is announced by number.
 * Announcements are always in English. The mod reads the game's English text table regardless of the language set in the game.
 * For about 10 seconds after the landing page appears, the game shows a sync popup and a "Free Rotating Fighter" toast that swallow key presses. Wait for them to be announced before navigating.
 * Only the Steam version of Killer Instinct is supported. The Microsoft Store / Xbox app version is not.
 * If a future game update changes the executable so that the mod can no longer find its hook points, the narrator stays silent and writes the reason to kiaccess\speech.log. The game itself still runs normally.
 
 New in this version:
+
+* Fixes from the first beta report (thank you, Sightless Kombat).
+* Opponent radar: the pulse no longer drops out in normal fights. The match timer only ticks every two seconds, and the radar mistook the gaps for a pause; it now watches the fighters' movement too.
+* Match results read all the stats: Hero, Offense, Defense, Combos and Style with every metric, and the XP earned. Ctrl+Shift+D repeats the stats.
+* The game settings menu on Character Select (the Y button, R on a keyboard with the default binds) is read: Time Limit and Difficulty with their values as you change them.
+* The music menu on Stage Select (also the Y button) is read: track name, whether it is the current one, and its position. Press Down once after opening it to hear the list.
+* Character Select announces each fighter's level and the level of the next unlock.
+* The Command List reads each move's description (ender types, Instinct effects, Combo Assist explanations) at normal verbosity, not only at the highest one.
+
+New in v0.2.0:
 
 * Shadow Lords. The hub announces the day and your currencies, then the focused tab as you move Left and Right (Guardians, Barracks, War Room, Emporium, Archives) with its notification count. The War Room reads the turn, your record and each mission as you move through the list (name, region, difficulty, turns remaining); Ctrl+Shift+D reads the briefing and the rewards. The loadout popup reads the fighter slot with its consumable and guardian sub-slots, the fighter picker and the launch button. The versus screen reads both fighters, the arena and their health, then every line of the pre-fight dialogue with the speaker's name as you press Enter. Match rewards read the result and the loot. The Emporium reads the active tab and the focused pack, item or recipe with its price or crafting state. The Barracks reads the fighter in the centre as the roster rotates. The Spirit Lair reads each guardian type and how many you own. Encounter popups read their title, text and the choices; turn changes are announced. The tutorial's guided prompts are spoken.
 * Popups that the game repopulates every frame (the fighting lessons of the Shadow Lords tutorial) are spoken once instead of dozens of times.
@@ -65,6 +77,8 @@ Start screen: press Space.
 Landing page: Shadow Lords, Single Player, Multiplayer, Store, Exit. Wait for the sync popup and the rotating fighter toast to pass before pressing keys.
 Single Player opens the main menu (Fight, Master and so on). A daily rewards panel may pop up; Escape closes it.
 Master, then Practice, leads to Character Select. Each side confirms fighter, costume and accessories with Enter. Loading takes 20 to 45 seconds.
+On Character Select the Y button (R with the default keyboard binds; the controller configuration screen tells you yours) opens the game settings: Up and Down move between Time Limit and Difficulty, Left and Right change the value, Escape closes. On Stage Select the same button opens the music menu: Up and Down move through the tracks, Enter picks one, Escape closes.
+During a fight, Space opens the pause menu; its Command List reads each move with its input and description, and Q and E switch between the move categories.
 In Practice, Escape opens the pause menu, which has tabs (Pause Menu, Dummy Options, Practice Options, Theme). Q and E switch tabs.
 To exit the game: on the landing page, press Down until "Exit, 5 of 5", then Enter, then Enter again to confirm.
 

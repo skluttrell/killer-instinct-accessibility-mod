@@ -18,7 +18,12 @@ const uintptr_t SLOT_STRIDE = 0xd0, OFF_POS = 0x3ec, OFF_FLAGS = 0x48;
 // three words and treats "none of them changed for STALL_MS" as paused / loading / not fighting.
 const uintptr_t OFF_CLOCK[3] = {0x368, 0x370, 0x938};
 const uint32_t FLAG_LIVE = 0x8000;
-const int PULSE_MS = 90, STALL_MS = 400;   // frame counter unchanged this long = paused / loading / not fighting
+// STALL_MS: neither the clock words nor the fighters' positions changed this long = paused / loading / not fighting. In
+// Practice and the Dojo the float clock moves every frame, but in a normal match the words only tick about every two
+// real seconds (the round timer runs slow), so 400 ms made the gate flap and the pulse fall silent between ticks (beta
+// report 2026-10-10; measured 12:08 the same day: running 0.3-0.7 s, stopped 1.6 s). Fighter movement also counts as
+// activity, so the pulse only stops when both the timer and the fighters are frozen for 3 s (pause, round end, menus).
+const int PULSE_MS = 90, STALL_MS = 3000;
 
 uintptr_t s_global = 0, s_roundGlobal = 0;
 std::atomic<bool> s_enabled{true}, s_run{false};
@@ -110,6 +115,7 @@ DWORD WINAPI thread(LPVOID) {
     int64_t lastLog = 0;
     bool wasLive = false, wasRunning = false;
     uint32_t lastClock[3] = {0, 0, 0};
+    float lastPos[6] = {0, 0, 0, 0, 0, 0};
     int64_t lastFrameChange = 0;
     while (s_run) {
         uintptr_t m = 0;
@@ -131,6 +137,7 @@ DWORD WINAPI thread(LPVOID) {
                 readT(r + OFF_CLOCK[0], clock[0]) && readT(r + OFF_CLOCK[1], clock[1]) && readT(r + OFF_CLOCK[2], clock[2])) {
                 bool changed = false;
                 for (int k = 0; k < 3; k++) if (clock[k] != lastClock[k]) { lastClock[k] = clock[k]; changed = true; }
+                for (int k = 0; k < 3; k++) if (me.v[k] != lastPos[k] || opp.v[k] != lastPos[3 + k]) { lastPos[k] = me.v[k]; lastPos[3 + k] = opp.v[k]; changed = true; }
                 if (changed) lastFrameChange = now;
                 running = now - lastFrameChange < STALL_MS;
             } else running = false;
