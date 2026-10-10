@@ -62,6 +62,9 @@ private:
     json fighter_names_ = json::object();
     std::map<std::string, std::string> fighter_levels_;   // code -> "level 3, next unlock at level 5" (from the player card entries)
     json fighter_appearance_ = json::object();   // code -> {"default": text, "retro": text} (data\fighter_appearance.json)
+    json costume_colors_ = json::object();       // code -> {"default": {"2": text, ...}, "retro": {...}} (data\costume_colors.json, generated from the textures)
+    std::map<int, int> cs_color_;                // side -> colour number (1-based) under the cursor / chosen on the colour stage
+    std::map<int, std::string> cs_color_name_;   // side -> that entry's name ("Color 3", "Mimic Skin")
     std::wstring names_path_;
 
     // Shadow Lords

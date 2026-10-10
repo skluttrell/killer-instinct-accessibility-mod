@@ -193,3 +193,20 @@ send when the game is not the foreground window (a key chain had typed into the 
 Colours: the game has no colour names or swatches; each colour is a baked texture (`characters\<f>\<f>_cm_variationN`
 in SPLIT_CHAR_<F>.PAK, a custom container, not DDS, format undecoded). Per-colour descriptions therefore cannot be
 derived from data without decoding that container; awaiting the user's choice.
+
+## Costume colours from the textures (2026-10-10 evening)
+The game has no colour data in its menus, so the descriptions are derived from the colour maps in SPLIT_CHAR_<F>.PAK
+and RETRO<F>.PAK (pak type 4). Record format, found by trial: a header (~0x620 bytes of records; the u16 pair at 0x620 is
+NOT reliable), the entry name as a NUL-terminated string, then DXT5 (BC3) blocks of mip 0 followed by the smaller
+mips. Dimensions follow from the payload size (w*h bytes, or w*h*4/3 with mips; most body maps are 2048 x 4096,
+Panda's 4096 x 4096). The first attempts failed because the data offset was taken from a size formula (37 bytes off),
+which keeps the block grid and the atlas silhouette but scrambles every block; BC7 / 16-bit layouts were ruled out
+with a neighbour-difference score (noise ~100, correct decode 4.7). The entry names use four variation spellings
+(_variation3, _variation_3, _var3, _v3) and a fighter's maps may be split into parts (skin, cloth, accessories, hair);
+TJ Combo's parts are prefixed "tj_". `05_tools/costume_colors.py` groups them, compares each variation with the base
+map at 1/8 resolution (changed = max channel difference > 28, empty atlas space excluded), names the changed pixels in
+both versions by hue/saturation/lightness buckets, pairs old -> new by area and writes one sentence per colour into
+`07_dll/data/costume_colors.json`; `read_appearance` appends it on the colour stage (`cs_color_` from
+AS_PlayerPickedColor). Limitations: no garment names (the UV atlas is not labelled), small regions below 7% of the
+changed area are dropped, "nearly the same as the default" when under 3% changes (some retro colours differ only on
+accessory maps that live under AltCostume and are excluded).

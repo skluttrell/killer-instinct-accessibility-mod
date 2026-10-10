@@ -1,0 +1,499 @@
+{
+ "aganos": {
+  "default": {
+   "2": "Colour 2: most of the costume changes; brown changes shade, dark yellow becomes brown, grey becomes brown.",
+   "3": "Colour 3: most of the costume changes; brown becomes dark green, dark teal becomes dark grey, grey becomes light blue.",
+   "4": "Colour 4: most of the costume changes; brown becomes dark grey, grey changes shade.",
+   "5": "Colour 5: most of the costume changes; brown becomes dark red, dark yellow becomes black, dark teal becomes dark grey.",
+   "6": "Colour 6: much of the costume changes; brown becomes grey, teal becomes grey, dark teal becomes dark grey.",
+   "7": "Colour 7: most of the costume changes; brown becomes dark grey, dark teal becomes brown, teal becomes yellow.",
+   "8": "Colour 8: most of the costume changes; grey becomes yellow-green, dark yellow becomes black, dark teal becomes black.",
+   "9": "Colour 9: much of the costume changes; grey becomes gold, yellow-green becomes green, teal becomes grey."
+  },
+  "retro": {
+   "2": "Colour 2: most of the costume changes; brown changes shade, dark grey becomes brown, grey becomes brown.",
+   "3": "Colour 3: most of the costume changes; brown changes shade, dark grey becomes brown, grey becomes brown.",
+   "4": "Colour 4: most of the costume changes; brown becomes dark grey, dark grey changes shade, grey becomes dark yellow.",
+   "5": "Colour 5: most of the costume changes; brown becomes grey, dark grey becomes grey, grey changes shade.",
+   "6": "Colour 6: most of the costume changes; brown becomes red, grey becomes brown, dark grey becomes brown."
+  }
+ },
+ "aria": {
+  "default": {
+   "2": "Colour 2: parts of the costume changes; orange becomes red, gold becomes red, grey becomes dark grey.",
+   "3": "Colour 3: most of the costume changes; grey becomes blue.",
+   "4": "Colour 4: most of the costume changes; grey becomes tan, orange becomes light blue, gold becomes light blue.",
+   "5": "Colour 5: most of the costume changes; grey becomes light blue, orange becomes light grey, gold becomes light grey.",
+   "6": "Colour 6: most of the costume changes; grey becomes dark grey, dark grey becomes black, orange becomes dark green.",
+   "7": "Colour 7: most of the costume changes; grey becomes gold, dark grey becomes dark yellow, orange becomes dark yellow.",
+   "8": "Colour 8: most of the costume changes; grey becomes light grey, orange becomes white, gold becomes light grey.",
+   "9": "Colour 9: most of the costume changes; grey becomes black, dark grey becomes black."
+  },
+  "retro": {
+   "2": "Colour 2: most of the costume changes; grey becomes pink, dark grey becomes light grey.",
+   "3": "Colour 3: most of the costume changes; grey becomes tan, dark grey becomes red.",
+   "4": "Colour 4: most of the costume changes; grey becomes dark blue, dark grey becomes orange.",
+   "5": "Colour 5: much of the costume changes; grey becomes light grey, dark grey becomes grey.",
+   "6": "Colour 6: most of the costume changes; grey becomes dark grey, dark grey becomes black."
+  }
+ },
+ "cinder": {
+  "default": {
+   "10": "Colour 10: most of the costume changes; dark red becomes dark blue, brown becomes dark blue, gold becomes light blue.",
+   "2": "Colour 2: most of the costume changes; dark red becomes dark blue, brown becomes dark blue, gold becomes light blue.",
+   "3": "Colour 3: most of the costume changes; dark red becomes dark green, brown becomes dark green, gold becomes green.",
+   "4": "Colour 4: most of the costume changes; dark red becomes dark pink, brown becomes dark pink, gold becomes pink.",
+   "5": "Colour 5: most of the costume changes; dark red becomes dark green, dark grey becomes grey, grey becomes light grey.",
+   "6": "Colour 6: most of the costume changes; dark grey changes shade, dark red becomes dark grey, gold becomes blue.",
+   "7": "Colour 7: most of the costume changes; dark grey changes shade, gold becomes dark red, dark red becomes dark grey.",
+   "8": "Colour 8: most of the costume changes; dark grey becomes brown, dark red becomes brown, grey becomes tan.",
+   "9": "Colour 9: most of the costume changes; dark red becomes dark grey, brown becomes dark grey, gold becomes grey."
+  }
+ },
+ "flipper": {
+  "default": {
+   "2": "Colour 2: most of the costume changes; dark grey becomes brown, grey becomes black.",
+   "3": "Colour 3: most of the costume changes; dark grey becomes brown, dark red becomes dark pink, grey becomes black.",
+   "4": "Colour 4: most of the costume changes; dark grey becomes brown, black becomes dark green, dark red becomes brown.",
+   "5": "Colour 5: most of the costume changes; dark grey becomes dark red, dark red changes shade, grey becomes black.",
+   "6": "Colour 6: most of the costume changes; dark grey becomes grey, dark red becomes grey, dark yellow becomes grey.",
+   "7": "Colour 7: much of the costume changes; dark grey becomes black, dark red becomes dark grey, grey becomes black.",
+   "8": "Colour 8: much of the costume changes; dark grey becomes black, grey becomes black, dark red becomes black.",
+   "9": "Colour 9: parts of the costume changes; dark grey becomes black, grey becomes black, brown becomes dark red."
+  }
+ },
+ "fulgore": {
+  "default": {
+   "10": "Colour 10: most of the costume changes; dark grey becomes grey, black becomes dark red, grey becomes red.",
+   "12": "Colour 12: most of the costume changes; dark grey becomes dark blue, black becomes dark teal, dark red becomes dark blue.",
+   "13": "Colour 13: parts of the costume changes; grey becomes yellow, dark grey becomes dark yellow, dark blue becomes dark yellow.",
+   "7": "Colour 7: much of the costume changes; dark grey becomes light blue, black becomes grey, grey becomes dark grey.",
+   "8": "Colour 8: nearly the same as the default.",
+   "9": "Colour 9: most of the costume changes; grey becomes dark grey, black becomes white, blue becomes white."
+  },
+  "retro": {
+   "2": "Colour 2: much of the costume changes; dark grey becomes light blue, grey becomes light blue, brown becomes light blue.",
+   "3": "Colour 3: most of the costume changes; dark grey becomes light grey, grey becomes white, dark yellow becomes light grey.",
+   "4": "Colour 4: nearly the same as the default.",
+   "5": "Colour 5: much of the costume changes; dark grey becomes green, grey becomes green, brown becomes green.",
+   "6": "Colour 6: most of the costume changes; dark grey becomes dark red, grey becomes red, brown becomes red."
+  }
+ },
+ "gargos": {
+  "default": {
+   "10": "Colour 10: most of the costume changes; dark grey becomes black, dark red becomes black, grey becomes black.",
+   "11": "Colour 11: much of the costume changes; dark grey changes shade, grey becomes dark grey, brown becomes dark grey.",
+   "2": "Colour 2: parts of the costume changes; brown becomes grey, red becomes grey, grey changes shade.",
+   "3": "Colour 3: much of the costume changes; dark grey becomes brown, grey becomes orange, red becomes tan.",
+   "4": "Colour 4: most of the costume changes; dark grey becomes grey, dark red becomes dark grey, grey changes shade.",
+   "5": "Colour 5: much of the costume changes; dark grey becomes grey, grey changes shade, brown becomes red.",
+   "6": "Colour 6: most of the costume changes; dark grey becomes brown, dark red becomes brown, grey becomes yellow.",
+   "7": "Colour 7: most of the costume changes; dark grey becomes grey, dark red becomes grey, grey becomes tan.",
+   "8": "Colour 8: much of the costume changes; dark grey becomes dark red, grey becomes red, brown becomes red.",
+   "9": "Colour 9: much of the costume changes; grey becomes dark grey, brown becomes dark grey, red becomes dark grey."
+  },
+  "retro": {
+   "2": "Colour 2: most of the costume changes; brown becomes dark blue, dark red becomes dark blue, dark grey becomes dark blue.",
+   "3": "Colour 3: parts of the costume changes; brown becomes dark yellow, red becomes dark yellow, orange becomes yellow.",
+   "4": "Colour 4: parts of the costume changes; brown becomes dark grey, dark red becomes dark grey, red becomes grey.",
+   "5": "Colour 5: parts of the costume changes; brown becomes dark grey, dark red becomes dark grey, red becomes brown.",
+   "6": "Colour 6: parts of the costume changes; brown becomes dark red, dark red becomes black, red becomes dark red.",
+   "7": "Colour 7: parts of the costume changes; brown changes shade, red becomes brown, dark red becomes brown."
+  }
+ },
+ "gauze": {
+  "default": {
+   "2": "Colour 2: much of the costume changes; brown becomes dark grey, dark yellow becomes dark grey.",
+   "3": "Colour 3: most of the costume changes; brown becomes grey, tan becomes grey, dark yellow becomes brown.",
+   "4": "Colour 4: parts of the costume changes; brown changes shade, tan changes shade, teal becomes grey.",
+   "5": "Colour 5: much of the costume changes; brown becomes dark grey, tan becomes light blue, dark grey becomes brown.",
+   "6": "Colour 6: much of the costume changes; brown becomes dark grey, tan becomes grey.",
+   "7": "Colour 7: most of the costume changes; brown becomes dark red, tan becomes dark red, dark yellow becomes dark grey.",
+   "8": "Colour 8: much of the costume changes; brown becomes grey, dark grey becomes grey, tan becomes light grey.",
+   "9": "Colour 9: much of the costume changes; brown becomes dark grey, dark teal becomes dark yellow, dark blue becomes dark yellow."
+  },
+  "retro": {
+   "2": "Colour 2: much of the costume changes; dark teal becomes brown, dark green becomes brown.",
+   "3": "Colour 3: nearly the same as the default.",
+   "4": "Colour 4: much of the costume changes; dark teal becomes dark yellow, grey changes shade, dark green becomes brown.",
+   "5": "Colour 5: most of the costume changes; grey becomes dark grey, brown becomes dark grey, dark teal becomes dark grey.",
+   "6": "Colour 6: much of the costume changes; brown becomes grey, grey changes shade, dark teal becomes dark grey."
+  }
+ },
+ "glacius": {
+  "default": {
+   "2": "Colour 2: most of the costume changes; dark grey becomes black, grey becomes dark pink, brown becomes dark pink.",
+   "3": "Colour 3: most of the costume changes; dark grey becomes red, brown becomes tan, grey becomes tan.",
+   "4": "Colour 4: parts of the costume changes; brown becomes green, tan becomes green, yellow becomes green."
+  }
+ },
+ "grub": {
+  "default": {
+   "2": "Colour 2: much of the costume changes; dark grey becomes dark red, brown becomes dark red, dark yellow becomes dark red.",
+   "3": "Colour 3: parts of the costume changes; dark grey becomes grey, dark red becomes grey, dark yellow becomes grey.",
+   "4": "Colour 4: parts of the costume changes; dark grey becomes light blue, dark red becomes light blue, dark yellow becomes dark teal.",
+   "5": "Colour 5: parts of the costume changes; dark grey becomes dark yellow, dark red becomes dark yellow-green, dark yellow becomes dark yellow-green.",
+   "6": "Colour 6: parts of the costume changes; dark grey changes shade, dark red becomes dark grey, dark yellow becomes dark grey.",
+   "7": "Colour 7: parts of the costume changes; dark grey becomes dark pink, dark red becomes dark pink, dark yellow becomes dark pink.",
+   "8": "Colour 8: parts of the costume changes; dark grey changes shade, dark red becomes dark grey, dark yellow becomes dark grey.",
+   "9": "Colour 9: much of the costume changes; dark grey becomes brown, dark red becomes brown, brown becomes dark grey."
+  },
+  "retro": {
+   "2": "Colour 2: parts of the costume changes; dark grey becomes brown, black becomes brown.",
+   "3": "Colour 3: parts of the costume changes; dark grey becomes pink, black becomes dark grey.",
+   "4": "Colour 4: parts of the costume changes; dark grey becomes dark teal, black becomes dark grey.",
+   "5": "Colour 5: parts of the costume changes; dark grey becomes dark green, black becomes dark grey.",
+   "6": "Colour 6: parts of the costume changes; dark grey becomes dark yellow, black becomes dark grey.",
+   "7": "Colour 7: parts of the costume changes; dark grey becomes brown, black becomes brown."
+  }
+ },
+ "hisako": {
+  "default": {
+   "10": "Colour 10: most of the costume changes; dark red becomes dark blue, grey becomes dark grey, brown becomes dark blue.",
+   "2": "Colour 2: most of the costume changes; dark red becomes dark grey, red becomes grey, orange becomes light grey.",
+   "3": "Colour 3: most of the costume changes; dark red becomes dark blue, grey becomes gold, brown becomes dark blue.",
+   "4": "Colour 4: most of the costume changes; grey changes shade, dark red becomes dark grey, red becomes dark grey.",
+   "5": "Colour 5: most of the costume changes; grey becomes dark teal, dark red becomes grey, orange becomes brown.",
+   "6": "Colour 6: most of the costume changes; dark red becomes dark green, black becomes dark red, brown becomes dark green.",
+   "7": "Colour 7: much of the costume changes; dark red changes shade, orange becomes dark grey, grey becomes dark grey.",
+   "8": "Colour 8: most of the costume changes; grey becomes dark grey, dark red becomes dark blue, dark grey becomes black.",
+   "9": "Colour 9: most of the costume changes; grey becomes dark red, dark red becomes dark grey, dark grey becomes dark red."
+  },
+  "retro": {
+   "2": "Colour 2: much of the costume changes; dark red becomes dark blue, black becomes dark blue, dark teal becomes brown.",
+   "3": "Colour 3: much of the costume changes; grey becomes yellow, dark grey becomes dark yellow, dark red becomes dark yellow.",
+   "4": "Colour 4: parts of the costume changes; grey becomes dark grey, dark pink becomes grey, dark teal becomes dark yellow.",
+   "5": "Colour 5: much of the costume changes; dark red becomes light grey, black becomes grey, dark grey becomes grey.",
+   "6": "Colour 6: much of the costume changes; grey becomes red, dark grey becomes dark red."
+  }
+ },
+ "jago": {
+  "default": {
+   "10": "Colour 10: much of the costume changes; brown changes shade, dark blue becomes brown, black becomes brown.",
+   "11": "Colour 11: much of the costume changes; brown becomes dark grey, dark blue becomes dark yellow, dark grey becomes brown.",
+   "13": "Colour 13: most of the costume changes; brown becomes black, tan becomes brown, dark blue becomes black.",
+   "2": "Colour 2: parts of the costume changes; dark blue becomes dark red, dark grey becomes dark red, dark teal becomes dark red.",
+   "3": "Colour 3: much of the costume changes; brown becomes dark grey, black becomes dark grey, dark blue becomes dark grey.",
+   "4": "Colour 4: much of the costume changes; dark blue becomes light grey, black becomes grey, brown becomes light grey.",
+   "5": "Colour 5: parts of the costume changes; dark blue becomes gold, black becomes brown, brown becomes gold.",
+   "6": "Colour 6: much of the costume changes; brown changes shade, dark blue becomes teal, dark grey becomes teal.",
+   "7": "Colour 7: much of the costume changes; black becomes dark yellow, brown becomes grey, dark grey becomes brown.",
+   "8": "Colour 8: parts of the costume changes; dark grey becomes grey, dark blue becomes blue, dark yellow becomes grey.",
+   "9": "Colour 9: most of the costume changes; brown becomes grey, black becomes dark grey, dark blue becomes grey."
+  },
+  "retro": {
+   "2": "Colour 2: most of the costume changes; light blue becomes red, dark blue becomes red, dark red becomes gold.",
+   "3": "Colour 3: most of the costume changes; light blue becomes dark grey, dark blue becomes dark grey, dark red becomes red.",
+   "4": "Colour 4: most of the costume changes; light blue becomes light grey, dark blue becomes light grey, dark red becomes red.",
+   "5": "Colour 5: most of the costume changes; light blue becomes gold, dark blue becomes gold, dark red becomes red.",
+   "6": "Colour 6: most of the costume changes; light blue becomes green, dark blue becomes green, dark red becomes red."
+  }
+ },
+ "judge": {
+  "default": {
+   "2": "Colour 2: parts of the costume changes; black becomes dark blue, dark red becomes dark blue, dark grey becomes dark blue.",
+   "3": "Colour 3: most of the costume changes; black becomes dark green, dark grey becomes grey, dark red becomes green.",
+   "4": "Colour 4: nearly the same as the default.",
+   "5": "Colour 5: parts of the costume changes; dark red becomes dark blue, dark grey becomes dark blue, black becomes dark pink.",
+   "6": "Colour 6: parts of the costume changes; dark grey becomes brown, black becomes dark grey, dark red becomes dark grey.",
+   "7": "Colour 7: much of the costume changes; dark red becomes dark grey, dark yellow becomes dark grey, brown becomes dark grey.",
+   "8": "Colour 8: parts of the costume changes; dark grey becomes dark red, black becomes brown, dark red becomes brown.",
+   "9": "Colour 9: parts of the costume changes; black becomes grey, dark grey becomes grey, dark red becomes grey."
+  },
+  "retro": {
+   "2": "Colour 2: much of the costume changes; dark grey changes shade."
+  }
+ },
+ "kimwu": {
+  "default": {
+   "11": "Colour 11: most of the costume changes; brown changes shade, dark pink becomes brown, black becomes brown.",
+   "2": "Colour 2: much of the costume changes; dark grey becomes dark red, dark pink becomes brown, dark red becomes dark grey.",
+   "3": "Colour 3: much of the costume changes; dark red becomes dark purple, blue becomes gold.",
+   "4": "Colour 4: most of the costume changes; dark red becomes dark green, blue becomes dark green.",
+   "5": "Colour 5: most of the costume changes; dark red becomes yellow, black becomes dark yellow, dark grey becomes dark yellow.",
+   "6": "Colour 6: parts of the costume changes; dark red becomes black, blue becomes orange.",
+   "7": "Colour 7: most of the costume changes; dark red becomes pink, black becomes dark pink, dark grey becomes dark pink.",
+   "8": "Colour 8: most of the costume changes; dark red becomes blue, black becomes blue, dark grey becomes blue.",
+   "9": "Colour 9: most of the costume changes; dark grey becomes grey, black becomes dark grey, dark pink becomes grey."
+  },
+  "retro": {
+   "2": "Colour 2: most of the costume changes; dark red becomes dark grey, red becomes dark grey, dark pink becomes dark grey.",
+   "3": "Colour 3: most of the costume changes; dark red becomes grey, red becomes grey, dark pink becomes grey.",
+   "4": "Colour 4: most of the costume changes; dark red becomes light blue, red becomes light blue, dark pink becomes light blue.",
+   "5": "Colour 5: most of the costume changes; dark red becomes brown, red becomes brown, dark pink becomes brown.",
+   "6": "Colour 6: most of the costume changes; dark red becomes dark pink, red becomes dark pink, dark pink changes shade.",
+   "7": "Colour 7: most of the costume changes; dark red becomes black, red becomes brown, dark pink becomes dark red."
+  }
+ },
+ "maya": {
+  "default": {
+   "11": "Colour 11: most of the costume changes; brown changes shade, dark grey becomes dark red, gold becomes yellow.",
+   "2": "Colour 2: much of the costume changes; brown becomes grey, dark red becomes brown.",
+   "3": "Colour 3: most of the costume changes; brown becomes grey, dark red becomes dark teal, dark grey becomes dark teal.",
+   "4": "Colour 4: most of the costume changes; brown becomes grey, black becomes grey, dark grey becomes light grey.",
+   "5": "Colour 5: most of the costume changes; dark red becomes grey, dark grey becomes grey, dark yellow becomes grey.",
+   "6": "Colour 6: most of the costume changes; brown becomes grey, tan becomes light grey.",
+   "7": "Colour 7: most of the costume changes; brown becomes blue, tan becomes grey, dark red becomes dark grey.",
+   "8": "Colour 8: most of the costume changes; dark red changes shade, dark grey becomes red, brown becomes grey.",
+   "9": "Colour 9: most of the costume changes; brown becomes grey, black becomes dark grey, dark grey becomes grey."
+  },
+  "retro": {
+   "2": "Colour 2: most of the costume changes; brown becomes tan, tan changes shade, orange becomes tan.",
+   "3": "Colour 3: most of the costume changes; brown changes shade, yellow becomes orange, tan becomes orange.",
+   "4": "Colour 4: most of the costume changes; brown becomes tan, tan changes shade, orange becomes tan.",
+   "5": "Colour 5: most of the costume changes; brown becomes tan, tan changes shade, orange becomes tan.",
+   "6": "Colour 6: most of the costume changes; brown becomes tan, tan changes shade, orange becomes tan."
+  }
+ },
+ "mira": {
+  "default": {
+   "11": "Colour 11: much of the costume changes; dark grey becomes blue, black becomes blue, dark red becomes dark purple.",
+   "2": "Colour 2: parts of the costume changes; dark grey becomes brown, dark red becomes brown.",
+   "3": "Colour 3: parts of the costume changes; dark grey becomes dark green, dark red becomes dark pink, dark pink becomes dark purple.",
+   "4": "Colour 4: much of the costume changes; dark grey becomes brown, dark red becomes dark blue, black becomes dark blue.",
+   "5": "Colour 5: much of the costume changes; dark grey becomes grey, black becomes dark purple, dark red becomes purple.",
+   "6": "Colour 6: much of the costume changes; dark grey becomes dark blue, dark red becomes dark blue, black becomes light grey.",
+   "7": "Colour 7: parts of the costume changes; dark grey becomes dark red, dark red becomes teal, black becomes dark red.",
+   "8": "Colour 8: much of the costume changes; dark grey becomes pink, dark red becomes pink, black becomes dark pink.",
+   "9": "Colour 9: parts of the costume changes; dark grey becomes grey, black becomes dark grey, dark red becomes dark grey."
+  },
+  "retro": {
+   "2": "Colour 2: most of the costume changes; dark grey becomes pink, dark red becomes pink, black becomes grey.",
+   "3": "Colour 3: most of the costume changes; dark grey becomes red, dark red becomes dark grey, red becomes dark grey.",
+   "4": "Colour 4: most of the costume changes; dark grey becomes dark green, dark red becomes dark blue, grey becomes dark grey.",
+   "5": "Colour 5: most of the costume changes; dark grey becomes dark blue, grey changes shade, dark red becomes grey.",
+   "6": "Colour 6: most of the costume changes; dark grey becomes grey, grey changes shade, dark red becomes brown.",
+   "7": "Colour 7: most of the costume changes; dark grey becomes gold, dark red becomes brown, black becomes red."
+  }
+ },
+ "nox": {
+  "default": {
+   "7": "Colour 7: nearly the same as the default.",
+   "8": "Colour 8: most of the costume changes; light blue becomes grey, teal becomes grey, grey becomes dark grey.",
+   "9": "Colour 9: most of the costume changes; light blue becomes pink, teal becomes dark grey, grey becomes purple."
+  }
+ },
+ "orchid": {
+  "default": {
+   "10": "Colour 10: nearly the same as the default.",
+   "13": "Colour 13: nearly the same as the default.",
+   "14": "Colour 14: nearly the same as the default.",
+   "2": "Colour 2: much of the costume changes; dark yellow becomes brown, brown becomes dark grey, black becomes brown.",
+   "3": "Colour 3: much of the costume changes; brown becomes grey, dark blue becomes dark grey, grey becomes red.",
+   "4": "Colour 4: much of the costume changes; brown becomes dark grey, dark yellow becomes dark grey, grey becomes dark grey.",
+   "5": "Colour 5: much of the costume changes; dark yellow becomes brown, black becomes dark yellow, dark yellow-green becomes brown.",
+   "6": "Colour 6: parts of the costume changes; dark yellow becomes red, black becomes dark red, dark green becomes light blue.",
+   "7": "Colour 7: nearly the same as the default.",
+   "8": "Colour 8: parts of the costume changes; dark yellow becomes dark grey, brown becomes pink, gold becomes pink.",
+   "9": "Colour 9: nearly the same as the default."
+  }
+ },
+ "panda": {
+  "default": {
+   "2": "Colour 2: nearly the same as the default.",
+   "3": "Colour 3: much of the costume changes; dark grey becomes brown, grey becomes gold.",
+   "4": "Colour 4: much of the costume changes; dark grey becomes brown, grey becomes brown.",
+   "5": "Colour 5: most of the costume changes; dark grey becomes grey, dark red becomes dark grey, dark yellow becomes dark grey.",
+   "6": "Colour 6: much of the costume changes; dark grey becomes brown, dark red changes shade, grey becomes orange.",
+   "7": "Colour 7: most of the costume changes; dark grey becomes pink, dark red becomes pink, dark yellow becomes pink.",
+   "8": "Colour 8: most of the costume changes; dark grey becomes blue, dark red becomes blue, dark yellow becomes grey.",
+   "9": "Colour 9: much of the costume changes; dark grey becomes dark red, dark red changes shade, grey becomes dark red."
+  },
+  "retro": {
+   "2": "Colour 2: nearly the same as the default.",
+   "3": "Colour 3: parts of the costume changes; dark grey becomes grey, grey changes shade, dark red becomes dark grey.",
+   "4": "Colour 4: nearly the same as the default.",
+   "5": "Colour 5: nearly the same as the default.",
+   "6": "Colour 6: nearly the same as the default.",
+   "7": "Colour 7: parts of the costume changes; dark grey becomes dark red, dark red becomes dark grey."
+  }
+ },
+ "prince": {
+  "default": {
+   "2": "Colour 2: most of the costume changes; dark yellow becomes grey, dark grey becomes grey, dark red becomes dark purple.",
+   "3": "Colour 3: much of the costume changes; dark yellow becomes dark blue, dark grey becomes dark blue, dark red becomes brown.",
+   "4": "Colour 4: most of the costume changes; dark yellow becomes brown, dark grey becomes brown, black becomes brown.",
+   "5": "Colour 5: much of the costume changes; dark yellow becomes brown, dark grey becomes brown, yellow becomes brown.",
+   "6": "Colour 6: parts of the costume changes; dark grey becomes dark red, dark yellow becomes dark red, dark red becomes dark grey.",
+   "7": "Colour 7: parts of the costume changes; yellow becomes grey, brown becomes grey, dark yellow becomes grey.",
+   "8": "Colour 8: much of the costume changes; dark yellow becomes dark blue, yellow becomes grey, brown becomes light blue.",
+   "9": "Colour 9: much of the costume changes; dark grey becomes brown, dark yellow becomes brown, yellow becomes brown."
+  },
+  "retro": {
+   "2": "Colour 2: much of the costume changes; dark green becomes dark red, dark red becomes gold, dark yellow-green becomes red.",
+   "3": "Colour 3: much of the costume changes; dark green becomes brown, dark yellow-green becomes brown, dark grey becomes dark green.",
+   "4": "Colour 4: much of the costume changes; dark green becomes pink, dark yellow-green becomes pink, dark grey becomes pink.",
+   "5": "Colour 5: much of the costume changes; dark green becomes gold, dark yellow-green becomes gold, dark grey becomes red.",
+   "6": "Colour 6: most of the costume changes; dark green becomes brown, green changes shade, dark yellow-green becomes brown.",
+   "7": "Colour 7: most of the costume changes; dark green becomes light blue, dark grey changes shade, dark yellow-green becomes light blue."
+  }
+ },
+ "riptor": {
+  "default": {
+   "11": "Colour 11: most of the costume changes; dark grey becomes black, grey becomes dark red, black becomes dark grey.",
+   "2": "Colour 2: much of the costume changes; dark grey changes shade, grey becomes dark grey, black becomes dark grey.",
+   "3": "Colour 3: most of the costume changes; dark grey becomes grey, black becomes grey, tan becomes grey.",
+   "4": "Colour 4: most of the costume changes; dark grey becomes dark blue, grey becomes blue, brown changes shade.",
+   "5": "Colour 5: most of the costume changes; dark grey changes shade, grey becomes dark grey, black becomes dark grey.",
+   "6": "Colour 6: much of the costume changes; dark grey changes shade, grey becomes dark grey, black becomes dark grey.",
+   "7": "Colour 7: much of the costume changes; dark grey changes shade, grey becomes dark grey, black becomes dark grey.",
+   "8": "Colour 8: most of the costume changes; dark grey becomes brown, black becomes brown, grey becomes brown.",
+   "9": "Colour 9: much of the costume changes; dark grey becomes black, grey becomes dark grey, tan becomes red."
+  },
+  "retro": {
+   "2": "Colour 2: much of the costume changes; red becomes yellow-green, brown becomes dark yellow-green, grey becomes brown.",
+   "3": "Colour 3: most of the costume changes; brown becomes dark green, tan becomes green, red becomes pink.",
+   "4": "Colour 4: most of the costume changes; brown becomes dark red, tan becomes red, red becomes dark red.",
+   "5": "Colour 5: most of the costume changes; brown becomes dark red, tan becomes brown, red becomes dark blue.",
+   "6": "Colour 6: most of the costume changes; brown becomes grey, tan becomes light grey, red becomes dark grey."
+  }
+ },
+ "sabrewulf": {
+  "default": {
+   "10": "Colour 10: most of the costume changes; dark grey becomes dark red, dark teal becomes black, brown becomes dark green.",
+   "12": "Colour 12: most of the costume changes; dark teal becomes dark red, dark grey becomes brown, dark blue becomes brown.",
+   "2": "Colour 2: most of the costume changes; dark teal becomes grey, dark grey becomes grey, dark blue becomes grey.",
+   "5": "Colour 5: most of the costume changes; dark teal becomes brown, dark grey becomes brown, dark blue becomes brown.",
+   "7": "Colour 7: much of the costume changes; dark grey becomes brown, dark teal becomes brown, dark blue becomes brown.",
+   "8": "Colour 8: parts of the costume changes; dark grey becomes grey, brown becomes dark blue, dark red becomes dark blue.",
+   "9": "Colour 9: most of the costume changes; dark teal becomes brown, dark grey becomes brown, dark blue becomes brown."
+  }
+ },
+ "sadira": {
+  "default": {
+   "2": "Colour 2: most of the costume changes; black becomes brown, dark teal becomes dark green, dark red becomes light grey.",
+   "3": "Colour 3: much of the costume changes; dark red becomes brown, dark pink becomes brown, dark teal becomes dark pink.",
+   "4": "Colour 4: most of the costume changes; dark red becomes black, black becomes brown, dark pink becomes dark grey.",
+   "5": "Colour 5: most of the costume changes; black becomes brown, dark red becomes dark teal, dark pink becomes light blue.",
+   "6": "Colour 6: much of the costume changes; dark red becomes yellow, black becomes brown, dark pink becomes yellow-green.",
+   "7": "Colour 7: much of the costume changes; dark pink becomes dark yellow, dark red becomes brown, black becomes dark yellow.",
+   "8": "Colour 8: much of the costume changes; dark grey becomes white, black becomes brown, dark pink becomes dark purple.",
+   "9": "Colour 9: much of the costume changes; dark grey becomes red, black becomes brown, dark pink becomes dark red."
+  },
+  "retro": {
+   "2": "Colour 2: most of the costume changes; brown becomes dark grey, dark grey becomes dark red, grey becomes dark grey.",
+   "3": "Colour 3: parts of the costume changes; black becomes dark yellow, dark red becomes dark yellow.",
+   "4": "Colour 4: parts of the costume changes; dark grey becomes orange, grey becomes dark grey, dark blue becomes black.",
+   "5": "Colour 5: parts of the costume changes; dark grey becomes light grey, brown becomes grey, dark red becomes grey.",
+   "6": "Colour 6: most of the costume changes; black becomes dark blue, dark grey becomes light blue, dark red becomes dark blue."
+  }
+ },
+ "salmon": {
+  "default": {
+   "2": "Colour 2: parts of the costume changes; dark grey becomes dark red.",
+   "3": "Colour 3: parts of the costume changes; dark grey becomes dark purple.",
+   "4": "Colour 4: much of the costume changes; dark grey becomes light blue.",
+   "5": "Colour 5: parts of the costume changes; light grey becomes brown, black becomes grey, dark blue becomes brown.",
+   "6": "Colour 6: parts of the costume changes; dark grey becomes brown, light grey becomes red, dark blue becomes dark red.",
+   "7": "Colour 7: much of the costume changes; dark grey becomes purple.",
+   "8": "Colour 8: much of the costume changes; dark grey becomes grey.",
+   "9": "Colour 9: much of the costume changes; dark grey becomes brown, black becomes dark grey, light grey becomes brown."
+  },
+  "retro": {
+   "2": "Colour 2: much of the costume changes; grey becomes brown, dark grey becomes grey, light grey becomes gold.",
+   "3": "Colour 3: much of the costume changes; grey becomes dark red, dark blue becomes brown, dark red becomes gold.",
+   "4": "Colour 4: much of the costume changes; grey becomes dark teal, dark red becomes dark green, light grey becomes dark teal.",
+   "5": "Colour 5: much of the costume changes; dark grey becomes red, light grey becomes light blue, dark blue becomes dark red.",
+   "6": "Colour 6: parts of the costume changes; dark red becomes grey, grey becomes dark green, light grey becomes green."
+  }
+ },
+ "shago": {
+  "default": {
+   "10": "Colour 10: much of the costume changes; dark grey becomes dark blue, grey becomes red, dark blue becomes red.",
+   "11": "Colour 11: most of the costume changes; dark grey becomes blue, grey becomes teal, dark yellow becomes teal.",
+   "2": "Colour 2: much of the costume changes; dark grey becomes grey, grey becomes blue, dark blue becomes grey.",
+   "3": "Colour 3: much of the costume changes; dark grey becomes brown, dark blue becomes brown, dark red becomes black.",
+   "4": "Colour 4: parts of the costume changes; dark grey becomes dark pink, dark blue becomes dark grey, grey becomes red.",
+   "5": "Colour 5: much of the costume changes; dark grey becomes dark blue, dark blue becomes purple, black becomes dark purple.",
+   "6": "Colour 6: parts of the costume changes; dark grey becomes dark red, dark blue becomes dark yellow, dark yellow becomes dark red.",
+   "7": "Colour 7: much of the costume changes; dark grey becomes dark red, dark yellow becomes dark blue, dark blue changes shade.",
+   "8": "Colour 8: much of the costume changes; dark grey becomes brown, dark blue becomes grey, dark yellow becomes dark blue.",
+   "9": "Colour 9: much of the costume changes; dark grey becomes brown, grey becomes dark blue, dark blue becomes dark grey."
+  }
+ },
+ "spinal": {
+  "default": {
+   "10": "Colour 10: much of the costume changes; brown becomes teal, dark grey becomes light blue, grey becomes light blue.",
+   "2": "Colour 2: nearly the same as the default.",
+   "3": "Colour 3: parts of the costume changes; dark grey becomes dark red, brown becomes grey, dark red becomes dark grey.",
+   "4": "Colour 4: nearly the same as the default.",
+   "5": "Colour 5: nearly the same as the default.",
+   "6": "Colour 6: nearly the same as the default.",
+   "7": "Colour 7: nearly the same as the default.",
+   "8": "Colour 8: nearly the same as the default.",
+   "9": "Colour 9: nearly the same as the default."
+  }
+ },
+ "thunder": {
+  "default": {
+   "2": "Colour 2: most of the costume changes; brown becomes dark green, grey becomes red, tan becomes red.",
+   "3": "Colour 3: most of the costume changes; brown becomes dark blue, grey changes shade, dark grey becomes grey.",
+   "4": "Colour 4: most of the costume changes; brown becomes dark grey, grey becomes dark grey, dark grey becomes black.",
+   "5": "Colour 5: parts of the costume changes; brown becomes dark red, dark blue becomes dark grey.",
+   "6": "Colour 6: parts of the costume changes; brown becomes grey, black becomes dark grey.",
+   "7": "Colour 7: much of the costume changes; brown becomes gold, dark grey becomes grey, black becomes grey.",
+   "8": "Colour 8: parts of the costume changes; brown becomes dark grey, grey becomes dark grey, dark grey changes shade.",
+   "9": "Colour 9: parts of the costume changes; brown becomes dark yellow, grey becomes brown, dark grey becomes brown."
+  },
+  "retro": {
+   "2": "Colour 2: parts of the costume changes; dark grey becomes grey, dark blue becomes grey, dark teal becomes grey.",
+   "3": "Colour 3: parts of the costume changes; dark grey becomes grey, dark yellow becomes grey, dark blue becomes grey.",
+   "4": "Colour 4: parts of the costume changes; dark grey becomes brown, dark blue becomes orange, dark teal becomes orange.",
+   "5": "Colour 5: parts of the costume changes; dark grey becomes grey, dark blue becomes grey, dark teal becomes grey.",
+   "6": "Colour 6: parts of the costume changes; dark grey changes shade, dark blue becomes dark grey, dark teal becomes dark grey."
+  }
+ },
+ "tjcombo": {
+  "default": {
+   "10": "Colour 10: most of the costume changes; dark grey becomes red, dark blue becomes red, grey becomes red.",
+   "12": "Colour 12: most of the costume changes; brown becomes dark yellow, dark grey becomes grey, dark blue becomes grey.",
+   "2": "Colour 2: most of the costume changes; dark grey becomes grey, dark blue becomes grey, grey changes shade.",
+   "3": "Colour 3: parts of the costume changes; dark blue becomes grey, grey becomes dark grey, dark grey becomes dark red.",
+   "4": "Colour 4: much of the costume changes; dark blue becomes grey, dark grey becomes grey, grey changes shade.",
+   "5": "Colour 5: much of the costume changes; dark blue becomes brown, red becomes brown, dark red becomes brown.",
+   "6": "Colour 6: most of the costume changes; dark grey becomes grey, dark blue becomes dark grey, grey becomes dark grey.",
+   "7": "Colour 7: most of the costume changes; dark grey becomes grey, dark blue becomes grey, grey becomes light grey.",
+   "8": "Colour 8: most of the costume changes; dark grey becomes red, dark blue becomes red, grey becomes red.",
+   "9": "Colour 9: most of the costume changes; dark grey becomes grey, dark blue becomes yellow, grey becomes yellow."
+  },
+  "retro": {
+   "2": "Colour 2: parts of the costume changes; dark blue becomes dark grey, yellow becomes grey, red changes shade.",
+   "3": "Colour 3: much of the costume changes; dark blue becomes brown, brown becomes dark blue, dark green becomes brown.",
+   "4": "Colour 4: much of the costume changes; dark blue becomes dark green, dark yellow-green becomes blue, dark green becomes dark blue.",
+   "5": "Colour 5: nearly the same as the default.",
+   "6": "Colour 6: much of the costume changes; dark blue becomes dark red, dark yellow-green becomes dark blue, dark green becomes dark blue."
+  }
+ },
+ "tusk": {
+  "default": {
+   "2": "Colour 2: most of the costume changes; dark grey becomes dark yellow-green, brown becomes dark yellow-green, grey becomes dark grey.",
+   "3": "Colour 3: most of the costume changes; brown becomes dark grey, dark grey changes shade, grey changes shade.",
+   "4": "Colour 4: most of the costume changes; brown becomes dark grey, grey becomes dark grey, dark grey changes shade.",
+   "5": "Colour 5: most of the costume changes; dark grey becomes dark blue, brown becomes blue, grey becomes dark grey.",
+   "6": "Colour 6: most of the costume changes; brown changes shade, dark grey changes shade, grey becomes brown.",
+   "7": "Colour 7: most of the costume changes; dark grey becomes dark red, brown becomes red, grey becomes red.",
+   "8": "Colour 8: most of the costume changes; brown changes shade, dark grey becomes black, grey becomes brown.",
+   "9": "Colour 9: most of the costume changes; dark grey becomes grey, brown becomes tan, tan becomes dark blue."
+  },
+  "retro": {
+   "2": "Colour 2: most of the costume changes; brown becomes dark red, grey becomes red, yellow becomes dark red.",
+   "3": "Colour 3: most of the costume changes; brown becomes dark blue, tan changes shade, grey becomes blue.",
+   "4": "Colour 4: most of the costume changes; tan becomes brown, brown changes shade, black becomes grey.",
+   "5": "Colour 5: most of the costume changes; brown changes shade, tan becomes yellow-green, orange becomes green.",
+   "6": "Colour 6: most of the costume changes; brown becomes dark grey, dark yellow becomes dark grey.",
+   "7": "Colour 7: most of the costume changes; tan becomes light blue, brown becomes light blue, dark yellow becomes dark grey."
+  }
+ },
+ "wombat": {
+  "default": {
+   "2": "Colour 2: nearly the same as the default.",
+   "3": "Colour 3: nearly the same as the default.",
+   "4": "Colour 4: nearly the same as the default.",
+   "5": "Colour 5: nearly the same as the default.",
+   "6": "Colour 6: nearly the same as the default.",
+   "7": "Colour 7: nearly the same as the default.",
+   "8": "Colour 8: nearly the same as the default.",
+   "9": "Colour 9: much of the costume changes; grey becomes red, black becomes light grey, dark grey becomes light blue."
+  }
+ }
+}

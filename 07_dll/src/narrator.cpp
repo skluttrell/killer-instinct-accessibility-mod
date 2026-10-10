@@ -161,6 +161,10 @@ void Narrator::loadData() {
         json j = json::parse(txt, nullptr, false);
         if (j.is_object()) fighter_appearance_ = j;
     } else logLine("warning: data\\fighter_appearance.json missing, appearance hotkey disabled");
+    if (readFile(dataDir() + L"data\\costume_colors.json", txt)) {
+        json j = json::parse(txt, nullptr, false);
+        if (j.is_object()) costume_colors_ = j;
+    } else logLine("warning: data\\costume_colors.json missing, colour descriptions disabled");
     if (readFile(dataDir() + L"data\\sl_prompts.json", txt)) {
         json j = json::parse(txt, nullptr, false);
         if (j.is_object()) sl_prompts_ = j;
@@ -857,12 +861,19 @@ void Narrator::on_charselect_ei(const std::string& fn, const std::string& js, in
             text += ", " + std::to_string(pos + 1) + " of " + std::to_string(colors.size());
         } else text = "color " + jtostr(bi);
         std::string lk = "color|" + std::to_string(side);
+        {   // remember the colour number for the appearance hotkey ("Color 3" -> 3; the texture variations are numbered the same way)
+            int num = 0;
+            for (char ch : text) { if (isdigit((unsigned char)ch)) num = num * 10 + (ch - '0'); else if (num) break; }
+            cs_color_[side] = num > 0 ? num : pos + 1;
+            cs_color_name_[side] = pos >= 0 ? S.resolve(jget(colors[pos], "name")) : "";
+        }
         if (confirmed) { cs_stage_[side] = "waiting"; say(p2 + text + " chosen. Ready", true, t); }
         else if (!cs_last_.count(lk) || cs_last_[lk] != text) say(p2 + text, true, t);
         cs_last_[lk] = text;
     } else if (fn == "AS_ResetPlayerSelection") {
         cs_stage_[side] = "fighter";
         cs_costume_.erase(side);
+        cs_color_.erase(side);
         if (side == 0) cs_active_ = 0;
         cs_last_.erase("fighter|" + std::to_string(side));
         say(p2 + "Back to fighter select", true, t);
@@ -1556,6 +1567,18 @@ void Narrator::read_appearance() {
         if (text.empty() && costume == "retro") { text = jstr(entry, "default"); if (!text.empty()) text += " No description of the retro costume yet."; }
     }
     if (text.empty()) text = "no appearance description for " + fighterName(code, code);
+    // colour variant: derived from the game's own textures (05_tools/costume_colors.py), named by the main areas that change
+    if (cs_stage_[side] != "fighter" && cs_stage_[side] != "costume") {
+        int num = cs_color_.count(side) ? cs_color_[side] : 1;
+        const json& cc = jget(jget(costume_colors_, code.c_str()), costume.c_str());
+        std::string cname = cs_color_name_.count(side) ? cs_color_name_[side] : "";
+        if (!cname.empty() && !startsWith(lower(cname), "color")) text += " " + cname + " is a special skin, not described.";   // Mimic, Shadow, Gold
+        else if (num <= 1) text += " Colour 1 is the look described.";
+        else {
+            std::string line = jstr(cc, std::to_string(num).c_str());
+            text += line.empty() ? " No description of colour " + std::to_string(num) + "." : " " + line;
+        }
+    }
     say((side == 1 ? "Player 2: " : "") + text, true);
 }
 void Narrator::read_ticker() { say(!ticker_.empty() ? ticker_ : (!motd_.empty() ? motd_ : "no news"), true); }

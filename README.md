@@ -13,7 +13,7 @@ Known Issues:
 * The fighter appearance descriptions were written from memory of the game and have not yet been reviewed by a sighted person.
 * The opponent radar assumes you are Player 1 playing against the CPU. There is no radar for Player 2.
 * The opponent radar pauses during the "Ready, Fight" intro of a round and for up to 3 seconds after a round ends. Please keep reporting whether the pulse, its panning and its pitch are useful.
-* The fighter appearance descriptions cover the default colour of each costume only; the colour you choose is announced by number.
+* The colour descriptions (Ctrl+Shift+A on the colour stage) are generated from the game's own textures by comparing each colour with the default: they name the main areas that change ("dark blue becomes gold") but not which garment that is, and skin, hair and small details may be missed. The default look of each costume is still a hand-written text that no sighted person has reviewed.
 * Announcements are always in English. The mod reads the game's English text table regardless of the language set in the game.
 * For about 10 seconds after the landing page appears, the game shows a sync popup and a "Free Rotating Fighter" toast that swallow key presses. Wait for them to be announced before navigating.
 * Only the Steam version of Killer Instinct is supported. The Microsoft Store / Xbox app version is not.
@@ -30,6 +30,7 @@ New in this version:
 * Character Select announces each fighter's level and the level of the next unlock.
 * The Command List reads each move's description (ender types, Instinct effects, Combo Assist explanations) at normal verbosity, not only at the highest one.
 * The stage is announced as a fight loads ("Stage: Shadow Tiger's Lair") whenever it was not picked by name on Stage Select, so a Random pick, Shadow Lords missions and ladder fights tell you where you are.
+* Costume colours: on the colour stage of Character Select, Ctrl+Shift+A now adds a line for the colour under the cursor, for the default and the retro costume, for example "Colour 3: much of the costume changes; dark blue becomes dark grey, brown becomes grey". These lines are generated from the game's textures (see Known Issues) and live in kiaccess\data\costume_colors.json, so they can be edited.
 
 New in v0.2.0:
 
