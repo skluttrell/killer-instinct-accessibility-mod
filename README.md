@@ -22,6 +22,7 @@ Known Issues:
 
 New in this version:
 
+* The hotkeys are no longer held system-wide: they are active only while the game window is in front, so Ctrl+Shift+R and the others are free for other programs when you switch away.
 * Fixes from the first beta report (thank you, Sightless Kombat).
 * Opponent radar: the pulse no longer drops out in normal fights. The match timer only ticks every two seconds, and the radar mistook the gaps for a pause; it now watches the fighters' movement too.
 * Match results read all the stats: Hero, Offense, Defense, Combos and Style with every metric, and the XP earned. Ctrl+Shift+D repeats the stats.
@@ -61,7 +62,7 @@ Note: this mod does not cover the Microsoft Store / Xbox app version of the game
 
 Keys
 
-All hotkeys work anywhere in the game:
+All hotkeys work anywhere in the game, but only while the game window is the active window. When you switch to another program, the mod releases them so that program can use the same key combinations:
 
 Ctrl+Shift+R: Repeat the last announcement.
 Ctrl+Shift+D: Read the description of the focused item.

@@ -26,12 +26,34 @@ static bool s_initialized = false;
 enum { HK_REPEAT = 1, HK_DESC, HK_APPEARANCE, HK_TICKER, HK_VERBOSITY, HK_TOGGLE, HK_RADAR, HK_UNLOAD };
 static void unloadSelf();
 
+// The hotkeys are system-wide while registered, which would take Ctrl+Shift+R and friends away from every other program
+// for as long as the game runs (user request 2026-10-10). They are therefore registered only while a window of this
+// process is in the foreground, checked every 200 ms, and released as soon as the player switches away.
+static bool gameHasFocus() {
+    DWORD pid = 0;
+    HWND fg = GetForegroundWindow();
+    if (!fg) return false;
+    GetWindowThreadProcessId(fg, &pid);
+    return pid == GetCurrentProcessId();
+}
+
 static DWORD WINAPI hotkeyThread(LPVOID) {
     const std::pair<int, int> keys[] = {{HK_REPEAT, 'R'}, {HK_DESC, 'D'}, {HK_APPEARANCE, 'A'}, {HK_TICKER, 'T'}, {HK_VERBOSITY, 'V'}, {HK_TOGGLE, 'Q'}, {HK_RADAR, 'P'}, {HK_UNLOAD, 'U'}};
-    for (auto& k : keys)
-        if (!RegisterHotKey(nullptr, k.first, MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT, k.second)) logLine("hotkey registration failed: " + std::to_string(k.first));
+    bool registered = false;
+    auto setRegistered = [&](bool on) {
+        if (on == registered) return;
+        for (auto& k : keys) {
+            if (on) { if (!RegisterHotKey(nullptr, k.first, MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT, k.second)) logLine("hotkey registration failed: " + std::to_string(k.first)); }
+            else UnregisterHotKey(nullptr, k.first);
+        }
+        registered = on;
+    };
     MSG msg;
-    while (GetMessageW(&msg, nullptr, 0, 0) > 0) {
+    while (true) {
+        DWORD w = MsgWaitForMultipleObjects(0, nullptr, FALSE, 200, QS_ALLINPUT);
+        if (w == WAIT_TIMEOUT) { setRegistered(gameHasFocus()); continue; }
+        if (!PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE)) continue;
+        if (msg.message == WM_QUIT) break;
         if (msg.message != WM_HOTKEY) continue;
         std::lock_guard<std::recursive_mutex> g(g_lock);
         switch ((int)msg.wParam) {
@@ -55,11 +77,12 @@ static DWORD WINAPI hotkeyThread(LPVOID) {
             case HK_UNLOAD:
                 s_nar->say("narrator unloading", true);
                 Sleep(300);
+                setRegistered(false);
                 unloadSelf();
                 return 0;
         }
     }
-    for (auto& k : keys) UnregisterHotKey(nullptr, k.first);
+    setRegistered(false);
     return 0;
 }
 

@@ -170,3 +170,11 @@ radar, post-match stats, then the Character Select / Stage Select items, then Co
    the two fighters' thumbnails). Would need the stage id from the match state; not done.
 8. Colour variants in the appearance texts: content work, awaiting the user's decision (announce the colour number and
    add per-colour notes gradually, or write all variants).
+
+## Hotkeys released when the game is not in focus (user request, 2026-10-10 afternoon)
+`RegisterHotKey` makes Ctrl+Shift+R/D/A/T/V/Q/P/U system-wide, which took them away from every other program while the
+game ran. The hotkey thread now waits with `MsgWaitForMultipleObjects` (200 ms) and registers the keys only while
+`GetForegroundWindow()` belongs to the game process, unregistering as soon as another window is in front
+(`dllmain.cpp`). Verified with `05_tools/hotkey_probe.py`: another process can register Ctrl+Shift+R after an Alt+Tab
+away from the game and cannot once the game is back in front; the in-game repeat key still works. Testing note:
+`SetForegroundWindow` to another process and minimizing the game do not move the focus away from the game, Alt+Tab does.

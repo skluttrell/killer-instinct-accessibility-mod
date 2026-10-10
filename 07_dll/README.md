@@ -34,7 +34,9 @@ The game imports `DirectInput8Create` from `dinput8.dll` in its own folder first
 and forwards the call to `C:\Windows\System32\dinput8.dll`.
 
 ## Use
-Speech starts with "Killer Instinct narrator ready". Hotkeys (global): Ctrl+Shift+R repeat, Ctrl+Shift+D description
+Speech starts with "Killer Instinct narrator ready". Hotkeys (registered with `RegisterHotKey` only while a window of
+the game process is in the foreground, checked every 200 ms, released otherwise so other programs keep the combinations;
+`05_tools/hotkey_probe.py` checks this with an Alt+Tab): Ctrl+Shift+R repeat, Ctrl+Shift+D description
 of the focused item, Ctrl+Shift+A physical appearance of the fighter on Character Select (the one under the cursor, or
 the chosen one; on the costume stage the retro costume gets its own text; Ctrl+Shift+D does the same there since
 fighters have no description), Ctrl+Shift+T ticker / MOTD, Ctrl+Shift+V cycle verbosity (0 label, 1 + position,
