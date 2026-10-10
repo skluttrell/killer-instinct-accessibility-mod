@@ -130,6 +130,31 @@ json readPath(const GValue& obj, const std::string& path) {
     return r;
 }
 
+json invokePath(const GValue& obj, const std::string& path, const char* name) {
+    // same fixed-slot walk as readPath, then a method call on the last object
+    enum { MAX_DEPTH = 10 };
+    std::string segs[MAX_DEPTH];
+    size_t n = 0, start = 0;
+    while (true) {
+        size_t dot = path.find('.', start);
+        if (n >= MAX_DEPTH) return json(json::value_t::discarded);
+        segs[n++] = path.substr(start, dot == std::string::npos ? std::string::npos : dot - start);
+        if (dot == std::string::npos) break;
+        start = dot + 1;
+    }
+    GValue vals[MAX_DEPTH];
+    const GValue* src = &obj;
+    for (size_t i = 0; i < n; i++) {
+        bool ok = getMember(*src, cstr(segs[i]), vals[i]);
+        if (i > 0) release(vals[i - 1]);
+        if (!ok || !vals[i].isObj()) { release(vals[i]); return json(json::value_t::discarded); }
+        src = &vals[i];
+    }
+    json r = invoke(vals[n - 1], name, {});
+    release(vals[n - 1]);
+    return r;
+}
+
 json invoke(const GValue& obj, const char* name, const std::vector<json>& args) {
     void* iface = obj.iface();
     if (!iface) return json(json::value_t::discarded);

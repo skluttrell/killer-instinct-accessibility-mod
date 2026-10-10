@@ -42,7 +42,29 @@ fighters have no description), Ctrl+Shift+T ticker / MOTD, Ctrl+Shift+V cycle ve
 hand-written in `data\fighter_appearance.json` in this folder (copied into `kiaccess\data` by the build; keyed by the game's internal fighter codes, see `fighter_names.json`;
 `default` and optional `retro` per fighter): edit them freely, the file is read at start. Settings in `kiaccess\kiaccess.ini`
 (`verbosity`, `speech`, `log_events`, `dump_populate`, and the `radar_*` keys below). Every utterance goes to `kiaccess\speech.log` with the hook
-to speech latency.
+to speech latency. With `dump_populate=1` a payload the JSON parser still rejects after repair (stray `\'` escapes, raw
+newlines and Windows-1252 bytes are repaired) is written raw to `kiaccess\data\badjson_<screen>_<function>.txt`.
+
+Popup button names ("Enter: Continue, Tab: Skip Lesson") are read from the popup's own key legend, so they follow the
+player's keyboard binds; until the first popup has been seen the defaults Enter / Escape / X / Y are used. Attack
+placeholders in popup text (`LIGHT_PUNCH`, `PUNCH_X_3`), which the game renders as the bound key, are spoken as the
+attack name. A popup repopulated with identical text within 3 s is spoken once (the Shadow Lords tutorial does this
+every frame). Shadow Lords screens (`GA_*.swf`) are loaded together and switched by the mode itself, so they are
+announced from their `ScreenShown` event rather than from `LoadDestination`.
+
+### Shadow Lords
+The mode keeps its state in the Populate / Refresh payloads and navigates inside ActionScript, so the readers trigger
+on the mode's own sound events and read the display objects a frame later (`ga_summary`, `on_ga_focus`,
+`on_preload_dialogue`, `say_mission` in `narrator.cpp`; probes in `snapshot.cpp`). What is read: screen summaries
+(hub: day, currencies; versus screen: fighters, arena, health, mission won/lost; War Room: turn, record, mission
+count; loadout: fighters with health; match rewards: result and loot), the versus-screen dialogue line by line with
+the speaker's name, the hub tab bar (title, position, notifications), the War Room mission list (name, location,
+difficulty, position, turns left, rewards; summary on Ctrl+Shift+D), the loadout popup (fighter slot with its
+consumable and guardian sub-buttons, launch button, fighter picker), the Emporium (active tab, focused item with cost
+or craft state, description on Ctrl+Shift+D), the Barracks (centre fighter with health, record, artifacts) and the
+tutorial prompts (`data\sl_prompts.json`, a state-to-text table taken from the decompiled GA_FTUE classes; the
+`<BIND>COMMAND_UI_*</BIND>` tokens become the learned key names). Not read yet: encounter popups, Spirit Lair,
+Archives, leaderboard, pack reveal cards, the Barracks artifact list, cinematic subtitles.
 
 ### Opponent radar
 During a fight a soft two-harmonic pulse (90 ms, 4 ms attack, 30 ms release) tells you where the opponent is relative

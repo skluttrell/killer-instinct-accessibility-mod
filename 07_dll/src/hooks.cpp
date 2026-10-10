@@ -122,7 +122,7 @@ static std::string argStr(const GValue* v) {
 
 static void deliverFocus(json&& rec) {
     if (rec.empty()) return;
-    if (g_cfg.logEvents) logLine("focus " + rec.dump().substr(0, 400));
+    if (g_cfg.logEvents) logLine("focus " + rec.dump().substr(0, 1500));
     std::lock_guard<std::recursive_mutex> g(g_lock);
     s_nar->on_focus(rec);
 }

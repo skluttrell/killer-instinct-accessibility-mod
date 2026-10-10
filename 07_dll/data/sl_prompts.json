@@ -1,0 +1,144 @@
+{
+ "Prompt_Recipe_Select": [
+  "GA_EMPORIUM_CRAFTPHOENIX_PROMPT1_DESC"
+ ],
+ "Prompt_Recipe_Select_Error": [
+  "GA_EMPORIUM_CRAFTPHOENIX_ERROR1_DESC"
+ ],
+ "Prompt_Recipe_Craft": [
+  "GA_EMPORIUM_CRAFTPHOENIX_PROMPT2_DESC",
+  "GA_EMPORIUM_CRAFTPHOENIX_PROMPT2_CMD"
+ ],
+ "Prompt_Recipe_Success": [
+  "GA_EMPORIUM_CRAFTPHOENIX_PROMPT3_DESC",
+  "GA_EMPORIUM_CRAFTPHOENIX_PROMPT3_CMD"
+ ],
+ "Prompt_Pack_Select": [
+  "GA_EMPORIUM_PURCHASEPACK_PROMPT1_DESC"
+ ],
+ "Prompt_Pack_Purchase": [
+  "GA_EMPORIUM_PURCHASEPACK_PROMPT2_DESC",
+  "GA_EMPORIUM_PURCHASEPACK_PROMPT2_CMD"
+ ],
+ "PROMPT_PACK_PURCHASE_ERROR": [
+  "GA_EMPORIUM_PURCHASEPACK_ERROR2_DESC"
+ ],
+ "Prompt_Pet_Select": [],
+ "Prompt_Pet_Select_Complete": [
+  "GA_EMPORIUM_PURCHASEPACK_PROMPT3_DESC",
+  "GA_EMPORIUM_PURCHASEPACK_PROMPT3_CMD"
+ ],
+ "Prompt_Select_Jago": [
+  "GA_BARRACKS_USEARTIFACT_PROMPT1_DESC",
+  "GA_BARRACKS_USEARTIFACT_PROMPT1_CMD"
+ ],
+ "Prompt_Select_Jago_Error": [
+  "GA_BARRACKS_USEARTIFACT_ERROR1_DESC",
+  "GA_BARRACKS_USEARTIFACT_ERROR1_CMD"
+ ],
+ "Prompt_Select_Artifact": [
+  "GA_BARRACKS_USEARTIFACT_PROMPT2_DESC",
+  "GA_BARRACKS_USEARTIFACT_PROMPT2_CMD"
+ ],
+ "Promptstate_MissionSelect_Mission": [
+  "GA_WARROOM_MISSION_SELECT_PROMPT1_DESC",
+  "GA_WARROOM_MISSION_SELECT_PROMPT1_CMD"
+ ],
+ "Promptstate_MissionSelect_Character": [
+  "GA_WARROOM_MISSION_SELECT_PROMPT2_DESC",
+  "GA_WARROOM_MISSION_SELECT_PROMPT2_CMD"
+ ],
+ "Promptstate_MissionSelect_Jago": [
+  "GA_WARROOM_MISSION_SELECT_PROMPT3_DESC"
+ ],
+ "Promptstate_MissionSelect_LaunchMission": [
+  "GA_WARROOM_MISSION_SELECT_PROMPT4_DESC"
+ ],
+ "Promptstate_MissionSelect_Final_LaunchMission": [
+  "GA_WARROOM_MISSION_SELECT_PROMPT6_DESC"
+ ],
+ "Promptstate_MissionSelect_Fight": [
+  "GA_WARROOM_MISSION_SELECT_PROMPT5_DESC"
+ ],
+ "Promptstate_ConsumableSelect_Mission": [
+  "GA_WARROOM_CONSUMABLE_SELECT_PROMPT1_DESC"
+ ],
+ "Promptstate_ConsumableSelect_Character": [
+  "GA_WARROOM_CONSUMABLE_SELECT_PROMPT8_DESC",
+  "GA_WARROOM_MISSION_SELECT_PROMPT2_CMD"
+ ],
+ "Promptstate_ConsumableSelect_KimWu": [
+  "GA_WARROOM_CONSUMABLE_SELECT_PROMPT2_DESC"
+ ],
+ "Promptstate_ConsumableSelect_EditLoadout": [
+  "GA_WARROOM_CONSUMABLE_SELECT_PROMPT3_DESC"
+ ],
+ "Promptstate_ConsumableSelect_NavigateToConsumables": [
+  "GA_WARROOM_CONSUMABLE_SELECT_PROMPT4_DESC"
+ ],
+ "Promptstate_ConsumableSelect_SelectConsumables": [
+  "GA_WARROOM_CONSUMABLE_SELECT_PROMPT5_DESC"
+ ],
+ "Promptstate_ConsumableSelect_SelectComsunableItem": [
+  "GA_WARROOM_CONSUMABLE_SELECT_PROMPT6_DESC"
+ ],
+ "Promptstate_ConsumableSelect_LeaveEditLoadout": [
+  "GA_WARROOM_CONSUMABLE_SELECT_PROMPT7_DESC"
+ ],
+ "Promptstate_PetSelect_Mission": [
+  "GA_WARROOM_PET_SELECT_PROMPT1_DESC"
+ ],
+ "Promptstate_PetSelect_Character": [
+  "GA_WARROOM_PET_SELECT_PROMPT10_DESC",
+  "GA_WARROOM_MISSION_SELECT_PROMPT2_CMD"
+ ],
+ "Promptstate_PetSelect_Jago": [
+  "GA_WARROOM_PET_SELECT_PROMPT2_DESC"
+ ],
+ "Promptstate_PetSelect_EditLoadout": [
+  "GA_WARROOM_PET_SELECT_PROMPT3_DESC"
+ ],
+ "Promptstate_PetSelect_SelectConsumables": [
+  "GA_WARROOM_PET_SELECT_PROMPT8_DESC"
+ ],
+ "Promptstate_PetSelect_SelectConsumableItem": [
+  "GA_WARROOM_PET_SELECT_PROMPT9_DESC"
+ ],
+ "Promptstate_Petselect_NavigateToGuardian": [
+  "GA_WARROOM_PET_SELECT_PROMPT4_DESC"
+ ],
+ "Promptstate_PetSelect_SelectGuardian": [
+  "GA_WARROOM_PET_SELECT_PROMPT5_DESC"
+ ],
+ "Promptstate_PetSelect_Guardian": [
+  "GA_WARROOM_PET_SELECT_PROMPT6_DESC"
+ ],
+ "Promptstate_PetSelect_LeaveEditLoadout": [
+  "GA_WARROOM_PET_SELECT_PROMPT7_DESC"
+ ],
+ "Promptstate_DeploySelect_Mission": [
+  "GA_WARROOM_DEPLOY_SELECT_PROMPT1_DESC",
+  "GA_WARROOM_DEPLOY_SELECT_PROMPT1_CMD"
+ ],
+ "Promptstate_DeploySelect_Character": [
+  "GA_WARROOM_DEPLOY_SELECT_PROMPT2_DESC"
+ ],
+ "Promptstate_DeploySelect_KimWu": [
+  "GA_WARROOM_DEPLOY_SELECT_PROMPT3_DESC"
+ ],
+ "Promptstate_DeploySelect_EditLoadout": [
+  "GA_WARROOM_DEPLOY_SELECT_PROMPT4_DESC"
+ ],
+ "Promptstate_DeploySelect_SelectConsumables": [
+  "GA_WARROOM_DEPLOY_SELECT_PROMPT5_DESC"
+ ],
+ "Promptstate_DeploySelect_SelectDramOfFocus": [
+  "GA_WARROOM_DEPLOY_SELECT_PROMPT6_DESC"
+ ],
+ "Promptstate_DeploySelect_LeaveEditLoadout": [
+  "GA_WARROOM_DEPLOY_SELECT_PROMPT7_DESC"
+ ],
+ "Promptstate_DeploySelect_SelectDeploy": [
+  "GA_WARROOM_DEPLOY_SELECT_PROMPT9_DESC"
+ ]
+}

@@ -32,7 +32,8 @@ static const char* SCREENS_JSON = R"JSON({
     "desc": "mcDojo.mcDisplayContent.mcDescription.txtDescription.text"},
     "groups": {"rows": {"item": "mcDojo.mcDojoRow{r}.mcEntry{e}", "rowSize": 8,
        "fields": {"label": "mcTxt.txtDojoLevelName.text", "state": "currentLabel", "locked": "mcLocked.visible", "done": "mcCompleted.visible"}}}},
- "Popup.swf": {"indexFn": "GetSelectedDisplayButton", "probe": {"title": "Title.text", "body": "Body.text", "hasButtons": "ButtonContainer.visible"},
+ "Popup.swf": {"indexFn": "GetSelectedDisplayButton", "probe": {"title": "Title.text", "body": "Body.text", "hasButtons": "ButtonContainer.visible",
+    "keyA": "ABUTTON.mcIcon.txt.text", "keyB": "BBUTTON.mcIcon.txt.text", "keyX": "XBUTTON.mcIcon.txt.text", "keyY": "YBUTTON.mcIcon.txt.text"},
     "groups": {"display": {"item": "DISPLAY{i}", "fields": {"label": "mcTxt.txtButton.text", "state": "currentLabel", "visible": "visible"}}}},
  "StoreMain.swf": {"scan": true, "groups": {"items": {"items": ["mcStoreMain.mcItem0", "mcStoreMain.mcItem1_1", "mcStoreMain.mcItem2_1", "mcStoreMain.mcItem3_1",
     "mcStoreMain.mcItem4_1", "mcStoreMain.mcItem5_1", "mcStoreMain.mcItem6_1", "mcStoreMain.mcItem1", "mcStoreMain.mcItem2", "mcStoreMain.mcItem3",
@@ -55,6 +56,40 @@ static const char* SCREENS_JSON = R"JSON({
        "fields": {"state": "currentLabel", "visible": "visible", "text": "mcTxt.TxtItem.text", "value": "mcValue.TxtItem.text", "warn": "mcCmdIconGroup.mcMessageText.txt.text", "warnState": "mcCmdIconGroup.currentLabel"}},
     "p2exit": {"when": "mcMenuGroup.mcControlsPanelP2.visible", "items": ["mcMenuGroup.mcControlsPanelP2.mcButtonLeft", "mcMenuGroup.mcControlsPanelP2.mcButtonRight"],
        "fields": {"label": "mcTxt.txtButton.text", "state": "currentLabel"}}}},
+ "GA_HUB.swf": {"custom": "none", "probe": {"tab": "mcNavigationElements.mcTab3.mcTabTitleText.txtItem.text",
+    "tabDetails": "mcNavigationElements.mcTab3.mcTabDetailsText.txtItem.text",
+    "tabNotes": "mcNavigationElements.mcTab3.mcTabNotification.mcNumText.txt.text", "tabNotesShown": "mcNavigationElements.mcTab3.mcTabNotification.visible"}},
+ "GA_PreLoad.swf": {"custom": "none"},
+ "GA_WarRoom.swf": {"custom": "none", "probe": {"encounterShown": "mcEncountersPopup.visible"},
+    "calls": {"encIdx": {"obj": "mcEncountersPopup.mcPopup.SelectionModule", "fn": "GetSelectionIndex"}}},
+ "GA_SpiritLair.swf": {"scan": true, "probe": {"popupShown": "mcPetDetailsPopup.visible", "rechargeShown": "mcAstralEnergyPopup.visible"},
+    "calls": {"cardIdx": {"obj": "mcPanel_0", "fn": "GetSelectedCardIndex"}},
+    "groups": {"decks": {"item": "mcPanel_0.mcPetDeck_{i}", "count": 10, "fields": {"state": "currentLabel", "visible": "visible"}}}},
+ "GA_Barracks.swf": {"custom": "none"},
+ "GA_Emporium.swf": {"custom": "none",
+    "probe": {"tab0": "mcTabs.mcPacksTitle.currentLabel", "tab1": "mcTabs.mcKIGoldTitle.currentLabel", "tab2": "mcTabs.mcCraftTitle.currentLabel", "tab3": "mcTabs.mcInventoryTitle.currentLabel",
+       "tab0Text": "mcTabs.mcPacksTitle.mcTitleTextBase.txtItem.text", "tab1Text": "mcTabs.mcKIGoldTitle.mcTitleTextBase.txtItem.text",
+       "tab2Text": "mcTabs.mcCraftTitle.mcTitleTextBase.txtItem.text", "tab3Text": "mcTabs.mcInventoryTitle.mcTitleTextBase.txtItem.text",
+       "packsShown": "mcPacksElements.visible", "goldShown": "mcKIGoldElements.visible", "craftShown": "mcCraftElements.visible", "storageShown": "mcInventoryElements.visible",
+       "craftTitle": "mcCraftElements.mcItemTitle.txtItem.text", "craftPos": "mcCraftElements.mcBuyPackAmt.txtItem.text",
+       "craftDesc": "mcCraftElements.mcCraftItemDetails.txtItem.text", "craftDesc2": "mcCraftElements.mcCraftItemDetails2.txtItem.text",
+       "storageTitle": "mcInventoryElements.mcItemTitle.txtItem.text", "storageDesc": "mcInventoryElements.mcInventoryItemDetails.txtItem.text",
+       "storageDesc2": "mcInventoryElements.mcInventoryItemDetails2.txtItem.text", "packDesc": "mcPacksElements.mcPackCellDetails.txtItem.text",
+       "goldDesc": "mcKIGoldElements.mcMainCellGoldDetails.txtItem0.text", "popupShown": "mcPopupElements.visible"},
+    "calls": {"packIdx": {"obj": "mcPacksElements", "fn": "GetSelectedPackIndex"}, "goldIdx": {"obj": "mcKIGoldElements", "fn": "GetSelectedPackIndex"},
+       "craftIdx": {"obj": "mcCraftElements", "fn": "GetSelectedPackIndex"}}},
+ "GA_Loadout_Popup.swf": {"scan": true,
+    "probe": {"petShown": "mcWarRoom_Loadout.mcSpiritPetPopup.visible", "consumableShown": "mcWarRoom_Loadout.mcConsumablePopup.visible",
+       "petName": "mcWarRoom_Loadout.mcSpiritPetPopup.mcPetDeck_1.mcSpiritPetInfo.mcPetName.txtItem.text"},
+    "calls": {"petIndex": {"obj": "mcWarRoom_Loadout.mcSpiritPetPopup.mcPetDeck_1", "fn": "GetSelectionIndex"}},
+    "groups": {
+    "slots": {"item": "mcWarRoom_Loadout.mcLoadout.mcAddFighter_{i}", "count": 3,
+       "fields": {"state": "currentLabel", "visible": "visible", "add": "mcSlot.mcAddFighter.txtItem.text", "sub": "mcFilledBacking.currentLabel",
+          "consumable": "mcFilledBacking.mcConsumableTitle.txtItem.text", "pet": "mcFilledBacking.mcSpiritPetTitle.txtItem.text"}},
+    "launch": {"items": ["mcWarRoom_Loadout.mcLoadout.mcLaunchMissionButton"],
+       "fields": {"state": "currentLabel", "visible": "visible", "label": "mcLaunchMission.mcLaunchMissionText.txtItem.text"}},
+    "fighters": {"when": "mcWarRoom_Loadout.mcCharacterPopup.visible", "item": "mcWarRoom_Loadout.mcCharacterPopup.mcCharacter_{i}", "count": 3,
+       "fields": {"state": "currentLabel", "visible": "visible"}}}},
  "CommandList.swf": {"indexFn": "GetSelectionIndex"},
  "StageSelect.swf": {"custom": "none"},
  "MultiplayerLobby.swf": {"indexFn": "GetSelectionIndex"}
@@ -183,6 +218,15 @@ json snapshot(const std::string& swfIn, const std::string& why) {
     if (probe.is_object()) {
         json p = json::object();
         for (auto it = probe.begin(); it != probe.end(); ++it) { json v = gfx::readPath(ref, it.value().get<std::string>()); if (!v.is_discarded()) p[it.key()] = v; }
+        rec["probe"] = p;
+    }
+    const json& calls = jget(cfg, "calls");   // getters on nested objects: {"name": {"obj": "a.b", "fn": "GetSelectionIndex"}}
+    if (calls.is_object()) {
+        json p = rec.contains("probe") ? rec["probe"] : json::object();
+        for (auto it = calls.begin(); it != calls.end(); ++it) {
+            json v = gfx::invokePath(ref, jstr(it.value(), "obj"), jstr(it.value(), "fn").c_str());
+            if (!v.is_discarded()) p[it.key()] = v;
+        }
         rec["probe"] = p;
     }
     std::string custom = jstr(cfg, "custom");

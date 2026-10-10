@@ -52,12 +52,26 @@ private:
     json cmdlist_ = json::object();
     bool cmd_group_spoken_ = false;
     bool popup_spoken_ = false;
+    std::string last_popup_text_;          // popup de-duplication: the tutorial repopulates the same popup every frame
+    int64_t last_popup_ms_ = 0;
+    std::map<std::string, std::string> key_labels_{{"ABUTTON", "Enter"}, {"BBUTTON", "Escape"}, {"XBUTTON", "X"}, {"YBUTTON", "Y"}};   // learned from the popup legend
     std::string skip_value_once_;
     bool hasSkip_ = false;
     std::vector<std::string> mm_state_;
     json fighter_names_ = json::object();
     json fighter_appearance_ = json::object();   // code -> {"default": text, "retro": text} (data\fighter_appearance.json)
     std::wstring names_path_;
+
+    // Shadow Lords
+    int preload_dialog_i_ = 0;             // next line of the versus-screen dialogue (dialogData index)
+    std::string ga_announced_;             // GA screen whose ScreenShown summary was spoken last
+    json sl_prompts_ = json::object();     // tutorial prompt state -> string keys (data\sl_prompts.json, from the GA_FTUE classes)
+    json encounter_;                       // last War Room encounter popup payload (title, description, options / rewards / results)
+    std::string barracks_pending_;         // centre fighter reported before the Barracks screen was shown (spoken with the screen name)
+    std::string ga_summary(const std::string& swf);   // what to say after the screen name
+    void on_ga_focus(const std::string& swf, const json& rec, const std::string& base_why, bool deferred, int64_t t);
+    void on_preload_dialogue(int64_t t);
+    void say_mission(int idx, bool interrupt, int64_t t);   // War Room mission list entry (MissionData[idx])
 
     void learn_fighter_names(const json& data);
     void say_popup(const json& data);

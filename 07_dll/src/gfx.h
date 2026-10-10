@@ -36,6 +36,7 @@ bool getMember(const GValue& obj, const char* name, GValue& out);
 bool memberObj(const GValue& obj, const char* name, GValue& out);
 json readPath(const GValue& obj, const std::string& path);   // "a.b.c" -> json (discarded when unreadable)
 json invoke(const GValue& obj, const char* name, const std::vector<json>& args);   // obj.name(args...)
+json invokePath(const GValue& obj, const std::string& path, const char* name);     // obj.a.b.name() (discarded when unreachable)
 
 }  // namespace gfx
 }  // namespace ki

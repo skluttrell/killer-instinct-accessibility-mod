@@ -10,7 +10,15 @@ Status 2026-10-08 (sixth session): **Phase 2 DLL working.** `07_dll/` builds `ki
 loaded by the game as a `dinput8.dll` proxy; it is a direct port of the Phase 1 narrator and was verified live on the
 same screens (main menu states, Dojo, Character Select, Stage Select, practice pause menu, Command List, Controller
 config, popups, match results). Phase 1 (`06_narrator/`, Python + Frida) stays as the development harness. Not yet
-read: store, lobbies, Shadow Lords (need sign-in). See `07_dll/README.md` and `04_notes/research_log_2026-10-08f.md`.
+read: store, lobbies, Shadow Lords. See `07_dll/README.md` and `04_notes/research_log_2026-10-08f.md`.
+
+Status 2026-10-10: **Shadow Lords readers working.** Live capture of the mode and decompile of its 13 movies done
+(`04_notes/research_log_2026-10-09b.md`); the narrator bugs it exposed are fixed (popup repeated every frame, payloads
+with `\'` escapes rejected, popup key names, attack placeholders, screen tracking without `LoadDestination`). Readers
+verified live from a saved playthrough: hub, versus screen and its dialogue, War Room missions and encounter popups,
+loadout popup, match rewards, Emporium, Barracks, Spirit Lair, tutorial prompts (see `07_dll/README.md`, "Shadow
+Lords"). Still to do: pack reveal cards, purchase / craft popups, Barracks artifact list, Spirit Lair pet details,
+Archives, leaderboard, cinematic subtitles (subtitle XML per movie + a Bink hook).
 
 ## Folder map
 
