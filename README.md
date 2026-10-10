@@ -1,14 +1,15 @@
 Killer Instinct Accessibility Mod
-v.0.1.0
+v.0.2.0
 
 Purpose:
 
-Adds screen reader output to the menus of Killer Instinct (Steam version, free base game and Anniversary Edition), spoken descriptions of each fighter's appearance, and an opponent radar sound during matches.
+Adds screen reader output to the menus of Killer Instinct (Steam version, free base game and Anniversary Edition) including the Shadow Lords mode, spoken descriptions of each fighter's appearance, and an opponent radar sound during matches.
 
 Known Issues:
 
-* This is the first TEST BUILD. The mod writes kiaccess\speech.log in your Killer Instinct folder each session with every announcement. If anything goes wrong, please attach that file to your bug report.
-* The Store, online lobbies and Shadow Lords screens are not read yet beyond their basic layout. The Store currently announces only "Store, bundles, item 1" and not the item names.
+* This is a TEST BUILD. The mod writes kiaccess\speech.log in your Killer Instinct folder each session with every announcement. If anything goes wrong, please attach that file to your bug report.
+* Shadow Lords: not read yet are the cards of a pack you open in the Emporium (press Right to turn each card, Escape to leave the pack), the Emporium's purchase and crafting popups, the artifact list in the Barracks, the guardian details and recharge popups in the Spirit Lair, the Archives, the leaderboard and the daily rewards panel. The subtitles of the story cinematics are not spoken either; the cinematics are voiced.
+* The Store and online lobbies are not read yet beyond their basic layout. The Store currently announces only "Store, bundles, item 1" and not the item names.
 * The fighter appearance descriptions were written from memory of the game and have not yet been reviewed by a sighted person.
 * The opponent radar assumes you are Player 1 playing against the CPU. There is no radar for Player 2.
 * The opponent radar was verified from the game's position data, but the sound itself has not been listened to by a player yet. Please report whether the pulse, its panning and its pitch are useful.
@@ -19,7 +20,15 @@ Known Issues:
 
 New in this version:
 
-* First release. Menu narration for: start screen, landing page, main menu and all of its states, Options, popups and toasts, Character Select (both sides, including the costume stage), Stage Select, loading screen, practice and versus pause menus, Command List (paging and move notation), Controller configuration (rows, rebinding flow, quit and discard popups), Dojo, Trials, match results and the exit confirmation.
+* Shadow Lords. The hub announces the day and your currencies, then the focused tab as you move Left and Right (Guardians, Barracks, War Room, Emporium, Archives) with its notification count. The War Room reads the turn, your record and each mission as you move through the list (name, region, difficulty, turns remaining); Ctrl+Shift+D reads the briefing and the rewards. The loadout popup reads the fighter slot with its consumable and guardian sub-slots, the fighter picker and the launch button. The versus screen reads both fighters, the arena and their health, then every line of the pre-fight dialogue with the speaker's name as you press Enter. Match rewards read the result and the loot. The Emporium reads the active tab and the focused pack, item or recipe with its price or crafting state. The Barracks reads the fighter in the centre as the roster rotates. The Spirit Lair reads each guardian type and how many you own. Encounter popups read their title, text and the choices; turn changes are announced. The tutorial's guided prompts are spoken.
+* Popups that the game repopulates every frame (the fighting lessons of the Shadow Lords tutorial) are spoken once instead of dozens of times.
+* Popup button names follow your keyboard binds: the mod reads the key shown in the popup's own legend, so a button that used to be announced as "X" is now announced as "Tab" when that is the key.
+* Attack placeholders in popup text (which the game shows as your bound key) are spoken as the attack name, for example "light punch".
+* Some popups and screens whose text failed to parse (dialogue with apostrophes, the Emporium) are read in full now, buttons included.
+
+New in v0.1.0 (first release):
+
+* Menu narration for: start screen, landing page, main menu and all of its states, Options, popups and toasts, Character Select (both sides, including the costume stage), Stage Select, loading screen, practice and versus pause menus, Command List (paging and move notation), Controller configuration (rows, rebinding flow, quit and discard popups), Dojo, Trials, match results and the exit confirmation.
 * Fighter appearance: Ctrl+Shift+A on Character Select describes the physical appearance of the fighter under the cursor, with separate text for the retro costume. The texts live in kiaccess\data\fighter_appearance.json and can be edited freely.
 * Opponent radar: a soft stereo pulse during a fight tells you where the opponent is. It is panned to the side the opponent is on, repeats faster the closer the opponent is, and rises in pitch when the opponent leaves the ground. Ctrl+Shift+P turns it on or off.
 * The mod ships none of the game's text. On the first start it builds its text table from the game's own files (about 10 milliseconds) and rebuilds it automatically after a game update.
@@ -58,6 +67,15 @@ Single Player opens the main menu (Fight, Master and so on). A daily rewards pan
 Master, then Practice, leads to Character Select. Each side confirms fighter, costume and accessories with Enter. Loading takes 20 to 45 seconds.
 In Practice, Escape opens the pause menu, which has tabs (Pause Menu, Dummy Options, Practice Options, Theme). Q and E switch tabs.
 To exit the game: on the landing page, press Down until "Exit, 5 of 5", then Enter, then Enter again to confirm.
+
+Shadow Lords:
+
+From the landing page choose Shadow Lords. The first time you play you have to finish the tutorial, which is three turns long and cannot be left early; it includes three fights with lessons. During a lesson, Enter continues a lesson popup and Tab skips a lesson once its "Need Help?" popup has appeared. Enter during a fight does nothing, Space pauses.
+The hub is a row of tabs: Left and Right move, Enter opens the tab, Escape asks whether to leave the mode (Tab confirms, Escape cancels).
+War Room: Up and Down move through the missions, Enter opens the loadout popup for the mission. In the loadout popup Left and Right move between the fighter slot and the Launch button, Up and Down move between the fighter, consumable and guardian sub-slots, Enter opens the picker for the focused slot. Escape goes back.
+Emporium: Q and E switch between the Packs, KI Gold, Craft and Storage tabs, Left and Right move through the items, Enter buys or crafts.
+Barracks and Spirit Lair: Left and Right rotate the fighters or guardian decks, Enter opens the details.
+Popups in this mode often use Tab rather than Enter for their main button; the announcement names the key.
 
 Opponent radar:
 
