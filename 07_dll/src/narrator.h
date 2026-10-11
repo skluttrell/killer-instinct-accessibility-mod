@@ -72,6 +72,7 @@ private:
     std::string ga_announced_;             // GA screen whose ScreenShown summary was spoken last
     json sl_prompts_ = json::object();     // tutorial prompt state -> string keys (data\sl_prompts.json, from the GA_FTUE classes)
     json encounter_;                       // last War Room encounter popup payload (title, description, options / rewards / results)
+    int mission_idx_ = -1;                 // War Room mission under the cursor (AS_UpdateMissionSelection), re-read when the loadout popup closes
     std::string barracks_pending_;         // centre fighter reported before the Barracks screen was shown (spoken with the screen name)
     json music_options_;                   // Stage Select music menu options (Lua_PopulateMusicOptions arrives before the screen's own Populate)
     std::string last_sound_;               // last PlaySoundString name: the Shadow Lords popups navigate in AS3 only, their sounds tell what moved

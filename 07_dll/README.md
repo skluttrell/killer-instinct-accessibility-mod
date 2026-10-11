@@ -77,10 +77,14 @@ The mode keeps its state in the Populate / Refresh payloads and navigates inside
 on the mode's own sound events and read the display objects a frame later (`ga_summary`, `on_ga_focus`,
 `on_preload_dialogue`, `say_mission` in `narrator.cpp`; probes in `snapshot.cpp`). What is read: screen summaries
 (hub: day, currencies; versus screen: fighters, arena, health, mission won/lost; War Room: turn, record, mission
-count; loadout: fighters with health; match rewards: result and loot), the versus-screen dialogue line by line with
-the speaker's name, the hub tab bar (title, position, notifications), the War Room mission list (name, location,
-difficulty, position, turns left, rewards; summary on Ctrl+Shift+D), the loadout popup (fighter slot with its
-consumable and guardian sub-buttons, launch button, fighter picker), the Emporium (active tab, focused item with cost
+count, corruption per region; loadout: fighters with health; match rewards: result and loot), the versus-screen dialogue
+line by line with the speaker's name, the hub tab bar (title, position, notifications), the War Room mission list (name,
+location, difficulty, position, turns left, the enemy from the portrait path `<code>_icon.dds` / `<code>_mimic_icon.dds`,
+rewards; summary on Ctrl+Shift+D; the mission is repeated when the loadout popup closes), the loadout popup (fighter
+slot with its consumable and guardian sub-buttons, launch button, fighter picker, consumable picker with owned count,
+tier and "n of m", guardian picker with the guardian's energy and its recharge popup, and after Launch the Fight /
+Deploy confirmation with the deploy success chance, "Deploy unavailable" on a play-only mission, description on
+Ctrl+Shift+D), the Emporium (active tab, focused item with cost
 or craft state, description on Ctrl+Shift+D; the buy popup with its two currency options, the KI gold purchase popup,
 the insufficient-materials popup with Yes / No, and the cards of a bought pack as Right reveals them), the Barracks
 (centre fighter with health, record, artifacts), the Spirit Lair (guardian types with counts), the War Room encounter
@@ -90,8 +94,12 @@ ActionScript only, so their state is the popup's timeline label (`Off` / `BuildO
 `Purchase` / `BuildOff`, which stays after the animation stops) and the pack reveal's cursor is counted from the
 `Play_SL_Emporium_Pack_Item_Toggle` sound (played only when it moved) with the direction from the label; the cards
 come from the `PackPurchased` payload. The reveal reader is written against a logged payload and has not been heard
-live yet (the test save cannot afford a pack). Not read yet: Archives, leaderboard, the Barracks artifact list,
-Spirit Lair guardian details, daily rewards, cinematic subtitles.
+live yet (the test save cannot afford a pack). The loadout popup's sub-popups (`mcWarRoom_Loadout.mcConsumablePopup`,
+`mcSpiritPetPopup`, `mcConfirmMission`) are gated by their timeline label (`Off` when built, `BuildOn` / `ScrollLeft` /
+`ScrollRight` while open, `BuildOff` closing), never by `.visible`; their text (title, description, tier name, "n/m")
+is read from the display objects. While the popup is up, its calls into the host script (`GA_WarRoom.AS_ValidateMissionLoadout`)
+must not switch the probed movie back to the War Room (`hooks.cpp`). Not read yet: Archives, leaderboard, the Barracks
+artifact list, Spirit Lair guardian details, daily rewards, cinematic subtitles.
 
 ### Opponent radar
 During a fight a soft two-harmonic pulse (90 ms, 4 ms attack, 30 ms release) tells you where the opponent is relative

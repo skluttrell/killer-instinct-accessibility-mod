@@ -229,8 +229,8 @@ void Narrator::learn_fighter_names(const json& data) {
 void Narrator::say(const std::string& textIn, bool interrupt, int64_t tHook) {
     std::string text = textIn;
     if (text.empty()) return;
-    if (text.find("\\n") != std::string::npos || text.find('\n') != std::string::npos)
-        text = replaceAll(replaceAll(text, "\\n", " "), "\n", " ");
+    if (text.find("\\n") != std::string::npos || text.find('\n') != std::string::npos || text.find('\r') != std::string::npos)
+        text = replaceAll(replaceAll(replaceAll(text, "\\n", " "), "\n", " "), "\r", " ");   // guardian descriptions use bare \r
     if (text.find('<') != std::string::npos) {   // inline icon tags: <TT>FORWARD</TT>, <img ...>, <font>
         std::string out;
         size_t p = 0;
@@ -282,7 +282,10 @@ static std::string repair_json(const std::string& js) {
             if (c == '\\') {
                 // Lua writes \' which JSON does not allow: keep valid escapes, drop the backslash of any other
                 unsigned char nx = i + 1 < js.size() ? (unsigned char)js[i + 1] : 0;
-                if (nx && strchr("\"\\/bfnrtu", nx)) { out += '\\'; out += (char)nx; i++; }
+                bool hex4 = nx == 'u' && i + 5 < js.size() && isxdigit((unsigned char)js[i + 2]) && isxdigit((unsigned char)js[i + 3]) &&
+                            isxdigit((unsigned char)js[i + 4]) && isxdigit((unsigned char)js[i + 5]);
+                // "\u" in an image path ("...\ui\...") is not a unicode escape either: only keep it with its four hex digits
+                if (nx && (strchr("\"\\/bfnrt", nx) || hex4)) { out += '\\'; out += (char)nx; i++; }
                 continue;
             }
             if (c == '"') { inStr = false; out += (char)c; continue; }
@@ -327,7 +330,10 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
     if (fn == "Populate" || fn == "Lua_Populate" || fn == "PopulateStatesOnly" || (fn == "Refresh" && startsWith(swf, "GA_"))) {
         if (data.is_array()) data = json{{"Modes", data}};   // Dojo sends an array of modes
         if (data.is_object()) {
-            if (fn == "Refresh" && populate_[swf].is_object()) populate_[swf].update(data);   // Shadow Lords screens refresh parts of their state
+            // Shadow Lords screens refresh parts of their state; the War Room also sends a Populate with only the threat meters
+            // after a mission (keep the mission list, or the next cursor move has nothing to read)
+            bool partial = swf == "GA_WarRoom.swf" && fn == "Populate" && !data.contains("MissionData");
+            if ((fn == "Refresh" || partial) && populate_[swf].is_object()) populate_[swf].update(data);
             else populate_[swf] = data;
             data = populate_[swf];
             if (g_cfg.dumpPopulate) writeFile(dataDir() + L"data\\populate_" + wide(replaceAll(swf, ".swf", "")) + L".json", data.dump(1));
@@ -559,7 +565,7 @@ void Narrator::on_ei(const std::string& script, const std::string& fn, const std
         if (!dest.empty()) {
             current_swf_ = dest;
             hasLast_ = false;
-            if (!startsWith(dest, "GA_")) ga_announced_.clear();
+            ga_announced_.clear();   // so the next ScreenShown of any GA screen is announced again (the loadout popup reopened from the War Room)
             say(screenName(dest), true, t);
         }
     } else if (script == "GameSettingsPopUp" && fn == "ScreenShown" && current_swf_ != "GameSettingsPopUp.swf") {
@@ -607,8 +613,13 @@ void Narrator::on_ei(const std::string& script, const std::string& fn, const std
     } else if (script == "GA_WarRoom" && fn == "AS_UpdateMissionSelection") {
         // the mission list reports every cursor move (and its initial position) to Lua
         json j = json::parse(js, nullptr, false, true);
-        say_mission(jint(jget(j, "Index"), -1), current_swf_ == "GA_WarRoom.swf" && ga_announced_ == "GA_WarRoom.swf" && hasLast_, t);
+        mission_idx_ = jint(jget(j, "Index"), -1);
+        say_mission(mission_idx_, current_swf_ == "GA_WarRoom.swf" && ga_announced_ == "GA_WarRoom.swf" && hasLast_, t);
         hasLast_ = true;
+    } else if (script == "GA_Loadout_Popup" && fn == "HideScreen" && mission_idx_ >= 0) {
+        // back from the loadout popup: the cursor is still on the same mission, say which (after the "War Room" screen name)
+        json j = json::parse(js, nullptr, false, true);
+        if (jstr(j, "ScreenName") == "GA_WarRoom.swf") say_mission(mission_idx_, false, t);
     } else if (fn == "PlaySoundString") {
         json j = json::parse(js, nullptr, false, true);
         last_sound_ = jstr(j, "Sound");   // read by the snapshot that follows the sound (the Shadow Lords popups navigate in AS3 only)
@@ -1272,10 +1283,11 @@ std::string Narrator::ga_summary(const std::string& swf) {
         const json& ms = jget(data, "MissionData");
         if (ms.is_array()) parts.push_back(std::to_string(ms.size()) + (ms.size() == 1 ? " mission" : " missions"));
         const json& th = jget(data, "threatData");
-        if (verbosity_ >= 2 && th.is_array()) {
+        if (verbosity_ >= 1 && th.is_array()) {
+            // the globe's corruption meters, one per region (Gargos arrives when three are full)
             std::vector<std::string> regions;
             for (const auto& r : th) { int c = jint(jget(r, "corruptionLevel"), -1); if (c > 0) regions.push_back(S.resolve(jget(r, "name")) + " corruption " + std::to_string(c)); }
-            if (!regions.empty()) parts.push_back(join(regions, ", "));
+            parts.push_back(regions.empty() ? std::string("No corruption") : join(regions, ", "));
         }
     } else if (swf == "GA_Barracks.swf") {
         if (!barracks_pending_.empty()) { parts.push_back(barracks_pending_); barracks_pending_.clear(); }
@@ -1344,11 +1356,85 @@ void Narrator::on_ga_focus(const std::string& swf, const json& rec, const std::s
         // slots (fighter / consumable / guardian sub-buttons), the launch button, or the fighter picker when it is open
         const json& groups = jget(rec, "groups");
         const json& data = jget(populate_, swf.c_str());
-        std::string text, key;
+        std::string text, key, desc;
         const json& fg = jget(groups, "fighters");
         const json& sg = jget(groups, "slots");
         const json& lg = jget(groups, "launch");
-        if (fg.is_object() && !jtruthy(jget(fg, "hidden")) && jget(fg, "index").is_number()) {
+        const json& cg = jget(groups, "confirm");
+        const json& ig = jget(groups, "consumables");
+        // the sub-popups' .visible flags stay true, so their timeline label says whether they are open
+        // (gotoAndStop("Off") when the popup is built, "BuildOn" / "ScrollLeft" / "ScrollRight" while open, "BuildOff" when closing)
+        auto open = [](const std::string& l) { return !l.empty() && l != "Off" && l != "BuildOff"; };
+        auto posText = [&](const std::string& p) {   // "1/3" -> "1 of 3"
+            size_t s = p.find('/');
+            return s == std::string::npos ? p : p.substr(0, s) + " of " + p.substr(s + 1);
+        };
+        if (open(jstr(probe, "confirmState")) && cg.is_object() && jget(cg, "index").is_number()) {
+            // after Launch: the Fight / Deploy confirmation (Left/Right, Enter; a disabled button is skipped by the game)
+            int i = jint(jget(cg, "index"));
+            json title = clean(jget(cg, "title")), pct = clean(jget(cg, "pct"));
+            std::vector<std::string> parts{isNone(title) ? std::string(i == 0 ? "Fight" : "Deploy") : sv(title)};
+            if (jtruthy(jget(cg, "pctVisible")) && !isNone(pct)) parts.push_back(sv(pct));
+            // a play-only mission greys out Deploy (and a deploy-only one Fight): say so instead of a position Right cannot reach
+            bool otherOff = jstr(probe, i == 0 ? "deployState" : "fightState") == "Disabled";
+            if (otherOff) parts.push_back(i == 0 ? "Deploy unavailable" : "Fight unavailable");
+            else if (verbosity_ >= 1) parts.push_back(std::to_string(jint(jget(cg, "pos")) + 1) + " of " + std::to_string(jint(jget(cg, "count"))));
+            json d = clean(jget(cg, "desc"));
+            if (!isNone(d)) desc = sv(d);
+            if (verbosity_ >= 2 && !desc.empty()) parts.push_back(desc);
+            text = join(parts, ", ");
+            key = "confirm|" + std::to_string(i) + "|" + text;
+        } else if (open(jstr(probe, "consState"))) {
+            // consumable picker: a 2 x 4 grid per tier, the tier tabs on Q / E; title, description and "n/m" are the popup's own text
+            json title = clean(jget(probe, "consTitle")), cat = clean(jget(probe, "consCat")), pos = clean(jget(probe, "consPos"));
+            std::vector<std::string> parts;
+            if (isNone(title)) parts.push_back("no consumables" + (isNone(cat) ? std::string() : " in " + sv(cat)));
+            else {
+                parts.push_back(sv(title));
+                json qty = ig.is_object() ? clean(jget(ig, "qty")) : json(nullptr);
+                if (!isNone(qty)) parts.push_back(sv(qty) == "1" ? "1 owned" : sv(qty) + " owned");
+                if (!isNone(cat)) parts.push_back(sv(cat));
+                if (verbosity_ >= 1 && !isNone(pos)) parts.push_back(posText(sv(pos)));
+            }
+            json d = clean(jget(probe, "consDesc"));
+            if (!isNone(d)) desc = sv(d);
+            if (verbosity_ >= 2 && !desc.empty()) parts.push_back(desc);
+            text = join(parts, ", ");
+            key = "cons|" + text;
+        } else if (open(jstr(probe, "petState"))) {
+            // guardian picker: one deck per tier (Q / E), Up/Down through the cards; Enter on a drained guardian opens the recharge popup
+            json name = clean(jget(probe, "petName")), cat = clean(jget(probe, "petCat")), pos = clean(jget(probe, "petPos"));
+            std::vector<std::string> parts;
+            if (open(jstr(probe, "rechargeState"))) {
+                json w = clean(jget(probe, "rechargeWallet"));
+                parts.push_back("Recharge " + (isNone(name) ? std::string("guardian") : sv(name)));
+                if (!isNone(w)) parts.push_back(sv(w));
+                int ae = jint(jget(data, "astralEnergyInInventory"), -1);
+                if (ae >= 0) parts.push_back(std::to_string(ae) + " astral energy");
+            } else if (isNone(name)) parts.push_back("no guardians" + (isNone(cat) ? std::string() : " in " + sv(cat)));
+            else {
+                parts.push_back(sv(name));
+                // energy from the payload entry with this name (the card only shows it as a meter)
+                const json& tiers = jget(data, "spiritPetData");
+                if (tiers.is_array()) for (const auto& tier : tiers) {
+                    const json& pets = jget(tier, "pets");
+                    if (!pets.is_array()) continue;
+                    for (const auto& p : pets) if (S.resolve(jget(p, "name")) == sv(name)) {
+                        int cur = jint(jget(p, "currentAstralEnergy"), -1), mx = jint(jget(p, "maxAstralEnergy"), -1);
+                        if (cur >= 0 && mx > 0) parts.push_back("energy " + std::to_string(cur) + " of " + std::to_string(mx));
+                        if (!jtruthy(jget(p, "available"))) parts.push_back("unavailable");
+                        break;
+                    }
+                }
+                if (!isNone(cat)) parts.push_back(sv(cat));
+                if (verbosity_ >= 1 && !isNone(pos)) parts.push_back(posText(sv(pos)));
+            }
+            json d = clean(jget(probe, "petDesc"));
+            if (!isNone(d)) desc = sv(d);
+            if (verbosity_ >= 2 && !desc.empty()) parts.push_back(desc);
+            text = join(parts, ", ");
+            key = "pet|" + text;
+        } else if (fg.is_object() && !jtruthy(jget(fg, "hidden")) && jget(fg, "index").is_number()) {
             int i = jint(jget(fg, "index"));
             const json& chars = jget(data, "characterData");
             std::vector<std::string> parts;
@@ -1391,7 +1477,7 @@ void Narrator::on_ga_focus(const std::string& swf, const json& rec, const std::s
         auto it = last_probe_.find(lk);
         if (it != last_probe_.end() && it->second == key) return;
         last_probe_[lk] = key;
-        last_focus_ = json{{"swf", swf}, {"label", text}, {"desc", ""}};
+        last_focus_ = json{{"swf", swf}, {"label", text}, {"desc", desc}};
         say(text, base_why != "ScreenShown", t);
         return;
     }
@@ -1657,7 +1743,23 @@ void Narrator::say_mission(int idx, bool interrupt, int64_t t) {
     std::string days = strip(S.resolve(jget(m, "days")));
     if (!days.empty()) parts.push_back(days);
     const json& opp = jget(m, "opponents");
-    if (opp.is_array() && opp.size() > 1) parts.push_back(std::to_string(opp.size()) + " enemies");
+    if (opp.is_array() && !opp.empty()) {
+        // the enemy is only shown as a portrait: ".../CharacterSelect/<code>_icon.dds", "<code>_mimic_icon.dds" for a Mimic
+        std::vector<std::string> names;
+        for (const auto& o : opp) {
+            std::string p = jstr(o, "imagePath");
+            size_t s = p.find_last_of("/\\");
+            std::string base = s == std::string::npos ? p : p.substr(s + 1);
+            size_t e = base.find("_icon");
+            if (e != std::string::npos) base = base.substr(0, e);
+            bool mimic = endsWith(base, "_mimic");
+            if (mimic) base = base.substr(0, base.size() - 6);
+            std::string n = fighterName(lower(base), "");
+            if (!n.empty()) names.push_back(mimic ? "Mimic " + n : n);
+        }
+        if (!names.empty()) parts.push_back("versus " + join(names, " and "));
+        else if (opp.size() > 1) parts.push_back(std::to_string(opp.size()) + " enemies");
+    }
     if (jtruthy(jget(m, "canDeployToOnly"))) parts.push_back("deploy only");
     std::vector<std::string> rewards;
     const json& rd = jget(m, "rewardData");

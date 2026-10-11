@@ -1,0 +1,1 @@
+shadowlords is almost fully playable now I believe! Only a few more fixes left! When going to the barracks, after choosing the character the artifacts aren't spoken yet. When choosing a mission, the consumables aren't spoken as well.

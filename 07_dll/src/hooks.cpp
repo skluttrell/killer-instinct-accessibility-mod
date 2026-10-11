@@ -165,7 +165,9 @@ static uint64_t hookDispatcher(void* wrapper, const char* method, GValue* args, 
             auto it = SCRIPT2SWF.find(script);
             std::string sw = it != SCRIPT2SWF.end() ? it->second : script + ".swf";
             if (sw == "Popup.swf" && s_currentSwf != "Popup.swf") s_prevSwf = s_currentSwf;
-            s_currentSwf = sw;
+            // the Shadow Lords loadout popup calls its host's script (GA_WarRoom.AS_ValidateMissionLoadout / AS_ShowHungryPetMessage)
+            // while it stays on top: keep probing the popup until it hides or loads a destination
+            if (!(s_currentSwf == "GA_Loadout_Popup.swf" && script == "GA_WarRoom")) s_currentSwf = sw;
         }
         swf = s_currentSwf;
         if (g_cfg.logEvents) logLine("ei " + script + "." + fn + " " + js.substr(0, 200));

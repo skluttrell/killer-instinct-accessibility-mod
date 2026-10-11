@@ -22,6 +22,14 @@ the pack reveal reader is written from a logged `PackPurchased` payload but not 
 pack; missions pay 21-56 gems, the cheapest pack is 500). Still to do: hear the reveal, Barracks artifact list,
 Spirit Lair pet details, Archives, leaderboard, cinematic subtitles (subtitle XML per movie + a Bink hook).
 
+Status 2026-10-11: **mission start in the War Room spoken.** Beta report 2 ("missions aren't spoken") turned out to be
+the stage after Launch: the loadout popup's Fight / Deploy confirmation, plus its consumable and guardian pickers, were
+probed but never read, and the popup's call into `GA_WarRoom.AS_ValidateMissionLoadout` made the hooks probe the War
+Room instead of the popup. All three are read now and verified live by driving the game from the terminal
+(`04_notes/research_log_2026-10-11.md`); the mission line names the enemy, the War Room summary reads the corruption
+per region, the loadout popup is announced on every open. Still to do: Barracks artifact list, Spirit Lair guardian
+details, Archives, leaderboard, daily rewards, cinematic subtitles, hear the pack reveal, a Deploy-capable mission.
+
 ## Folder map
 
 | Folder | What is in it |

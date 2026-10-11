@@ -1,5 +1,5 @@
 Killer Instinct Accessibility Mod
-v.0.2.2
+v.0.2.3
 
 Purpose:
 
@@ -21,6 +21,13 @@ Known Issues:
 * If a future game update changes the executable so that the mod can no longer find its hook points, the narrator stays silent and writes the reason to kiaccess\speech.log. The game itself still runs normally.
 
 New in this version:
+
+* Shadow Lords War Room: the mission start is now fully spoken. After Launch, the Fight / Deploy confirmation reads the focused button ("FIGHT", or "DEPLOY, Success Chance 99%") with Left and Right to switch and Ctrl+Shift+D for the button's description; on a mission that must be fought it says "Deploy unavailable" instead of a position. Enter on FIGHT starts the match.
+* Shadow Lords loadout: the consumable picker reads the focused item with how many you own, its tier and position ("Gibraltar Shield Mk III, 1 owned, Rare, 1 of 2"; Q and E switch tiers, Ctrl+Shift+D reads the effect), and the guardian picker reads the guardian with its energy ("Ram, energy 4 of 5, Common, 1 of 1") and the recharge popup when a drained guardian is chosen.
+* Shadow Lords War Room: each mission now names the enemy ("Relic Hunt, Egypt, Easy, 1 of 3, (0) Turns Remaining, versus Kan-Ra"), the screen summary includes the corruption level of each region (or "No corruption"), the mission under the cursor is repeated when you close the loadout popup, and the loadout popup is announced every time it opens, not only the first time.
+* Fixed: the mission list could go silent after a fight (the War Room refreshes its threat meters with a payload that has no mission data; it is merged now instead of replacing the list), and Shadow Lords payloads containing a path with "\u" were rejected by the JSON parser.
+
+New in v0.2.1 and v0.2.2:
 
 * The hotkeys are no longer held system-wide: they are active only while the game window is in front, so Ctrl+Shift+R and the others are free for other programs when you switch away.
 * Fixes from the first beta report (thank you, Sightless Kombat).
@@ -92,7 +99,7 @@ Shadow Lords:
 
 From the landing page choose Shadow Lords. The first time you play you have to finish the tutorial, which is three turns long and cannot be left early; it includes three fights with lessons. During a lesson, Enter continues a lesson popup and Tab skips a lesson once its "Need Help?" popup has appeared. Enter during a fight does nothing, Space pauses.
 The hub is a row of tabs: Left and Right move, Enter opens the tab, Escape asks whether to leave the mode (Tab confirms, Escape cancels).
-War Room: Up and Down move through the missions, Enter opens the loadout popup for the mission. In the loadout popup Left and Right move between the fighter slot and the Launch button, Up and Down move between the fighter, consumable and guardian sub-slots, Enter opens the picker for the focused slot. Escape goes back.
+War Room: Up and Down move through the missions, Enter opens the loadout popup for the mission. In the loadout popup Left and Right move between the fighter slot and the Launch button, Up and Down move between the fighter, consumable and guardian sub-slots, Enter opens the picker for the focused slot. In the consumable and guardian pickers Left, Right, Up and Down move through the items, Q and E switch tiers, Enter equips. Enter on Launch Mission (after a warning popup if nothing is equipped: Enter continues) shows the Fight / Deploy confirmation: Left and Right switch, Enter starts the mission. Escape goes back at every stage.
 Emporium: Q and E switch between the Packs, KI Gold, Craft and Storage tabs, Left and Right move through the items, Enter buys or crafts.
 Barracks and Spirit Lair: Left and Right rotate the fighters or guardian decks, Enter opens the details.
 Popups in this mode often use Tab rather than Enter for their main button; the announcement names the key.

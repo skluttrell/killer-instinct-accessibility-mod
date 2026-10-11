@@ -23,6 +23,7 @@ Copy-Item (Join-Path $root "data\fighter_appearance.json") (Join-Path $kd "data\
 Copy-Item (Join-Path $root "data\sl_prompts.json") (Join-Path $kd "data\sl_prompts.json") -Force
 if (Test-Path (Join-Path $root "data\costume_colors.json")) { Copy-Item (Join-Path $root "data\costume_colors.json") (Join-Path $kd "data\costume_colors.json") -Force }
 $prism = "$env:APPDATA\Python\Python310\site-packages\prism\_native\prism.dll"
-if (Test-Path $prism) { Copy-Item $prism (Join-Path $kd "prism.dll") -Force }
+# prism.dll stays mapped in the game after Ctrl+Shift+U unloads an injected build, so this copy can fail while the game runs
+if (Test-Path $prism) { try { Copy-Item $prism (Join-Path $kd "prism.dll") -Force -ErrorAction Stop } catch { Write-Output "note: prism.dll in use, kept the existing copy" } }
 if (-not (Test-Path (Join-Path $kd "kiaccess.ini"))) { Copy-Item (Join-Path $root "kiaccess.ini") (Join-Path $kd "kiaccess.ini") }
 Write-Output "built $build\kiaccess.dll"
