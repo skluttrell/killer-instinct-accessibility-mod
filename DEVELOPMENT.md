@@ -17,8 +17,10 @@ Status 2026-10-10: **Shadow Lords readers working.** Live capture of the mode an
 with `\'` escapes rejected, popup key names, attack placeholders, screen tracking without `LoadDestination`). Readers
 verified live from a saved playthrough: hub, versus screen and its dialogue, War Room missions and encounter popups,
 loadout popup, match rewards, Emporium, Barracks, Spirit Lair, tutorial prompts (see `07_dll/README.md`, "Shadow
-Lords"). Still to do: pack reveal cards, purchase / craft popups, Barracks artifact list, Spirit Lair pet details,
-Archives, leaderboard, cinematic subtitles (subtitle XML per movie + a Bink hook).
+Lords"). 2026-10-10 evening: the Emporium popups (buy pack, KI gold, insufficient materials) are read, verified live;
+the pack reveal reader is written from a logged `PackPurchased` payload but not yet heard (the save cannot afford a
+pack; missions pay 21-56 gems, the cheapest pack is 500). Still to do: hear the reveal, Barracks artifact list,
+Spirit Lair pet details, Archives, leaderboard, cinematic subtitles (subtitle XML per movie + a Bink hook).
 
 ## Folder map
 

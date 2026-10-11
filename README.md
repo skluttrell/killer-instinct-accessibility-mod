@@ -1,5 +1,5 @@
 Killer Instinct Accessibility Mod
-v.0.2.1
+v.0.2.2
 
 Purpose:
 
@@ -8,7 +8,8 @@ Adds screen reader output to the menus of Killer Instinct (Steam version, free b
 Known Issues:
 
 * This is a TEST BUILD. The mod writes kiaccess\speech.log in your Killer Instinct folder each session with every announcement. If anything goes wrong, please attach that file to your bug report.
-* Shadow Lords: not read yet are the cards of a pack you open in the Emporium (press Right to turn each card, Escape to leave the pack), the Emporium's purchase and crafting popups, the artifact list in the Barracks, the guardian details and recharge popups in the Spirit Lair, the Archives, the leaderboard and the daily rewards panel. The subtitles of the story cinematics are not spoken either; the cinematics are voiced.
+* Shadow Lords: the cards of a pack you open in the Emporium (press Right to turn each card, Escape to leave the pack) are read from this version on, but that reader has not been tested with a real purchase yet; please report what you hear. Not read yet are the artifact list in the Barracks, the guardian details and recharge popups in the Spirit Lair, the Archives, the leaderboard and the daily rewards panel. The subtitles of the story cinematics are not spoken either; the cinematics are voiced.
+* When a popup opens, the first thing spoken can be a button of the previous popup (for example "Purchase 300 KI Gold" just before "Exit Shadow Lords?"). The popup itself follows at once.
 * The Store and online lobbies are not read yet beyond their basic layout. The Store currently announces only "Store, bundles, item 1" and not the item names.
 * The fighter appearance descriptions were written from memory of the game and have not yet been reviewed by a sighted person.
 * The opponent radar assumes you are Player 1 playing against the CPU. There is no radar for Player 2.
@@ -31,6 +32,9 @@ New in this version:
 * The Command List reads each move's description (ender types, Instinct effects, Combo Assist explanations) at normal verbosity, not only at the highest one.
 * The stage is announced as a fight loads ("Stage: Shadow Tiger's Lair") whenever it was not picked by name on Stage Select, so a Random pick, Shadow Lords missions and ladder fights tell you where you are.
 * Costume colours: on the colour stage of Character Select, Ctrl+Shift+A now adds a line for the colour under the cursor, for the default and the retro costume, for example "Colour 3: much of the costume changes; dark blue becomes dark grey, brown becomes grey". These lines are generated from the game's textures (see Known Issues) and live in kiaccess\data\costume_colors.json, so they can be edited.
+* Shadow Lords Emporium: the buy popup is read ("Buy Healing Pack? Pay 700 astral gems, 2 of 2"; Left and Right switch between KI gold and astral gems), as are the "Not enough" popup with its store options, the KI gold purchase popup, and the "Insufficient Materials" popup on the Craft tab with its Yes and No choices. Crafting an item announces "Crafted" with its name. The KI Gold tab reads each bundle's amount and price.
+* Shadow Lords Emporium: when you buy a pack, the cards are read as you turn them ("Pack opened, 7 cards. Gibraltar Shield Mk III, rare, 1 of 7"), with the card's description on Ctrl+Shift+D. See Known Issues: not yet tested with a real purchase.
+* Shadow Lords item names and descriptions no longer contain the game's colour-tag markup.
 
 New in v0.2.0:
 

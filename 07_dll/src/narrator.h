@@ -74,6 +74,9 @@ private:
     json encounter_;                       // last War Room encounter popup payload (title, description, options / rewards / results)
     std::string barracks_pending_;         // centre fighter reported before the Barracks screen was shown (spoken with the screen name)
     json music_options_;                   // Stage Select music menu options (Lua_PopulateMusicOptions arrives before the screen's own Populate)
+    std::string last_sound_;               // last PlaySoundString name: the Shadow Lords popups navigate in AS3 only, their sounds tell what moved
+    json pack_items_;                      // Emporium: the cards of the pack bought last (PackPurchased payload), revealed one by one
+    int pack_card_ = 0;                    // index of the card under the cursor in that reveal
     std::string ga_summary(const std::string& swf);   // what to say after the screen name
     void on_ga_focus(const std::string& swf, const json& rec, const std::string& base_why, bool deferred, int64_t t);
     void on_preload_dialogue(int64_t t);

@@ -134,6 +134,21 @@ static json clean(const json& v) {
 static bool isNone(const json& v) { return v.is_null() || v.is_discarded(); }
 static std::string sv(const json& v) { return v.is_string() ? v.get<std::string>() : jtostr(v); }   // str(v)
 static std::string keyOf(const std::vector<std::string>& parts) { return join(parts, "\x1f"); }
+// Shadow Lords item texts carry <CLR="..."> colour tags and line breaks: drop the tags, turn breaks into spaces
+static std::string strip_markup(const std::string& s) {
+    std::string out;
+    bool tag = false;
+    for (char ch : s) {
+        if (ch == '<') tag = true;
+        else if (ch == '>') tag = false;
+        else if (!tag) {
+            char c = (ch == '\n' || ch == '\r' || ch == '\t') ? ' ' : ch;
+            if (c == ' ' && !out.empty() && out.back() == ' ') continue;
+            out += c;
+        }
+    }
+    return strip(out);
+}
 
 // ---------------- Narrator ----------------
 Narrator::Narrator(Strings& strings) : S(strings) {}
@@ -383,6 +398,14 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
         // the music menu (Y on Stage Select): track list with the current choice; the focused track is read from the screen
         music_options_ = jget(data, "MusicOptions");   // kept apart: the screen's own Lua_Populate follows and would replace it
         last_probe_.erase(swf + "|music");
+    } else if (swf == "GA_Emporium.swf" && fn == "PackPurchased" && data.is_array()) {
+        // a pack was bought: its cards are revealed one by one (Right turns the next card), spoken from the reveal animation's snapshots
+        pack_items_ = data;
+        pack_card_ = 0;
+        last_probe_.erase("GA_Emporium.swf|popup");
+    } else if (swf == "GA_Emporium.swf" && fn == "RecipeCrafted") {
+        std::string n = jstr(last_focus_, "label");
+        say(n.empty() ? "Crafted" : "Crafted " + n, true);
     } else if (swf == "GA_WarRoom.swf" && fn == "ShowDaysPassedPopup" && data.is_object()) {
         std::string d = S.resolve(jget(data, "currentDay"));
         if (!d.empty()) say(d, true);   // "TURN 3"
@@ -586,9 +609,10 @@ void Narrator::on_ei(const std::string& script, const std::string& fn, const std
         json j = json::parse(js, nullptr, false, true);
         say_mission(jint(jget(j, "Index"), -1), current_swf_ == "GA_WarRoom.swf" && ga_announced_ == "GA_WarRoom.swf" && hasLast_, t);
         hasLast_ = true;
-    } else if (fn == "PlaySoundString" && current_swf_ == "GA_PreLoad.swf") {
+    } else if (fn == "PlaySoundString") {
         json j = json::parse(js, nullptr, false, true);
-        if (startsWith(jstr(j, "Sound"), "Play_SL_PreLoad_FlavorText_")) on_preload_dialogue(t);
+        last_sound_ = jstr(j, "Sound");   // read by the snapshot that follows the sound (the Shadow Lords popups navigate in AS3 only)
+        if (current_swf_ == "GA_PreLoad.swf" && startsWith(last_sound_, "Play_SL_PreLoad_FlavorText_")) on_preload_dialogue(t);
     } else if (fn == "SetVariables" && script == "OptionsMenu" && current_swf_ != "OptionsMenu.swf") {
         // shared toggle component on another screen (practice menu): the new value is in the event itself
         json j = json::parse(js, nullptr, false, true);
@@ -1423,6 +1447,113 @@ void Narrator::on_ga_focus(const std::string& swf, const json& rec, const std::s
         // four tabs (Packs, KI Gold, Craft, Storage), each a carousel; the item lists arrive in the Populate/Refresh payload
         // (the sub-screens' and popups' .visible flags are always true: they hide through frame labels, so only the
         // tab strip's "Active" label tells which screen is up)
+        // Popups (buy pack, KI gold, insufficient materials) and the pack reveal live in AS3 only: their state is the
+        // timeline label (Off / BuildOn / ScrollLeft / ScrollRight / Purchase / BuildOff), which stays after the animation stops.
+        auto popupOpen = [](const std::string& st) { return st == "BuildOn" || st == "ScrollLeft" || st == "ScrollRight"; };
+        auto ptext = [&](const char* k) { json v = clean(jget(probe, k)); return isNone(v) ? std::string() : strip_markup(sv(v)); };
+        std::string buySt = jstr(probe, "buyState"), revealSt = jstr(probe, "revealState"), craftSt = jstr(probe, "craftPopState"), goldSt = jstr(probe, "goldPopState");
+        std::string pk = swf + "|popup";
+        if (popupOpen(revealSt) && pack_items_.is_array() && !pack_items_.empty()) {
+            // pack reveal: seven card slots, the focused one is slot 3; the cursor index is private, so it is tracked from
+            // the toggle sound (played only when the cursor moved) and the direction from the animation played
+            if (!deferred && base_why == "PlaySoundString" && last_sound_ == "Play_SL_Emporium_Pack_Item_Toggle") {
+                if (revealSt == "ScrollRight") pack_card_++;
+                else if (revealSt == "ScrollLeft") pack_card_--;
+                last_sound_.clear();
+            }
+            int n = (int)pack_items_.size();
+            if (pack_card_ < 0) pack_card_ = 0;
+            if (pack_card_ >= n) pack_card_ = n - 1;
+            const json& c = pack_items_[pack_card_];
+            std::string name = strip_markup(S.resolve(jget(c, "name")));
+            if (name.empty()) name = ptext("revealTitle");
+            if (name.empty()) return;
+            std::string key = "reveal|" + std::to_string(pack_card_) + "|" + name;
+            if (last_probe_[pk] == key) return;
+            bool first = !startsWith(last_probe_[pk], "reveal|");
+            last_probe_[pk] = key;
+            std::vector<std::string> parts;
+            if (first) parts.push_back("Pack opened, " + std::to_string(n) + (n == 1 ? " card" : " cards") + ". Right turns the next card, " + key_labels_["BBUTTON"] + " leaves the pack");
+            parts.push_back(name);
+            int tier = jint(jget(c, "tier"), -1);
+            bool pet = jint(jget(c, "type"), -1) == 3;   // GA_Utilities.AIT_SpiritPet
+            static const char* TIERS[] = {"GA_MODE_TIER_COMMON", "GA_MODE_TIER_UNIQUE", "GA_MODE_TIER_EPIC", "GA_MODE_TIER_KILLER"};
+            std::string tn = tier >= 0 && tier < 4 ? lower(S.resolve(std::string(TIERS[tier]))) : "";
+            if (pet) parts.push_back(tn.empty() ? "guardian" : tn + " guardian");
+            else if (!tn.empty()) parts.push_back(tn);
+            std::string q = S.resolve(jget(c, "quantity"));
+            if (!pet && !q.empty() && q != "1") parts.push_back("quantity " + q);
+            if (jtruthy(jget(c, "isPerfect"))) parts.push_back("perfect");
+            if (verbosity_ >= 1) parts.push_back(std::to_string(pack_card_ + 1) + " of " + std::to_string(n));
+            std::string desc;
+            for (const char* dk : {"description1", "description2"}) { std::string d = strip_markup(S.resolve(jget(c, dk))); if (!d.empty()) desc += (desc.empty() ? "" : " ") + d; }
+            if (desc.empty()) { desc = ptext("revealDesc"); std::string d2 = ptext("revealDesc2"); if (!d2.empty()) desc += (desc.empty() ? "" : " ") + d2; }
+            if (verbosity_ >= 2 && !desc.empty()) parts.push_back(desc);
+            last_focus_ = json{{"swf", swf}, {"label", name}, {"desc", desc}};
+            say(join(parts, ", "), true, t);
+            return;
+        }
+        if (buySt == "Purchase") return;   // bought: the reveal animation follows in a moment
+        if (popupOpen(buySt)) {
+            // buy popup: two currency options side by side, KI gold on the left, astral gems on the right (the default)
+            int sel = buySt == "ScrollLeft" ? 0 : 1;
+            std::string title = ptext("buyTitle");
+            if (title.empty()) return;   // text not written yet: the next snapshot has it
+            std::string gold = ptext("buyGold"), tokens = ptext("buyTokens");
+            std::string opt = sel == 0 ? (gold.empty() ? "" : gold + " ") + "KI gold" : (tokens.empty() ? "" : tokens + " ") + "astral gems";
+            std::string key = "buy|" + std::to_string(sel) + "|" + title;
+            if (last_probe_[pk] == key) return;
+            bool first = !startsWith(last_probe_[pk], "buy|");
+            last_probe_[pk] = key;
+            std::string desc = ptext("buyDesc");
+            std::vector<std::string> parts;
+            if (first) { parts.push_back("Buy " + title + "?"); if (verbosity_ >= 2 && !desc.empty()) parts.push_back(desc); }
+            parts.push_back("Pay " + opt);
+            if (verbosity_ >= 1) parts.push_back(std::to_string(sel + 1) + " of 2");
+            last_focus_ = json{{"swf", swf}, {"label", title}, {"desc", desc}};
+            say(join(parts, ", "), true, t);
+            return;
+        }
+        if (popupOpen(craftSt)) {
+            // crafting popup (only when materials are missing): Yes goes to the Packs tab, No returns; Yes is the left option and the default
+            int sel = craftSt == "ScrollLeft" ? 1 : 0;
+            std::string title = ptext("craftPopTitle");
+            if (title.empty()) return;
+            std::string opt = S.resolve(std::string(sel == 0 ? "COMMON_YES" : "COMMON_NO"));
+            std::string key = "craft|" + std::to_string(sel) + "|" + title;
+            if (last_probe_[pk] == key) return;
+            bool first = !startsWith(last_probe_[pk], "craft|");
+            last_probe_[pk] = key;
+            std::string desc = ptext("craftPopDesc");
+            std::vector<std::string> parts;
+            if (first) { parts.push_back(title); if (!desc.empty()) parts.push_back(desc); }
+            parts.push_back(opt);
+            if (verbosity_ >= 1) parts.push_back(std::to_string(sel + 1) + " of 2");
+            last_focus_ = json{{"swf", swf}, {"label", title}, {"desc", desc}};
+            say(join(parts, ", "), true, t);
+            return;
+        }
+        if (popupOpen(goldSt)) {
+            // KI gold purchase popup: one button, Enter continues to the store
+            std::string title = ptext("goldPopTitle");
+            if (title.empty()) return;
+            std::string key = "gold|" + title;
+            if (last_probe_[pk] == key) return;
+            last_probe_[pk] = key;
+            std::string desc = ptext("goldPopDesc");
+            std::vector<std::string> parts{title};
+            if (!desc.empty()) parts.push_back(desc);
+            std::string item = jstr(last_focus_, "label");
+            if (!item.empty()) parts.push_back(item);
+            parts.push_back(key_labels_["ABUTTON"] + ": " + S.resolve(std::string("GA_EMPORIUM_KIGOLD_POPUP_LEGEND")) + ", " + key_labels_["BBUTTON"] + ": " + S.resolve(std::string("LEGEND_BACK")));
+            last_focus_ = json{{"swf", swf}, {"label", title}, {"desc", desc}};
+            say(join(parts, ". "), true, t);
+            return;
+        }
+        if (!last_probe_[pk].empty()) {   // a popup just closed: say where the cursor is again
+            last_probe_.erase(pk);
+            last_probe_.erase(swf + "|focus");
+        }
         int tab = -1;
         for (int i = 0; i < 4; i++) if (jstr(probe, ("tab" + std::to_string(i)).c_str()) == "Active") { tab = i; break; }
         if (tab < 0) return;
@@ -1441,21 +1572,24 @@ void Narrator::on_ga_focus(const std::string& swf, const json& rec, const std::s
         if (!isNone(title)) name = sv(title);
         if (items.is_array() && idx >= 0 && idx < (int)items.size()) {
             const json& it = items[idx];
-            if (name.empty()) name = S.resolve(jget(it, "name"));
+            if (name.empty()) name = strip_markup(S.resolve(jget(it, "name")));
             std::vector<std::string> costs;
             std::string tc = S.resolve(jget(it, "tokenCost")), gc = S.resolve(jget(it, "kiGoldCost")), q = S.resolve(jget(it, "quantity"));
             if (!tc.empty() && tc != "0") costs.push_back(tc + " gems");
             if (!gc.empty() && gc != "0") costs.push_back(gc + " KI gold");
             if (!costs.empty()) extra = join(costs, " or ");
+            std::string amount = S.resolve(jget(it, "amount")), price = S.resolve(jget(it, "price"));   // KI gold bundles
+            if (!amount.empty()) extra += (extra.empty() ? "" : ", ") + amount + " KI gold";
+            if (!price.empty()) extra += (extra.empty() ? "" : ", ") + price;
             if (!q.empty()) extra += (extra.empty() ? "" : ", ") + std::string("quantity ") + q;
             const json& cc = jget(it, "canCraft");
             if (cc.is_boolean()) extra += (extra.empty() ? "" : ", ") + std::string(cc.get<bool>() ? "can craft" : "missing materials");
-            for (const char* dk : {"description", "description1", "description2"}) { std::string d = S.resolve(jget(it, dk)); if (!d.empty()) desc += (desc.empty() ? "" : " ") + d; }
+            for (const char* dk : {"description", "description1", "description2"}) { std::string d = strip_markup(S.resolve(jget(it, dk))); if (!d.empty()) desc += (desc.empty() ? "" : " ") + d; }
         }
         if (desc.empty()) {
             const char* dks[] = {"packDesc", "goldDesc", "craftDesc", "storageDesc"};
-            json d = clean(jget(probe, dks[tab])); if (!isNone(d)) desc = sv(d);
-            json d2 = clean(jget(probe, tab == 2 ? "craftDesc2" : tab == 3 ? "storageDesc2" : "none")); if (!isNone(d2)) desc += (desc.empty() ? "" : " ") + sv(d2);
+            desc = ptext(dks[tab]);
+            std::string d2 = ptext(tab == 2 ? "craftDesc2" : tab == 3 ? "storageDesc2" : "none"); if (!d2.empty()) desc += (desc.empty() ? "" : " ") + d2;
         }
         std::vector<std::string> parts;
         std::string key = tabName + "|" + std::to_string(idx) + "|" + name;

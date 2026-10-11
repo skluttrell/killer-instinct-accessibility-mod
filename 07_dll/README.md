@@ -81,10 +81,17 @@ count; loadout: fighters with health; match rewards: result and loot), the versu
 the speaker's name, the hub tab bar (title, position, notifications), the War Room mission list (name, location,
 difficulty, position, turns left, rewards; summary on Ctrl+Shift+D), the loadout popup (fighter slot with its
 consumable and guardian sub-buttons, launch button, fighter picker), the Emporium (active tab, focused item with cost
-or craft state, description on Ctrl+Shift+D), the Barracks (centre fighter with health, record, artifacts) and the
-tutorial prompts (`data\sl_prompts.json`, a state-to-text table taken from the decompiled GA_FTUE classes; the
-`<BIND>COMMAND_UI_*</BIND>` tokens become the learned key names). Not read yet: encounter popups, Spirit Lair,
-Archives, leaderboard, pack reveal cards, the Barracks artifact list, cinematic subtitles.
+or craft state, description on Ctrl+Shift+D; the buy popup with its two currency options, the KI gold purchase popup,
+the insufficient-materials popup with Yes / No, and the cards of a bought pack as Right reveals them), the Barracks
+(centre fighter with health, record, artifacts), the Spirit Lair (guardian types with counts), the War Room encounter
+popups and the tutorial prompts (`data\sl_prompts.json`, a state-to-text table taken from the decompiled GA_FTUE
+classes; the `<BIND>COMMAND_UI_*</BIND>` tokens become the learned key names). The Emporium popups navigate in
+ActionScript only, so their state is the popup's timeline label (`Off` / `BuildOn` / `ScrollLeft` / `ScrollRight` /
+`Purchase` / `BuildOff`, which stays after the animation stops) and the pack reveal's cursor is counted from the
+`Play_SL_Emporium_Pack_Item_Toggle` sound (played only when it moved) with the direction from the label; the cards
+come from the `PackPurchased` payload. The reveal reader is written against a logged payload and has not been heard
+live yet (the test save cannot afford a pack). Not read yet: Archives, leaderboard, the Barracks artifact list,
+Spirit Lair guardian details, daily rewards, cinematic subtitles.
 
 ### Opponent radar
 During a fight a soft two-harmonic pulse (90 ms, 4 ms attack, 30 ms release) tells you where the opponent is relative

@@ -210,3 +210,34 @@ both versions by hue/saturation/lightness buckets, pairs old -> new by area and 
 AS_PlayerPickedColor). Limitations: no garment names (the UV atlas is not labelled), small regions below 7% of the
 changed area are dropped, "nearly the same as the default" when under 3% changes (some retro colours differ only on
 accessory maps that live under AltCostume and are excluded).
+
+## Emporium popups and the pack reveal (2026-10-10 evening)
+The GA_Emporium movie was decompiled again (INTERFACE.PAK type-63 record `swfs\GA_Emporium`, `swf_inspect.py` ->
+`.gfx`, `ffdec.bat -export script`). The three popups live in `mcPopupElements` (`mcBuyPackPopup`, `mcBuyKIGoldPopup`,
+`mcCraftingPopup`, classes GA_Emporium_*Popup) and the reveal in `mcBuyPackPopup.mcPackPurchaseAnim`
+(GA_Emporium_PurchasedPackInfo, seven `mcCell{i}` slots, the focused one is `mcCell3`). Everything happens in AS3
+(`TransitionToState("GA_Emporium_Popup")`), so the only Lua traffic is the sounds; the popups' selection indices are
+private. Frame labels (parsed from the DefineSprite tags): popups `Off`(1) `BuildOn`(3) `ScrollRight`/`ScrollLeft`
+(12 / 21; the crafting popup has them the other way round, the KI gold one `ScrollDown`/`ScrollUp`) `Purchase`(30)
+`BuildOff`(38), each region ending in a `stop()`, so `currentLabel` keeps the last animation played. The reveal anim:
+`Off` `BuildOn`(3) `ScrollLeft`(12) `ScrollRight`(20) `BuildOff`(28) `BuildOnSkipped`(37); the cell labels are
+`BuildOnCommon/Unique/Epic/Killer/Pet`.
+Readers (`on_ga_focus`, Emporium branch, before the tab logic): buy popup = label open -> selection 0 (KI gold) when
+`ScrollLeft`, else 1 (astral gems, the default); crafting popup = `ScrollLeft` -> No, else Yes (it only opens when
+materials are missing; Yes jumps to the Packs tab, Escape does nothing in it); KI gold popup = title, text, the bundle
+under the cursor, "Enter: Purchase, Esc: Back". Pack reveal: `inv GA_Emporium.swf.PackPurchased [cards]` stores the
+cards ({name, type (3 = guardian), tier 0-3, quantity, description1/2, isPerfect, playTutorialVid, imagePath});
+the cursor index is counted from `Play_SL_Emporium_Pack_Item_Toggle` (played only when it moved; `Play_SL_Global_Negative`
+at the ends) with the direction from the anim's label in the same snapshot (`last_sound_` is recorded in `on_ei`);
+the first card is announced when the anim's label is `BuildOn` (the `Play_SL_Emporium_Pack_Open` sound). `buyState`
+`Purchase` (between the purchase and the reveal) is skipped. `RecipeCrafted` says "Crafted <item>". `strip_markup`
+removes the `<CLR="...">` tags and line breaks from the mode's item texts.
+Verified live (Turn 3 save, 80 gems): "Buy Healing Pack?, Pay 700 astral gems, 2 of 2" / "Pay 200 KI gold, 1 of 2";
+the purchase attempt with too few gems opens a Popup.swf message ("Not Enough Astral Gems or KI Gold", buttons =
+real-money bundles, Escape cancels; the generic popup reader handles it); the item is re-announced when a popup
+closes; "Insufficient Materials, ... Yes, 1 of 2" / "No, 2 of 2"; "Purchase KI Gold. Unlock the cool stuff ... Continue
+to Steam Store.. KAN-RA'S SATCHEL. Enter: Purchase, Esc: Back"; the KI Gold tab now reads "300 KI gold, $0.99". All
+new probes resolve (`revealState` Off, `revealCard` BuildOnCommon, `revealTitle` missing text while closed).
+Not heard: the reveal itself (the cheapest pack is 500 gems, missions pay 21-56). Noticed: when a popup opens, the
+Popup.swf snapshot first speaks a button of the previous popup ("Purchase 300 KI Gold for $0.99" before "Exit Shadow
+Lords?"); the old DISPLAY buttons are still focused until the new Populate lands. Listed in the README's known issues.
