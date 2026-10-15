@@ -80,6 +80,12 @@ private:
     std::string last_sound_;               // last PlaySoundString name: the Shadow Lords popups navigate in AS3 only, their sounds tell what moved
     json pack_items_;                      // Emporium: the cards of the pack bought last (PackPurchased payload), revealed one by one
     int pack_card_ = 0;                    // index of the card under the cursor in that reveal
+    bool hub_daily_open_ = false;          // the hub's daily rewards overlay is on screen (it swallows the hub's keys)
+
+    // Store content pages (StoreContentOverview.swf: Fighters, Skins, Boosters, ...)
+    json store_page_items_;                // current window of PopulateItems
+    int store_page_min_ = 0;               // MinIndex of that window (GetItemsInCategory)
+    std::string store_page_cat_;           // last announced category name
     std::string ga_summary(const std::string& swf);   // what to say after the screen name
     void on_ga_focus(const std::string& swf, const json& rec, const std::string& base_why, bool deferred, int64_t t);
     void on_preload_dialogue(int64_t t);
@@ -90,6 +96,7 @@ private:
     void say_match_outcome(const json& data);
     void on_stage_changed(const std::string& js, int64_t t);
     void on_story_focus(const json& rec, int64_t t);
+    void on_store_preview(const std::string& js, int64_t t);
     void on_move_selected(const std::string& js, int64_t t);
     void on_controller_focus(const json& rec, const json& probe, bool deferred);
     json cs_fighter(const json& idx);

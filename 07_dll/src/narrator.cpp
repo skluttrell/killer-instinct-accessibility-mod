@@ -13,7 +13,8 @@ static const std::map<std::string, std::string> SCREEN_NAMES = {
     {"PauseMenu.swf", "Pause menu"}, {"PracticePauseMenu.swf", "Practice menu"}, {"BlockList.swf", "Block list"},
     {"CommandList.swf", "Command list"}, {"Dojo.swf", "Dojo"}, {"Trials.swf", "Trials"}, {"SinglePlayerLadder.swf", "Arcade ladder"},
     {"MatchOutcome.swf", "Match results"}, {"LoadingScreen.swf", "Loading"}, {"StoreFighters.swf", "Store, fighters"},
-    {"StoreBundles.swf", "Store, bundles"}, {"StoreContent.swf", "Store, content"}, {"Leaderboards.swf", "Leaderboards"}, {"Stats.swf", "Stats"},
+    {"StoreBundles.swf", "Store, bundles"}, {"StoreContent.swf", "Store, content"}, {"StoreContentOverview.swf", "Store page"},
+    {"Leaderboards.swf", "Leaderboards"}, {"Stats.swf", "Stats"},
     {"Replays.swf", "Replays"}, {"ComboBreakerOptions.swf", "Combo breaker options"}, {"ShadowHub.swf", "Shadow Lab"},
     {"MultiplayerRanked.swf", "Ranked"}, {"MultiplayerExhibition.swf", "Exhibition"}, {"Story.swf", "Story"}, {"GA_HUB.swf", "Shadow Lords hub"},
     // Shadow Lords ("GA" = Gargos Assault) screens: shown/hidden by the mode itself, announced from their ScreenShown event
@@ -352,6 +353,15 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
                 say("Start screen. Press Menu or Space", true);
             }
             if (swf == "GA_PreLoad.swf") preload_dialog_i_ = 0;
+            if (swf == "StoreContentOverview.swf") {
+                // a Store content page (Fighters, Skins, Boosters, ...): say which; the items follow in PopulateItems
+                store_page_items_ = json();
+                store_page_min_ = 0;
+                store_page_cat_.clear();
+                last_probe_.erase("StoreContentOverview.swf|item");
+                std::string title = S.resolve(jget(data, "ScreenTitle"));
+                if (!title.empty() && title != jstr(data, "ScreenTitle")) say(title, false);
+            }
             if (swf == "CharacterSelect.swf") {
                 cs_stage_ = {{0, "fighter"}, {1, "fighter"}};
                 cs_fighter_code_.clear();
@@ -499,6 +509,51 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
         const json& pr = jget(data, "previewRewardData");
         if (pr.is_array()) for (const auto& d : pr) if (d.is_object()) { std::string n = S.resolve(jget(d, "name")); if (!n.empty()) days.push_back(n); }
         say("Daily rewards panel. " + S.resolve(jget(data, "resetText")) + ". " + join(days, ", ") + ". Escape to close", true);
+    } else if (swf == "StoreContentOverview.swf" && fn == "PopulateItems" && data.is_object()) {
+        store_page_items_ = jget(data, "Items");   // the visible window; PreviewItem announces the cursor
+    } else if (swf == "GA_HUB.swf" && fn == "PopulateDailyRewardExpanded" && data.is_object()) {
+        // the hub's daily rewards overlay: it opens by itself when a reward was just earned and swallows
+        // the hub's keys while it is up, so say what it is and how to leave
+        const json& d = jget(data, "dailyRewardData");
+        std::vector<std::string> parts{"Daily rewards"};
+        const json& cur = jget(d, "currentRewardData");
+        if (cur.is_object()) {
+            std::string line = "Today's reward";
+            std::string day = strip(S.resolve(jget(cur, "day")));
+            if (!day.empty()) line += ", day " + day;
+            std::string nm = S.resolve(jget(cur, "displayName")), q = strip(S.resolve(jget(cur, "quantity")));
+            if (!nm.empty()) line += ": " + nm;
+            if (!q.empty()) line += ", " + q;
+            line += jtruthy(jget(cur, "completed")) ? ", collected" : ", play a match to collect";
+            parts.push_back(line);
+        }
+        const json& pr = jget(d, "previewRewardData");
+        if (pr.is_array() && !pr.empty()) {
+            int done = 0;
+            for (const auto& e : pr) if (jtruthy(jget(e, "completed"))) done++;
+            parts.push_back(std::to_string(done) + " of " + std::to_string(pr.size()) + " days collected");
+        }
+        if (verbosity_ >= 1) {
+            auto objectives = [this](const json& list, const char* title) {
+                std::vector<std::string> os;
+                if (list.is_array()) for (const auto& o : list) {
+                    std::string ti = S.resolve(jget(o, "title")), r = strip(S.resolve(jget(o, "reward")));
+                    if (ti.empty()) continue;
+                    os.push_back(ti + (r.empty() ? "" : " for " + r) + (jtruthy(jget(o, "completed")) ? ", done" : ""));
+                }
+                return os.empty() ? std::string() : std::string(title) + ": " + join(os, "; ");
+            };
+            std::string mp = objectives(jget(d, "multiplayerRewardData"), "Multiplayer gauntlet");
+            if (!mp.empty()) parts.push_back(mp);
+            std::string sm = objectives(jget(d, "shadowMissionRewardData"), "Shadow mission loot");
+            if (!sm.empty()) parts.push_back(sm);
+        }
+        parts.push_back("Escape to close");
+        hub_daily_open_ = true;
+        say(join(parts, ". "), true);
+    } else if (swf == "GA_HUB.swf" && fn == "PopulateDailyRewardContracted" && hub_daily_open_) {
+        hub_daily_open_ = false;
+        say("Daily rewards closed", true);
     }
 }
 
@@ -665,11 +720,55 @@ void Narrator::on_ei(const std::string& script, const std::string& fn, const std
         }
     } else if (script == "CharSelectMenu" || (current_swf_ == "CharacterSelect.swf" && (fn == "PlayBackP1" || fn == "PlayBackP2"))) {
         on_charselect_ei(fn, js, t);
+    } else if (script == "StoreContentOverview" && fn == "GetItemsInCategory") {
+        // paging / tab change on a Store content page; a category other than the page itself (skins per fighter) is named
+        json j = json::parse(js, nullptr, false, true);
+        store_page_min_ = jint(jget(j, "MinIndex"));
+        std::string cat = jstr(j, "Category");
+        if (!cat.empty() && cat != store_page_cat_) {
+            bool first = store_page_cat_.empty();
+            store_page_cat_ = cat;
+            if (!first) { cat[0] = (char)toupper((unsigned char)cat[0]); say(cat, true, t); }
+        }
+    } else if (script == "StoreContentOverview" && fn == "PreviewItem") {
+        on_store_preview(js, t);
     } else if (script == "StageSelect" && fn == "StageSelectionChanged") {
         on_stage_changed(js, t);
     } else if (script == "CommandList" && fn == "EntrySelected") {
         on_move_selected(js, t);
     }
+}
+
+// ---- Store content pages (event-driven: PreviewItem {Id} on every cursor move; items from PopulateItems) ----
+void Narrator::on_store_preview(const std::string& js, int64_t t) {
+    json j = json::parse(js, nullptr, false, true);
+    std::string ids = jtostr(jget(j, "Id"));
+    const json& items = store_page_items_;
+    if (!items.is_array() || ids.empty()) return;
+    int idx = -1;
+    for (int i = 0; i < (int)items.size(); i++) if (items[i].is_object() && jtostr(jget(items[i], "Id")) == ids) { idx = i; break; }
+    if (idx < 0) return;
+    const json& it = items[idx];
+    std::vector<std::string> parts;
+    std::string name = S.resolve(jget(it, "Name"));
+    parts.push_back(name.empty() ? "item " + ids : name);
+    std::string lvl = strip(S.resolve(jget(it, "CurrentLevel")));
+    if (!lvl.empty()) parts.push_back(lvl);
+    std::string price = strip(S.resolve(jget(it, "Price")));
+    if (!price.empty()) parts.push_back("price " + price);
+    if (jtruthy(jget(it, "IsOnSale"))) parts.push_back("on sale");
+    if (jtruthy(jget(it, "Equipped"))) parts.push_back("equipped");
+    if (jtruthy(jget(it, "Locked"))) parts.push_back("locked");
+    if (jget(it, "CanBeSelected").is_boolean() && !jget(it, "CanBeSelected").get<bool>()) parts.push_back("not selectable");
+    if (verbosity_ >= 1) parts.push_back("item " + std::to_string(store_page_min_ + idx + 1));
+    std::string desc = S.resolve(jget(it, "Description"));
+    if (verbosity_ >= 2 && !desc.empty()) parts.push_back(desc);
+    std::string text = join(parts, ", ");
+    std::string k = "StoreContentOverview.swf|item";
+    if (last_probe_.count(k) && last_probe_[k] == text) return;
+    last_probe_[k] = text;
+    last_focus_ = json{{"swf", "StoreContentOverview.swf"}, {"index", idx}, {"label", parts[0]}, {"desc", desc}, {"value", nullptr}};
+    say(text, true, t);
 }
 
 // ---- stage select (event-driven: the screen tells Lua the 1-based index on every move) ----
@@ -1166,6 +1265,7 @@ void Narrator::on_focus(const json& rec) {
     }
     if (swf == "Story.swf") { on_story_focus(rec, t); return; }
     if (isNone(jget(rec, "index")) || swf == "CommandList.swf") return;
+    if (swf == "StoreContentOverview.swf") return;   // event-driven (PreviewItem); the generic reader only knows "item N"
     const json& probe = jget(rec, "probe");
     if (swf == "ControllerConfig.swf") { on_controller_focus(rec, probe, deferred); return; }
     if (startsWith(swf, "GA_")) { on_ga_focus(swf, rec, base_why, deferred, t); return; }

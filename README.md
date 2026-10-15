@@ -1,5 +1,5 @@
 Killer Instinct Accessibility Mod
-v.0.2.4
+v.0.2.5
 
 Purpose:
 
@@ -8,9 +8,9 @@ Adds screen reader output to the menus of Killer Instinct (Steam version, free b
 Known Issues:
 
 * This is a TEST BUILD. The mod writes kiaccess\speech.log in your Killer Instinct folder each session with every announcement. If anything goes wrong, please attach that file to your bug report.
-* Shadow Lords: the cards of a pack you open in the Emporium (press Right to turn each card, Escape to leave the pack) have not been tested with a real purchase yet; please report what you hear. Not read yet are the guardian details and recharge popups in the Spirit Lair, the Archives, the leaderboard and the daily rewards panel in the hub (the one in the main menu is read). The subtitles of the story cinematics are not spoken either; the cinematics are voiced.
+* Shadow Lords: the cards of a pack you open in the Emporium (press Right to turn each card, Escape to leave the pack) have not been tested with a real purchase yet; please report what you hear. Not read yet are the guardian details and recharge popups in the Spirit Lair, the Archives and the leaderboard. The hub's daily rewards overlay reader is new in this version and has not been heard live yet (it only appears right after a daily reward is earned); if it stays silent for you, please attach kiaccess\speech.log. The subtitles of the story cinematics are not spoken either; the cinematics are voiced.
 * When a popup opens, the first thing spoken can be a button of the previous popup (for example "Purchase 300 KI Gold" just before "Exit Shadow Lords?"). The popup itself follows at once.
-* The Store's front page reads its tiles by name, but the pages behind them (Fighters, Skins, Extras and so on) and the online lobbies are not read yet beyond their basic layout.
+* The Store's front page and its content pages are read; the Bundles and Fighters pages and the online lobbies are not read yet beyond their basic layout.
 * The fighter appearance descriptions were written from memory of the game and have not yet been reviewed by a sighted person.
 * The opponent radar assumes you are Player 1 playing against the CPU. There is no radar for Player 2.
 * The opponent radar pauses during the "Ready, Fight" intro of a round and for up to 3 seconds after a round ends. Please keep reporting whether the pulse, its panning and its pitch are useful.
@@ -21,6 +21,11 @@ Known Issues:
 * If a future game update changes the executable so that the mod can no longer find its hook points, the narrator stays silent and writes the reason to kiaccess\speech.log. The game itself still runs normally.
 
 New in this version:
+
+* The Store's content pages (Skins, Extras, Profile Card, Currency, Boosters and What's New) are read: the page's name on entry, then each item as you move with its price and your level where shown ("Jago Mimic Skin, Your Current Jago Level is 3, price 600, item 19"), plus "on sale", "equipped" or "locked" when they apply. The item's description is on Ctrl+Shift+D. Paging through long lists keeps the numbering.
+* The daily rewards overlay inside the Shadow Lords hub is read. It opens by itself when you have just earned a daily reward and it swallows the hub's keys while open; it now announces today's reward with its day and whether it is collected, how many of the ten days you have collected, the Multiplayer Gauntlet and Shadow Mission Loot objectives with their rewards, and that Escape closes it. Closing it says "Daily rewards closed" so you know the hub is listening again.
+
+New in v0.2.4:
 
 * Fixed: Character Select went silent after backing out of a picked fighter (reported by anomaly420 and Sightless Kombat). Backing out of the costume or colour stage, un-readying a player, and moving to the next Shadow Lords team slot all bring the fighter cursor back to life now, on both sides.
 * Story mode (Single Player, Fight, Story) is read: each fighter's row with the selected ending, its difficulty, its unlock requirement and whether it is unlocked ("SABREWULF - ENDING 1, locked. Difficulty beginner. Unlock: Complete Story Mode. Row 2 of 8"), Left and Right move through the endings, and the season with its completion is announced on entry (reported by anomaly420 as "it just says item 1 2 or 3").
