@@ -1354,6 +1354,43 @@ void Narrator::on_focus(const json& rec) {
     if (swf == "Story.swf") { on_story_focus(rec, t); return; }
     if (isNone(jget(rec, "index")) || swf == "CommandList.swf") return;
     if (swf == "StoreContentOverview.swf") return;   // event-driven (PreviewItem); the generic reader only knows "item N"
+    if (swf == "StoreFighters.swf") {
+        // fighter grid: the info panel always shows the focused fighter's name and state, updated on every move
+        const json& spr = jget(rec, "probe");
+        json n = clean(jget(spr, "name")), st = clean(jget(spr, "status"));
+        if (isNone(n)) return;
+        std::string text = sv(n);
+        if (!isNone(st)) text += ", " + lower(sv(st));
+        std::string k = swf + "|item";
+        if (last_probe_.count(k) && last_probe_[k] == text) return;
+        last_probe_[k] = text;
+        last_focus_ = json{{"swf", swf}, {"index", -1}, {"label", sv(n)}, {"desc", ""}, {"value", nullptr}};
+        say(text, true, t);
+        return;
+    }
+    if (swf == "StoreBundles.swf") {
+        // bundle carousel: Title and Price come from the Populate payload, the contents hint from the screen
+        int bidx = jint(jget(rec, "index"), -1);
+        const json& bundles = jget(jget(populate_, swf.c_str()), "Bundles");
+        if (!bundles.is_array() || bidx < 0 || bidx >= (int)bundles.size() || !bundles[bidx].is_object()) return;
+        const json& b = bundles[bidx];
+        std::string text = S.resolve(jget(b, "Title"));
+        if (text.empty()) text = "bundle " + std::to_string(bidx + 1);
+        std::string lbl = text;
+        std::string price = strip(S.resolve(jget(b, "Price")));
+        if (price.find_first_not_of('-') == std::string::npos) price.clear();   // "-----" until Steam delivers the price
+        if (!price.empty()) text += ", price " + price;
+        if (verbosity_ >= 1) text += ", " + std::to_string(bidx + 1) + " of " + std::to_string(bundles.size());
+        json hint = clean(jget(jget(rec, "probe"), "hint"));
+        std::string desc = isNone(hint) ? "" : sv(hint);
+        if (verbosity_ >= 2 && !desc.empty()) text += ". " + desc;
+        std::string k = swf + "|item";
+        if (last_probe_.count(k) && last_probe_[k] == text) return;
+        last_probe_[k] = text;
+        last_focus_ = json{{"swf", swf}, {"index", bidx}, {"label", lbl}, {"desc", desc}, {"value", nullptr}};
+        say(text, true, t);
+        return;
+    }
     const json& probe = jget(rec, "probe");
     if (swf == "ControllerConfig.swf") { on_controller_focus(rec, probe, deferred); return; }
     if (startsWith(swf, "GA_")) { on_ga_focus(swf, rec, base_why, deferred, t); return; }

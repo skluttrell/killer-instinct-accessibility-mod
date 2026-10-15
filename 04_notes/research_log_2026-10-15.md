@@ -165,12 +165,28 @@ readers:
   by the popups' timeline labels (`.visible` always true, as everywhere in the mode).
 * GA screens now clear every `swf|...` dedup key on ScreenShown, so re-entering re-announces.
 
+## Store Bundles + Fighters pages (late afternoon, verified live)
+
+* **StoreBundles.swf**: default index mode (`GetSelectionIndex`), entries in the Populate's `Bundles`
+  array (`Title`, `Price`), the contents hint probed from `mcExtraInfo.mcHintText.txtItem` (spoken at
+  verbosity 2, on the description hotkey otherwise). A price Steam has not delivered yet is "-----";
+  it is skipped. This account shows one bundle (Anniversary Edition).
+* **StoreFighters.swf**: pure probe reader — `mcInfo.mcFighterName.txtItem` and `mcInfo.mcStatus.txtItem`
+  update on every grid move (sound "PlayScroll" fires the probes). Status text is the game's own
+  (Owned / Available / Free / Coming Soon / connect prompts). No position (the grid's x/y is not
+  exposed and all slots are fighters anyway).
+* **GA_Leaderboard.swf looked cheap but is not**: its nav state is `GA_WrapUp_Main` — it belongs to the
+  end-of-playthrough wrap-up flow and has never appeared in any log. Rows use `getChildByName` columns
+  driven by `CategoryInfo`; building it blind was declined. Revisit when a playthrough ends.
+
 ## Open / not verified live
 
 * Hub daily rewards overlay's expanded announcement (needs the next daily reward).
 * StoryMuralPopup announcement (built from the captured payload; re-heard on the next finished ladder).
 * Spirit Lair excess-guardian popup and dismantle popup (reader built; the popup needs a dismantle-able
   spare guardian / an overfull lair to appear).
+* GA_Leaderboard and GA_WrapUp (end of a Shadow Lords playthrough; no reader yet, no capture yet).
+* StoreFighters states other than "owned" (this account owns every fighter).
 * The hub's own Daily Rewards overlay (opens over the hub, swallowed input, says nothing — the main
   menu one is read). Noted in README known issues.
 * Pack reveal still untested (needs 500 gems; save has 307).

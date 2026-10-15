@@ -148,6 +148,10 @@ static const char* SCREENS_JSON = R"JSON({
        "fields": {"state": "currentLabel", "visible": "visible", "label": "mcLaunchMission.mcLaunchMissionText.txtItem.text"}},
     "fighters": {"when": "mcWarRoom_Loadout.mcCharacterPopup.visible", "item": "mcWarRoom_Loadout.mcCharacterPopup.mcCharacter_{i}", "count": 3,
        "fields": {"state": "currentLabel", "visible": "visible"}}}},
+ "StoreBundles.swf": {"probe": {"hint": "mcExtraInfo.mcHintText.txtItem.text"}},
+ "StoreFighters.swf": {"custom": "none", "probe": {
+    "name": "mcInfo.mcFighterName.txtItem.text",
+    "status": "mcInfo.mcStatus.txtItem.text"}},
  "Story.swf": {"probe": {"item": "mcStoryMain.mcUnlockDetails.txtItem.text",
     "req": "mcStoryMain.mcUnlockDetails.txtDescription.text",
     "diff": "mcStoryMain.mcUnlockDetails.txtDifficulty.text",
