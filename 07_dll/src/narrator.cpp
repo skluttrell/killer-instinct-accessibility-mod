@@ -16,7 +16,8 @@ static const std::map<std::string, std::string> SCREEN_NAMES = {
     {"StoreBundles.swf", "Store, bundles"}, {"StoreContent.swf", "Store, content"}, {"StoreContentOverview.swf", "Store page"},
     {"Leaderboards.swf", "Leaderboards"}, {"Stats.swf", "Stats"},
     {"Replays.swf", "Replays"}, {"ComboBreakerOptions.swf", "Combo breaker options"}, {"ShadowHub.swf", "Shadow Lab"},
-    {"MultiplayerRanked.swf", "Ranked"}, {"MultiplayerExhibition.swf", "Exhibition"}, {"Story.swf", "Story"}, {"GA_HUB.swf", "Shadow Lords hub"},
+    {"MultiplayerRanked.swf", "Ranked"}, {"MultiplayerExhibition.swf", "Exhibition"}, {"Story.swf", "Story"}, {"StoryMuralPopup.swf", "Story mural"},
+    {"GA_HUB.swf", "Shadow Lords hub"},
     // Shadow Lords ("GA" = Gargos Assault) screens: shown/hidden by the mode itself, announced from their ScreenShown event
     {"GA_WarRoom.swf", "War Room"}, {"GA_Barracks.swf", "Barracks"}, {"GA_Emporium.swf", "Emporium"}, {"GA_SpiritLair.swf", "Spirit Lair"},
     {"GA_PreLoad.swf", "Versus screen"}, {"GA_MatchRewards.swf", "Match rewards"}, {"GA_Loadout_Popup.swf", "Loadout"}, {"GA_Archives.swf", "Archives"},
@@ -353,6 +354,30 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
                 say("Start screen. Press Menu or Space", true);
             }
             if (swf == "GA_PreLoad.swf") preload_dialog_i_ = 0;
+            if (swf == "StoryMuralPopup.swf") {
+                // after finishing an arcade ladder (the voiced ending cinematic has just played): a mural piece
+                // is revealed; names come from the Story screen's payload, the indices are row * 3 + ending
+                std::vector<std::string> parts;
+                int season = jint(jget(data, "MuralIndex"), 0) + 1;
+                const json& arr = jget(jget(populate_, "Story.swf"), season == 2 ? "Season2" : "Season1");
+                const json& newE = jget(data, "NewEndings");
+                if (newE.is_array()) for (const auto& e : newE) {
+                    int idx = jint(e, -1);
+                    if (idx < 0) continue;
+                    int row = idx / 3, ending = idx % 3 + 1;
+                    std::string who;
+                    if (arr.is_array() && row < (int)arr.size()) who = S.resolve(jget(arr[row], "DisplayName"));
+                    parts.push_back("New ending unlocked: " + (who.empty() ? "fighter " + std::to_string(row + 1) : who) +
+                                    ", ending " + std::to_string(ending));
+                }
+                const json& state = jget(data, "EndingsUnlockState");
+                int done = 0;
+                if (state.is_array()) for (const auto& b : state) if (jtruthy(b)) done++;
+                parts.push_back("A piece of the season " + std::to_string(season) + " mural is revealed. " +
+                                std::to_string(done) + (done == 1 ? " ending" : " endings") + " unlocked so far");
+                parts.push_back(key_labels_["ABUTTON"] + ": Continue");
+                say(join(parts, ". "), false);
+            }
             if (swf == "SinglePlayerLadder.swf") {
                 // the ladder tower: your stats, then where you stand in the climb
                 std::vector<std::string> parts;
@@ -516,6 +541,14 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
             }
         }
         say(disp + " assigned", true);
+    } else if (fn == "PopulateLevelUpNotification" && data.is_object()) {
+        // level-up banner on the match outcome screen ("Sabrewulf Level Up" with the items it unlocked)
+        std::vector<std::string> items;
+        const json& its = jget(data, "Items");
+        if (its.is_array()) for (const auto& it : its) { std::string n = S.resolve(jget(it, "Name")); if (!n.empty()) items.push_back(n); }
+        std::string ti = S.resolve(jget(data, "Title"));
+        if (!ti.empty() || !items.empty())
+            say((ti.empty() ? "Level up" : ti) + (items.empty() ? "" : ": " + join(items, ", ")), false);
     } else if (fn == "PopulatePlayerCards" && data.is_object()) {
         learn_fighter_names(data);
     } else if (fn == "PopulateTicker" && data.is_object()) {
@@ -910,6 +943,7 @@ void Narrator::on_match_live(int32_t levelId) {
     if (key.empty()) { logLine("stage: unknown level id " + std::to_string(levelId)); return; }
     std::string name = S.resolve(key);
     if (name.empty() || name == key) return;
+    if (lower(name) == "debug void") return;   // the game's hidden shadow-AI calibration match, not a fight of the player's
     // say it unless Stage Select already announced this very stage (Random, Shadow Lords and ladders never did)
     std::string chosen = lower(last_probe_["StageSelect.swf|stage"]);
     if (!chosen.empty() && startsWith(chosen, lower(name).c_str())) return;

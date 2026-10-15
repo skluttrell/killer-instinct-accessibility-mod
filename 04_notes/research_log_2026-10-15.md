@@ -116,9 +116,30 @@ v0.2.4 code-only fixes heard live:
 Save state after the burn: mission failed, Fulgore at 0% (unavailable), Kim Wu available again at 43%,
 turn advanced to 4. Backed out cleanly; game exited.
 
+## Ladder ending captured (user's Sabrewulf run, afternoon)
+
+The user played a Season 1 ladder to the end with Sabrewulf (log with the raised 2000/4000-char caps).
+Flow after the last win: Match results -> Advance -> ~21 s with no UI traffic = the **ending cinematic**
+(fully voiced, no subtitles pass through the UI layer — nothing for the narrator to add) ->
+`StoryMuralPopup.swf.Populate` -> `PlayPuzzlePieceAdded` -> Enter -> out. The popup's payload is pure
+state: `MuralIndex` (season - 1), `NewEndings[]` and `EndingsUnlockState[27]` (9 rows x 3; row 9 is the
+hidden fighter, "char_ending_hidden"), index = row * 3 + ending, rows in the Story screen's Season
+array order (index 3 = Sabrewulf ending 1 ✓). No text on the screen beyond flair.
+
+New readers from the capture (commit pending):
+* **StoryMuralPopup**: "New ending unlocked: SABREWULF, ending 1. A piece of the season 1 mural is
+  revealed. 1 ending unlocked so far. Enter: Continue" (names from the stored Story.swf payload).
+* **PopulateLevelUpNotification** (match outcome): "Sabrewulf Level Up: Sabrewulf Background 1" — was
+  silent before.
+* Suppressed: after some matches the game runs a **hidden shadow-AI calibration match** ("Glacius
+  versus Kilgore", stage DEBUG VOID) that triggered the loading-screen and stage announcements while
+  the player sits in a menu. The stage line is now skipped for DEBUG VOID (the loading line remains —
+  rare, and hard to tell apart from a real load).
+
 ## Open / not verified live
 
 * Hub daily rewards overlay's expanded announcement (needs the next daily reward).
+* StoryMuralPopup announcement (built from the captured payload; re-heard on the next finished ladder).
 * The hub's own Daily Rewards overlay (opens over the hub, swallowed input, says nothing — the main
   menu one is read). Noted in README known issues.
 * Pack reveal still untested (needs 500 gems; save has 307).
