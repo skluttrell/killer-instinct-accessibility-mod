@@ -136,6 +136,14 @@ New readers from the capture (commit pending):
   the player sits in a menu. The stage line is now skipped for DEBUG VOID (the loading line remains —
   rare, and hard to tell apart from a real load).
 
+## Pack reveal verified with a real purchase (user's own session, ~13:00)
+
+The user bought a Healing Pack for 700 astral gems. Everything spoke on the first live run of the
+v0.2.2 reveal reader: the buy popup ("Buy Healing Pack?, Pay 700 astral gems, 2 of 2"), the opening
+line ("Pack opened, 4 cards. Right turns the next card, Escape leaves the pack") with the first card,
+every card turned forward AND backward with tier and quantity, the return to the pack list, and the
+updated wallet in the hub. Pack-reveal caveat removed from the README.
+
 ## Open / not verified live
 
 * Hub daily rewards overlay's expanded announcement (needs the next daily reward).
