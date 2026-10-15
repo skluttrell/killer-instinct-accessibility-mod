@@ -1,5 +1,5 @@
-Killer Instinct Accessibility Mod
-v.0.2.5
+﻿Killer Instinct Accessibility Mod
+v.0.2.6
 
 Purpose:
 
@@ -9,6 +9,7 @@ Known Issues:
 
 * This is a TEST BUILD. The mod writes kiaccess\speech.log in your Killer Instinct folder each session with every announcement. If anything goes wrong, please attach that file to your bug report.
 * Shadow Lords: the cards of a pack you open in the Emporium (press Right to turn each card, Escape to leave the pack) have not been tested with a real purchase yet; please report what you hear. Not read yet are the guardian details and recharge popups in the Spirit Lair, the Archives and the leaderboard. The hub's daily rewards overlay reader is new in this version and has not been heard live yet (it only appears right after a daily reward is earned); if it stays silent for you, please attach kiaccess\speech.log. The subtitles of the story cinematics are not spoken either; the cinematics are voiced.
+* The end of an arcade ladder (the rival fight, the ending text and the mural reveal) has not been reached in testing yet, so what those screens say is unknown; please report what you hear.
 * When a popup opens, the first thing spoken can be a button of the previous popup (for example "Purchase 300 KI Gold" just before "Exit Shadow Lords?"). The popup itself follows at once.
 * The Store's front page and its content pages are read; the Bundles and Fighters pages and the online lobbies are not read yet beyond their basic layout.
 * The fighter appearance descriptions were written from memory of the game and have not yet been reviewed by a sighted person.
@@ -21,6 +22,11 @@ Known Issues:
 * If a future game update changes the executable so that the mod can no longer find its hook points, the narrator stays silent and writes the reason to kiaccess\speech.log. The game itself still runs normally.
 
 New in this version:
+
+* The story dossier before an arcade ladder (the Ultratech databank page after picking your fighter in Story mode) is read in full: name, height, weight, age, threat level, last known location, the character's story text, and the continue prompt with your bound key.
+* The arcade ladder tower is read: your difficulty, total wins and score, how many fights the ladder has, and the opponent you are at ("Next opponent: Riptor, 2 of 7"), spoken again with fresh numbers each time you return to the tower after a match.
+
+New in v0.2.5:
 
 * The Store's content pages (Skins, Extras, Profile Card, Currency, Boosters and What's New) are read: the page's name on entry, then each item as you move with its price and your level where shown ("Jago Mimic Skin, Your Current Jago Level is 3, price 600, item 19"), plus "on sale", "equipped" or "locked" when they apply. The item's description is on Ctrl+Shift+D. Paging through long lists keeps the numbering.
 * The daily rewards overlay inside the Shadow Lords hub is read. It opens by itself when you have just earned a daily reward and it swallows the hub's keys while open; it now announces today's reward with its day and whether it is collected, how many of the ten days you have collected, the Multiplayer Gauntlet and Shadow Mission Loot objectives with their rewards, and that Escape closes it. Closing it says "Daily rewards closed" so you know the hub is listening again.

@@ -353,6 +353,30 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
                 say("Start screen. Press Menu or Space", true);
             }
             if (swf == "GA_PreLoad.swf") preload_dialog_i_ = 0;
+            if (swf == "SinglePlayerLadder.swf") {
+                // the ladder tower: your stats, then where you stand in the climb
+                std::vector<std::string> parts;
+                const json& ps = jget(data, "PlayerStats");
+                for (const char* k : {"Difficulty", "Wins", "Score"}) {
+                    const json& e = jget(ps, k);
+                    if (!e.is_object()) continue;
+                    if (jget(e, "visible").is_boolean() && !jget(e, "visible").get<bool>()) continue;
+                    std::string kk = strip(S.resolve(jget(e, "key"))), v = strip(S.resolve(jget(e, "value")));
+                    if (!v.empty()) parts.push_back(kk.empty() ? v : kk + " " + v);
+                }
+                const json& ch = jget(data, "Challengers");
+                const json& opp = jget(ch, "Opponents");
+                if (opp.is_array() && !opp.empty()) {
+                    int lvl = jint(jget(ch, "Level"), 0);   // the rung you are at: the opponent still to beat
+                    std::string line = std::to_string(opp.size()) + (opp.size() == 1 ? " fight" : " fights");
+                    if (lvl >= 0 && lvl < (int)opp.size()) {
+                        std::string n = strip(S.resolve(jget(opp[lvl], "string")));
+                        if (!n.empty()) line += ". Next opponent: " + n + ", " + std::to_string(lvl + 1) + " of " + std::to_string(opp.size());
+                    }
+                    parts.push_back(line);
+                }
+                if (!parts.empty()) say(join(parts, ". "), false);
+            }
             if (swf == "StoreContentOverview.swf") {
                 // a Store content page (Fighters, Skins, Boosters, ...): say which; the items follow in PopulateItems
                 store_page_items_ = json();
@@ -509,6 +533,22 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
         const json& pr = jget(data, "previewRewardData");
         if (pr.is_array()) for (const auto& d : pr) if (d.is_object()) { std::string n = S.resolve(jget(d, "name")); if (!n.empty()) days.push_back(n); }
         say("Daily rewards panel. " + S.resolve(jget(data, "resetText")) + ". " + join(days, ", ") + ". Escape to close", true);
+    } else if (swf == "SinglePlayerLadder.swf" && fn == "PopulateArcadeInfo" && data.is_object()) {
+        // the story dossier before an arcade ladder (the Ultratech databank page): everything is in the payload,
+        // the bio ("Description") is a string key into the game's text table
+        std::vector<std::string> parts;
+        std::string nm = strip(S.resolve(jget(data, "Name")));
+        if (!nm.empty()) parts.push_back(nm);
+        for (const char* k : {"Height", "Weight", "Age", "Threat", "Location"}) {
+            const json& p = jget(data, k);
+            std::string ti = strip(S.resolve(jget(p, "title"))), v = strip(S.resolve(jget(p, "value")));
+            if (!v.empty()) parts.push_back(ti.empty() ? std::string(k) + ": " + v : ti + " " + v);
+        }
+        std::string bio = S.resolve(jget(data, "Description"));
+        if (!bio.empty() && bio != jstr(data, "Description")) parts.push_back(bio);
+        std::string start = S.resolve(jget(data, "StartKey"));
+        if (!start.empty() && start != jstr(data, "StartKey")) parts.push_back(start);
+        if (!parts.empty()) say(join(parts, ". "), false);
     } else if (swf == "StoreContentOverview.swf" && fn == "PopulateItems" && data.is_object()) {
         store_page_items_ = jget(data, "Items");   // the visible window; PreviewItem announces the cursor
     } else if (swf == "GA_HUB.swf" && fn == "PopulateDailyRewardExpanded" && data.is_object()) {
