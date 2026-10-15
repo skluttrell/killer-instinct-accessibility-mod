@@ -582,6 +582,10 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
         std::string start = S.resolve(jget(data, "StartKey"));
         if (!start.empty() && start != jstr(data, "StartKey")) parts.push_back(start);
         if (!parts.empty()) say(join(parts, ". "), false);
+    } else if (swf == "GA_Archives.swf" && fn == "PopulateContent" && data.is_object()) {
+        // the entry list of the grid that just opened (a category's items or a fighter's dossiers)
+        populate_["GA_Archives.swf:content"] = data;
+        last_probe_.erase("GA_Archives.swf|entry");
     } else if (swf == "StoreContentOverview.swf" && fn == "PopulateItems" && data.is_object()) {
         store_page_items_ = jget(data, "Items");   // the visible window; PreviewItem announces the cursor
     } else if (swf == "GA_HUB.swf" && fn == "PopulateDailyRewardExpanded" && data.is_object()) {
@@ -720,8 +724,11 @@ void Narrator::on_ei(const std::string& script, const std::string& fn, const std
             ga_announced_ = swf;
             current_swf_ = swf;
             hasLast_ = false;
-            last_probe_.erase(swf + "|tab");   // re-announce the hub's focused tab each time the hub appears
-            last_probe_.erase(swf + "|focus");
+            // re-announce the screen's own focus keys each time it appears (tab, grid entry, open popups, ...)
+            for (auto it = last_probe_.begin(); it != last_probe_.end();) {
+                if (startsWith(it->first, (swf + "|").c_str())) it = last_probe_.erase(it);
+                else ++it;
+            }
             // the rewards screen's fresh Populate lands after ScreenShown; the stored one is the previous
             // match's (it read the wrong fighter's health and rewards), so wait for the new payload
             if (swf == "GA_MatchRewards.swf") populate_.erase(swf);
@@ -793,6 +800,13 @@ void Narrator::on_ei(const std::string& script, const std::string& fn, const std
         }
     } else if (script == "CharSelectMenu" || (current_swf_ == "CharacterSelect.swf" && (fn == "PlayBackP1" || fn == "PlayBackP2"))) {
         on_charselect_ei(fn, js, t);
+    } else if (script == "GA_SpiritLair" && fn == "AS_RechargePetBlocked") {
+        json j = json::parse(js, nullptr, false, true);
+        if (jtruthy(jget(j, "PetFull"))) say("Guardian is already fully charged", true, t);
+        else {
+            int n = jint(jget(j, "MinEnergy"), -1);
+            say("Not enough astral energy" + (n > 0 ? ", needs " + std::to_string(n) : std::string()), true, t);
+        }
     } else if (script == "StoreContentOverview" && fn == "GetItemsInCategory") {
         // paging / tab change on a Store content page; a category other than the page itself (skins per fighter) is named
         json j = json::parse(js, nullptr, false, true);
@@ -1821,12 +1835,78 @@ void Narrator::on_ga_focus(const std::string& swf, const json& rec, const std::s
         return;
     }
     if (swf == "GA_SpiritLair.swf") {
-        // a row of guardian decks (one per guardian type, spiritPetData[i]); Left/Right change deck, Up/Down the card in it
-        // (the popups' .visible flags are always true, so they are not used as gates)
+        // a row of guardian decks (one per guardian type, spiritPetData[i]); Left/Right change deck, Up/Down the card.
+        // Enter opens the details popup (Up/Down its cards), Enter again the recharge popup (Left/Right the amount),
+        // all gated by their timeline labels (the .visible flags are always true)
+        auto open = [](const std::string& l) { return !l.empty() && l != "Off" && l != "BuildOff"; };
         const json& dg = jget(jget(rec, "groups"), "decks");
+        int deckIdx = dg.is_object() && jget(dg, "index").is_number() ? jint(jget(dg, "index")) : -1;
+        const json& pets = jget(jget(populate_, swf.c_str()), "spiritPetData");
+        if (open(jstr(probe, "dismantleState"))) {
+            std::string lk = swf + "|dismantle";
+            if (!last_probe_.count(lk)) {
+                last_probe_[lk] = "1";
+                std::string ti = S.resolve(std::string("GA_MODE_SPIRITPET_DISMANTLE_POPUP_TITLE"));
+                std::string de = S.resolve(std::string("GA_MODE_SPIRITPET_DISMANTLE_POPUP_DESC"));
+                std::vector<std::string> parts{startsWith(ti, "GA_MODE") ? "Dismantle guardian?" : ti};
+                if (!de.empty() && !startsWith(de, "GA_MODE")) parts.push_back(de);
+                parts.push_back(key_labels_["ABUTTON"] + ": dismantle, " + key_labels_["BBUTTON"] + ": cancel");
+                say(join(parts, ". "), false, t);
+            }
+            return;
+        }
+        last_probe_.erase(swf + "|dismantle");
+        if (open(jstr(probe, "rechargeState"))) {
+            // feed astral energy: Left/Right set the amount; the popup's own texts carry the cost and the wallet
+            json w = clean(jget(probe, "rechargeWallet")), need = clean(jget(probe, "rechargeNeed"));
+            std::string text = isNone(need) ? "" : sv(need);
+            if (!isNone(w)) text += (text.empty() ? "" : ", ") + sv(w);
+            if (text.empty()) return;
+            std::string lk = swf + "|recharge";
+            bool first = last_probe_.find(lk) == last_probe_.end();
+            if (!first && last_probe_[lk] == text) return;
+            last_probe_[lk] = text;
+            say((first ? "Recharge guardian. Left and Right set the amount, " + key_labels_["ABUTTON"] + " feeds. " : "") + text, !first, t);
+            return;
+        }
+        last_probe_.erase(swf + "|recharge");
+        if (open(jstr(probe, "popupState"))) {
+            // details popup: the focused deck's card, its energy and abilities
+            int card = jint(jget(probe, "cardIdx"), -1);
+            std::vector<std::string> parts;
+            std::string name, desc;
+            if (pets.is_array() && deckIdx >= 0 && deckIdx < (int)pets.size()) {
+                const json& p = pets[deckIdx];
+                name = S.resolve(jget(p, "name"));
+                desc = S.resolve(jget(p, "instructions"));
+                parts.push_back(name.empty() ? "Guardian details" : name + " details");
+                const json& inv = jget(p, "inventory");
+                int n = inv.is_array() ? (int)inv.size() : 0;
+                int c = card >= 0 && card < n ? card : 0;
+                if (n > 0 && inv[c].is_object()) {
+                    const json& cd = inv[c];
+                    if (n > 1) parts.push_back("card " + std::to_string(c + 1) + " of " + std::to_string(n));
+                    int cur = jint(jget(cd, "currentAstralEnergy"), -1), mx = jint(jget(cd, "maxAstralEnergy"), -1);
+                    if (cur >= 0 && mx > 0) parts.push_back("energy " + std::to_string(cur) + " of " + std::to_string(mx));
+                    const json& abs = jget(cd, "abilities");
+                    if (abs.is_array()) for (const auto& a : abs) {
+                        std::string an = S.resolve(jget(a, "name")), ad = S.resolve(jget(a, "desc"));
+                        if (!an.empty()) parts.push_back(an + (ad.empty() ? "" : ": " + ad));
+                    }
+                }
+            } else parts.push_back("Guardian details");
+            std::string text = join(parts, ". ");
+            std::string lk = swf + "|petpopup";
+            bool first = last_probe_.find(lk) == last_probe_.end();
+            if (!first && last_probe_[lk] == text) return;
+            last_probe_[lk] = text;
+            last_focus_ = json{{"swf", swf}, {"label", name}, {"desc", desc}};
+            say(text, !first, t);
+            return;
+        }
+        last_probe_.erase(swf + "|petpopup");
         if (!dg.is_object() || !jget(dg, "index").is_number()) return;
         int i = jint(jget(dg, "index"));
-        const json& pets = jget(jget(populate_, swf.c_str()), "spiritPetData");
         std::vector<std::string> parts;
         std::string name, desc;
         if (pets.is_array() && i >= 0 && i < (int)pets.size()) {
@@ -1849,6 +1929,72 @@ void Narrator::on_ga_focus(const std::string& swf, const json& rec, const std::s
         last_probe_[fk] = key;
         last_focus_ = json{{"swf", swf}, {"label", name}, {"desc", desc}};
         say(join(parts, ", "), base_why != "ScreenShown", t);
+        return;
+    }
+    if (swf == "GA_Archives.swf") {
+        // four category tiles -> a grid of entries (fighters, dossiers, videos); the focused entry's name and
+        // description are the screen's own text, the dossier reading view pages with Up/Down
+        auto open = [](const std::string& l) { return !l.empty() && l != "Off" && l != "BuildOff"; };
+        if (open(jstr(probe, "detailState"))) {
+            json ti = clean(jget(probe, "detailTitle")), bo = clean(jget(probe, "detailBody"));
+            std::string text = isNone(ti) ? "" : sv(ti);
+            if (!isNone(bo)) text += (text.empty() ? "" : ". ") + sv(bo);
+            if (text.empty()) return;
+            std::string lk = swf + "|detail";
+            bool first = last_probe_.find(lk) == last_probe_.end();
+            if (!first && last_probe_[lk] == text) return;
+            last_probe_[lk] = text;
+            last_focus_ = json{{"swf", swf}, {"label", isNone(ti) ? "" : sv(ti)}, {"desc", isNone(bo) ? "" : sv(bo)}};
+            say((first ? "Dossier. Up and Down turn the pages, " + key_labels_["BBUTTON"] + " closes. " : "") + text, !first, t);
+            return;
+        }
+        last_probe_.erase(swf + "|detail");
+        struct View { const char* state; const char* title; const char* desc; };
+        static const View VIEWS[] = {{"invState", "invTitle", "invDesc"}, {"subState", "subTitle", "subDesc"}, {"charState", "charTitle", nullptr}};
+        for (const View& v : VIEWS) {
+            if (!open(jstr(probe, v.state))) continue;
+            json ti = clean(jget(probe, v.title));
+            if (isNone(ti)) return;
+            std::string text = sv(ti);
+            // position among the grid's entries, matched by name in the list that filled it
+            const json& content = jget(populate_["GA_Archives.swf:content"], "content");
+            if (verbosity_ >= 1 && content.is_array() && !content.empty()) {
+                for (int i = 0; i < (int)content.size(); i++) {
+                    if (lower(strip(S.resolve(jget(content[i], "name")))) != lower(strip(text))) continue;
+                    text += ", " + std::to_string(i + 1) + " of " + std::to_string(content.size());
+                    break;
+                }
+            }
+            json de = v.desc ? clean(jget(probe, v.desc)) : json(nullptr);
+            if (!isNone(de) && verbosity_ >= 1) text += ". " + sv(de);
+            std::string lk = swf + "|entry";
+            bool first = last_probe_.find(lk) == last_probe_.end();
+            if (!first && last_probe_[lk] == text) return;
+            last_probe_[lk] = text;
+            last_focus_ = json{{"swf", swf}, {"label", sv(ti)}, {"desc", isNone(de) ? "" : sv(de)}};
+            say(text, !first, t);
+            return;
+        }
+        last_probe_.erase(swf + "|entry");
+        // the main screen: four category tiles, named like the tab list in the payload
+        const json& cg = jget(jget(rec, "groups"), "cats");
+        if (cg.is_object() && jget(cg, "index").is_number()) {
+            int i = jint(jget(cg, "index"));
+            const json& tabs = jget(jget(populate_, swf.c_str()), "navigationTabData");
+            std::string name;
+            if (tabs.is_array() && i >= 0 && i < (int)tabs.size()) {
+                name = S.resolve(jget(tabs[i], "key"));
+                if (jtruthy(jget(tabs[i], "notification"))) name += ", new content";
+            }
+            if (name.empty()) name = "category " + std::to_string(i + 1);
+            if (verbosity_ >= 1) name += ", " + std::to_string(jint(jget(cg, "pos")) + 1) + " of " + std::to_string(jint(jget(cg, "count")));
+            std::string lk = swf + "|cat";
+            if (last_probe_.count(lk) && last_probe_[lk] == name) return;
+            bool first = last_probe_.find(lk) == last_probe_.end();
+            last_probe_[lk] = name;
+            last_focus_ = json{{"swf", swf}, {"label", name}, {"desc", ""}};
+            say(name, !first, t);
+        }
         return;
     }
     if (swf == "GA_WarRoom.swf") {
