@@ -1,0 +1,6 @@
+Sightless Kombat's feature/bug report
+• the game always says 0 turns remaining, even if you still have turns to take each day.,
+• It seems to be using the results of the last fighter at the end of the Shadow Lords mission - I played as Jago and won, but the end result seemed to be tracking Kim Wu's health and rewards instead, as if I'd just won the last fight. Not sure why this is.,
+• The mission text at the end of matches, where you'll get choices etc, isn't waiting to read that text, just skipping to read the choice (so you'd just hear "open the container, 1 of 3") rather than the dialogue that led to it.,
+• Correct me if I'm wrong, but is there a way to check your KI Gold, astral gems, astral energy etc?,
+• Finally, I'd check if the consumables have information on the mission screen as to what they do, as if so, that information is not currently read. (I think this is currently read by the description key, maybe we need to set verbosity to read everything by default and let the user decide when they want to lower it.)

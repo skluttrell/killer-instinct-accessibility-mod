@@ -1,5 +1,5 @@
 Killer Instinct Accessibility Mod
-v.0.2.3
+v.0.2.4
 
 Purpose:
 
@@ -8,9 +8,9 @@ Adds screen reader output to the menus of Killer Instinct (Steam version, free b
 Known Issues:
 
 * This is a TEST BUILD. The mod writes kiaccess\speech.log in your Killer Instinct folder each session with every announcement. If anything goes wrong, please attach that file to your bug report.
-* Shadow Lords: the cards of a pack you open in the Emporium (press Right to turn each card, Escape to leave the pack) are read from this version on, but that reader has not been tested with a real purchase yet; please report what you hear. Not read yet are the artifact list in the Barracks, the guardian details and recharge popups in the Spirit Lair, the Archives, the leaderboard and the daily rewards panel. The subtitles of the story cinematics are not spoken either; the cinematics are voiced.
+* Shadow Lords: the cards of a pack you open in the Emporium (press Right to turn each card, Escape to leave the pack) have not been tested with a real purchase yet; please report what you hear. Not read yet are the guardian details and recharge popups in the Spirit Lair, the Archives, the leaderboard and the daily rewards panel in the hub (the one in the main menu is read). The subtitles of the story cinematics are not spoken either; the cinematics are voiced.
 * When a popup opens, the first thing spoken can be a button of the previous popup (for example "Purchase 300 KI Gold" just before "Exit Shadow Lords?"). The popup itself follows at once.
-* The Store and online lobbies are not read yet beyond their basic layout. The Store currently announces only "Store, bundles, item 1" and not the item names.
+* The Store's front page reads its tiles by name, but the pages behind them (Fighters, Skins, Extras and so on) and the online lobbies are not read yet beyond their basic layout.
 * The fighter appearance descriptions were written from memory of the game and have not yet been reviewed by a sighted person.
 * The opponent radar assumes you are Player 1 playing against the CPU. There is no radar for Player 2.
 * The opponent radar pauses during the "Ready, Fight" intro of a round and for up to 3 seconds after a round ends. Please keep reporting whether the pulse, its panning and its pitch are useful.
@@ -21,6 +21,20 @@ Known Issues:
 * If a future game update changes the executable so that the mod can no longer find its hook points, the narrator stays silent and writes the reason to kiaccess\speech.log. The game itself still runs normally.
 
 New in this version:
+
+* Fixed: Character Select went silent after backing out of a picked fighter (reported by anomaly420 and Sightless Kombat). Backing out of the costume or colour stage, un-readying a player, and moving to the next Shadow Lords team slot all bring the fighter cursor back to life now, on both sides.
+* Story mode (Single Player, Fight, Story) is read: each fighter's row with the selected ending, its difficulty, its unlock requirement and whether it is unlocked ("SABREWULF - ENDING 1, locked. Difficulty beginner. Unlock: Complete Story Mode. Row 2 of 8"), Left and Right move through the endings, and the season with its completion is announced on entry (reported by anomaly420 as "it just says item 1 2 or 3").
+* Store: the tiles are numbered among the ones you can reach, so the first is "Bundles, 1 of 7" instead of "2 of 8" (the unreachable "What's New" banner was counted before).
+* Ctrl+Shift+I reads your Shadow Lords status on demand: KI gold, astral gems, astral energy, the turn with your record, and every fighter's health or state (requested by two testers).
+* Shadow Lords Barracks: the artifact inventory of a fighter is read (it was silent): opening it announces the fighter with their condition, then each artifact with its tier, position and effect as you move; Q and E switch tiers. A dead fighter is announced as "dead" in the roster instead of "health: 0%" (reported with the dead-fighter screenshot).
+* Shadow Lords War Room: the mission line no longer ends in the meaningless "(0) Turns Remaining" (the game never shows that text; reported by Sightless Kombat).
+* Shadow Lords match rewards: the screen was announced from the previous match's data, so it could name the wrong fighter with the wrong health and rewards (reported by Sightless Kombat); it now waits for the fresh payload. On a team mission every fighter's health is read.
+* Shadow Lords: the choices of an encounter that opens right after a mission fight are read as you move through them (they were silent when the encounter appeared on top of the loadout screen; reported with the Relic Hunt screenshot).
+* Shadow Lords: the consumable picker, the guardian picker and the Barracks artifacts read the item's effect at normal verbosity, not only at the highest one (requested by Sightless Kombat).
+* Versus screen of a Shadow Lords mission: both sides' buffs are read ("your buffs: Ram, Odorous Wolf Heart, +10% DMG +10% DEF. enemy buffs: Power Level II, Vampirism, +10% DMG"; requested with the vs-screen screenshot).
+* Colour stage of Character Select: each colour now comes with a brief hint of its look ("Color 2, 2 of 17, mainly dark red"), derived from the game's textures; the full description stays on Ctrl+Shift+A (requested in beta feedback).
+
+New in v0.2.3:
 
 * Shadow Lords War Room: the mission start is now fully spoken. After Launch, the Fight / Deploy confirmation reads the focused button ("FIGHT", or "DEPLOY, Success Chance 99%") with Left and Right to switch and Ctrl+Shift+D for the button's description; on a mission that must be fought it says "Deploy unavailable" instead of a position. Enter on FIGHT starts the match.
 * Shadow Lords loadout: the consumable picker reads the focused item with how many you own, its tier and position ("Gibraltar Shield Mk III, 1 owned, Rare, 1 of 2"; Q and E switch tiers, Ctrl+Shift+D reads the effect), and the guardian picker reads the guardian with its energy ("Ram, energy 4 of 5, Common, 1 of 1") and the recharge popup when a drained guardian is chosen.

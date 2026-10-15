@@ -23,6 +23,7 @@ public:
     // hotkeys
     void repeat();
     void read_desc();
+    void read_status();
     void read_appearance();                // Ctrl+Shift+A: physical appearance of the fighter on Character Select
     void read_ticker();
     void cycle_verbosity();
@@ -70,6 +71,7 @@ private:
     // Shadow Lords
     int preload_dialog_i_ = 0;             // next line of the versus-screen dialogue (dialogData index)
     std::string ga_announced_;             // GA screen whose ScreenShown summary was spoken last
+    std::string ga_summary_pending_;       // GA screen announced before its Populate arrived: summary owed
     json sl_prompts_ = json::object();     // tutorial prompt state -> string keys (data\sl_prompts.json, from the GA_FTUE classes)
     json encounter_;                       // last War Room encounter popup payload (title, description, options / rewards / results)
     int mission_idx_ = -1;                 // War Room mission under the cursor (AS_UpdateMissionSelection), re-read when the loadout popup closes
@@ -87,10 +89,12 @@ private:
     void say_popup(const json& data);
     void say_match_outcome(const json& data);
     void on_stage_changed(const std::string& js, int64_t t);
+    void on_story_focus(const json& rec, int64_t t);
     void on_move_selected(const std::string& js, int64_t t);
     void on_controller_focus(const json& rec, const json& probe, bool deferred);
     json cs_fighter(const json& idx);
     std::string cs_fighter_text(const json& e);
+    std::string color_brief(const std::string& code, const std::string& costume, int num);
     void on_charselect_ei(const std::string& fn, const std::string& js, int64_t t);
     void on_charselect_focus(const json& rec);
     json mm_entries();

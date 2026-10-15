@@ -22,8 +22,8 @@ static HANDLE s_hotkeyThread = nullptr;
 static DWORD s_hotkeyThreadId = 0;
 static bool s_initialized = false;
 
-// ---- hotkeys: Ctrl+Shift+R repeat, D description, A fighter appearance, T ticker, V verbosity, Q toggle narration, U unload (development) ----
-enum { HK_REPEAT = 1, HK_DESC, HK_APPEARANCE, HK_TICKER, HK_VERBOSITY, HK_TOGGLE, HK_RADAR, HK_UNLOAD };
+// ---- hotkeys: Ctrl+Shift+R repeat, D description, A fighter appearance, T ticker, I Shadow Lords status, V verbosity, Q toggle narration, U unload (development) ----
+enum { HK_REPEAT = 1, HK_DESC, HK_APPEARANCE, HK_TICKER, HK_STATUS, HK_VERBOSITY, HK_TOGGLE, HK_RADAR, HK_UNLOAD };
 static void unloadSelf();
 
 // The hotkeys are system-wide while registered, which would take Ctrl+Shift+R and friends away from every other program
@@ -38,7 +38,7 @@ static bool gameHasFocus() {
 }
 
 static DWORD WINAPI hotkeyThread(LPVOID) {
-    const std::pair<int, int> keys[] = {{HK_REPEAT, 'R'}, {HK_DESC, 'D'}, {HK_APPEARANCE, 'A'}, {HK_TICKER, 'T'}, {HK_VERBOSITY, 'V'}, {HK_TOGGLE, 'Q'}, {HK_RADAR, 'P'}, {HK_UNLOAD, 'U'}};
+    const std::pair<int, int> keys[] = {{HK_REPEAT, 'R'}, {HK_DESC, 'D'}, {HK_APPEARANCE, 'A'}, {HK_TICKER, 'T'}, {HK_STATUS, 'I'}, {HK_VERBOSITY, 'V'}, {HK_TOGGLE, 'Q'}, {HK_RADAR, 'P'}, {HK_UNLOAD, 'U'}};
     bool registered = false;
     auto setRegistered = [&](bool on) {
         if (on == registered) return;
@@ -61,6 +61,7 @@ static DWORD WINAPI hotkeyThread(LPVOID) {
             case HK_DESC: s_nar->read_desc(); break;
             case HK_APPEARANCE: s_nar->read_appearance(); break;
             case HK_TICKER: s_nar->read_ticker(); break;
+            case HK_STATUS: s_nar->read_status(); break;
             case HK_VERBOSITY: s_nar->cycle_verbosity(); break;
             case HK_RADAR: {
                 bool on = !radar::enabled();

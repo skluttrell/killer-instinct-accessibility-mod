@@ -1,0 +1,7 @@
+anomaly420 feature/bug report
+* In the story menu, it just says item 1 2 or 3.
+Relevant screenshot: "C:\Users\sklut\Documents\Programming\Claude\killer_instinct\Screenshots\2026-10-13_09-35-30-single_player-fight-story.jpg"
+
+* I may have found a bug, but I have to try and replicate it to be sure. On the character selection screen, if you back out of a character on p2 side and try to choose a different one, speech becomes silent and does not read the character you are highlighting.
+(I have confirmed this and it happens to both player 1 and player 2. Selecting a character and backing back out to the character select screen for either player 1 or player 2 causes speech to go silent.
+From Sightless Kombat: Also occurs when choosing a Shadow Lords team. Choose your first character, then go to choose your second, you should hear nothing speaking instead of the character announcements that should be there.)

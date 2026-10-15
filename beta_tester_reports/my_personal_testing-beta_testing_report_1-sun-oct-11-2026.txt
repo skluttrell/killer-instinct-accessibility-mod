@@ -1,0 +1,38 @@
+***
+In the middle, the Relic Hunt text box reads:
+“ARIA tells you to go to Kan-Ra’s lair in the Sahara Desert. You trek across the blazing sands and arrive at the Forbidden Archive. The desiccated figure of the sorcerer appears before you, materializing from a whirlwind of sand…”
+
+Below that text there are two blue choice buttons:
+Greet Kan-Ra courteously
+Insult the sorcerer’s appearance
+***
+Choices like this need to be read when I move through them.
+Relevant screenshot: "C:\Users\sklut\Documents\Programming\Claude\killer_instinct\Screenshots\2026-10-11_11-04-00-war_room_choices.jpg"
+----
+I think knowing the statistics on this vs screen would be helpful for people. It is presented when you select and launch a mission after the cinematic.
+
+Left:
+JAGO
+Health: 100%
+Ram (with a green circular icon)
+Odorous Wolf Heart (with a green spiky icon)
+At the very bottom under Jago’s side:
++10% DMG +10% DEF
+
+Right:
+SHADOW JAGO
+Health: 110%
+Power Level II
+Vampirism
+Overdrive
+At the very bottom under Shadow Jago’s side:
++10% DMG
+
+Relevant screenshot: "C:\Users\sklut\Documents\Programming\Claude\killer_instinct\Screenshots\2026-10-11_17-40-04-vs_screen.jpg"
+---
+When a character is dead and you select them in the War Room, nothing is read.
+Relevant screenshot: "C:\Users\sklut\Documents\Programming\Claude\killer_instinct\Screenshots\2026-10-11_17-46-16-death_screen.jpg"
+---
+There needs to be a key for the player to hear their currency and other information in the War Room on demand instead of just when they enter the hub.
+---
+I would like a very brief color description on the costume select screen instead of just a number. Something like the main color and a secondary highlight. If the player want's a complete description, they can use the ctrl+shift description key. If you need to see what the costumes look like, my suggestion would be to take screenshots at the costume select screen as you move through the options.

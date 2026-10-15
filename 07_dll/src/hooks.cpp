@@ -181,6 +181,9 @@ static uint64_t hookDispatcher(void* wrapper, const char* method, GValue* args, 
     if (s_enabled && trigger && gfx::g_root) {
         if (swf.empty()) { swf = gfx::rootCallStr("root.GetActiveSWF"); if (!swf.empty()) s_currentSwf = swf; }
         if (!swf.empty()) { deliverFocus(snap::snapshot(swf, fn)); schedule(swf, fn); }
+        // after a mission the War Room's encounter popup sits on top of the loadout popup: its choice cursor
+        // only shows through the War Room's probes, so give that movie a look as well
+        if (swf == "GA_Loadout_Popup.swf" && fn == "PlaySoundString") deliverFocus(snap::snapshot("GA_WarRoom.swf", fn));
     }
     return ret;
 }

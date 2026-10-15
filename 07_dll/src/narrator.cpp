@@ -336,6 +336,12 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
             if ((fn == "Refresh" || partial) && populate_[swf].is_object()) populate_[swf].update(data);
             else populate_[swf] = data;
             data = populate_[swf];
+            if (swf == ga_summary_pending_ && swf == ga_announced_) {
+                // the screen was announced before its payload arrived (match rewards): speak the summary now
+                ga_summary_pending_.clear();
+                std::string s = ga_summary(swf);
+                if (s.size() > 2) say(s.substr(2), false);
+            }
             if (g_cfg.dumpPopulate) writeFile(dataDir() + L"data\\populate_" + wide(replaceAll(swf, ".swf", "")) + L".json", data.dump(1));
             if (swf == "OptionsMenu.swf") options_state_ = {jtruthy(jget(data, "GraphicsOptionOnly")) ? "Graphics" : "Main"};
             if (swf == "MainMenu.swf") { std::string st = jstr(data, "InitialState"); mm_state_ = {st.empty() ? "SinglePlayer" : st}; }
@@ -389,6 +395,9 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
             say(names.empty() ? "Loading" : "Loading. " + join(names, " versus "), true);
         } else if (swf == "StageSelect.swf") {
             last_probe_.erase("StageSelect.swf|stage");
+        } else if (swf == "Story.swf") {
+            last_probe_.erase("Story.swf|sel");
+            last_probe_.erase("Story.swf|season");
         } else if (swf == "MatchOutcome.swf" && data.is_object()) {
             say_match_outcome(data);
         }
@@ -585,7 +594,11 @@ void Narrator::on_ei(const std::string& script, const std::string& fn, const std
             hasLast_ = false;
             last_probe_.erase(swf + "|tab");   // re-announce the hub's focused tab each time the hub appears
             last_probe_.erase(swf + "|focus");
+            // the rewards screen's fresh Populate lands after ScreenShown; the stored one is the previous
+            // match's (it read the wrong fighter's health and rewards), so wait for the new payload
+            if (swf == "GA_MatchRewards.swf") populate_.erase(swf);
             std::string s = ga_summary(swf);
+            ga_summary_pending_ = s.size() > 2 ? "" : swf;
             if (named) { if (s.size() > 2) say(s.substr(2), false, t); }
             else say(screenName(swf) + s, true, t);
         }
@@ -597,8 +610,11 @@ void Narrator::on_ei(const std::string& script, const std::string& fn, const std
         if (chars.is_array() && i >= 0 && i < (int)chars.size()) {
             const json& c = chars[i];
             std::vector<std::string> parts{S.resolve(jget(c, "name"))};
+            static const char* ROSTER_STATUS[] = {nullptr, "unavailable", "in a match", "deployed", "captured", "dead"};
+            int st = jint(jget(c, "status"), 0);
+            if (st >= 1 && st <= 5 && ROSTER_STATUS[st]) parts.push_back(ROSTER_STATUS[st]);
             std::string hp = S.resolve(jget(c, "healthDesc"));
-            if (!hp.empty()) parts.push_back(lower(hp));
+            if (!hp.empty() && st != 5) parts.push_back(lower(hp));
             if (verbosity_ >= 1) parts.push_back(std::to_string(i + 1) + " of " + std::to_string(chars.size()));
             if (jtruthy(jget(c, "isPrimary"))) parts.push_back("captain");
             std::string loc = strip(S.resolve(jget(c, "location"))), days = strip(S.resolve(jget(c, "daysRemaining")));
@@ -677,6 +693,50 @@ void Narrator::on_stage_changed(const std::string& js, int64_t t) {
     last_probe_["StageSelect.swf|stage"] = text;
     last_focus_ = json{{"swf", "StageSelect.swf"}, {"index", n - 1}, {"label", text}, {"desc", ""}, {"value", nullptr}};
     say(text, true, t);
+}
+
+// ---- story mode (a season's ladder: one row per fighter, three endings each; the detail panel bottom right
+// always shows the current selection already resolved, so the screen text is the source of truth) ----
+void Narrator::on_story_focus(const json& rec, int64_t t) {
+    const json& probe = jget(rec, "probe");
+    json item = clean(jget(probe, "item"));
+    if (isNone(item)) return;   // detail panel not populated yet
+    std::string text = sv(item);
+    json reqJ = clean(jget(probe, "req")), diffJ = clean(jget(probe, "diff"));
+    std::string req = isNone(reqJ) ? "" : sv(reqJ);
+    std::string diff = isNone(diffJ) ? "" : sv(diffJ);
+    int idx = jint(jget(rec, "index"), -1);
+    // locked state from the Populate payload: row = index, ending = the digit in "<NAME> - ENDING n"
+    int ending = 0;
+    if (!text.empty() && isdigit((unsigned char)text.back())) ending = text.back() - '0';
+    const json& data = jget(populate_, "Story.swf");
+    const json& arr = jget(data, jint(jget(data, "Season"), 1) == 2 ? "Season2" : "Season1");
+    std::string locked;
+    if (arr.is_array() && idx >= 0 && idx < (int)arr.size() && ending >= 1 && ending <= 3) {
+        const json& u = jget(jget(arr[idx], "EndingData"), ("Ending" + std::to_string(ending) + "Unlocked").c_str());
+        if (u.is_boolean()) locked = u.get<bool>() ? ", unlocked" : ", locked";
+    }
+    std::string prefix;
+    json seas = clean(jget(probe, "season"));
+    if (!isNone(seas)) {   // spoken once per season (the shoulder buttons page between seasons on some accounts)
+        std::string s = sv(seas), k = "Story.swf|season";
+        if (!last_probe_.count(k) || last_probe_[k] != s) {
+            last_probe_[k] = s;
+            prefix = s;
+            json comp = clean(jget(probe, "complete"));
+            if (!isNone(comp)) prefix += ", " + lower(sv(comp));
+            prefix += ". ";
+        }
+    }
+    std::string out = text + locked;
+    if (!diff.empty()) out += ". Difficulty " + lower(diff);
+    if (!req.empty()) out += ". Unlock: " + req;
+    if (verbosity_ >= 1 && arr.is_array() && idx >= 0) out += ". Row " + std::to_string(idx + 1) + " of " + std::to_string(arr.size());
+    std::string mk = "Story.swf|sel";
+    if (last_probe_.count(mk) && last_probe_[mk] == out) return;
+    last_probe_[mk] = out;
+    last_focus_ = json{{"swf", "Story.swf"}, {"index", idx}, {"label", text}, {"desc", req}, {"value", nullptr}};
+    say(prefix + out, true, t);
 }
 
 // ---- stage of the match that just loaded ----
@@ -845,15 +905,27 @@ void Narrator::on_charselect_ei(const std::string& fn, const std::string& js, in
         for (auto it = sel["selectionData"].begin(); it != sel["selectionData"].end(); ++it) merged[it.key()] = it.value();
         sel = merged;
     }
-    int side = jint(jget(sel, "PlayerIndex"));
+    int side = jint(jget(sel, "PlayerIndex"), -1);
+    if (side < 0) side = jint(jget(sel, "Index"));   // AS_ResetPlayerSelection carries {"Index":n}
     bool confirmed = jtruthy(jget(sel, "Confirmed"));
     const json& data = jget(populate_, "CharacterSelect.swf");
     std::string fname = jstr(sel, "Name");
     std::string p2 = side == 1 ? "Player 2: " : "";
-    if (fn == "AS_SetSelections" && side == 1 && cs_stage_[0] == "waiting" && cs_stage_[1] == "fighter") {
-        cs_active_ = 1;   // Player 1 is ready and now drives the Player 2 (dummy / CPU) cursor
-        cs_last_.erase("fighter|1");
-        say("Now choosing Player 2's fighter", true, t);
+    if (fn == "AS_SetSelections") {
+        if (side == 1 && cs_stage_[0] == "waiting" && cs_stage_[1] == "fighter" && cs_active_ != 1) {
+            cs_active_ = 1;   // Player 1 is ready and now drives the Player 2 (dummy / CPU) cursor
+            cs_last_.erase("fighter|1");
+            say("Now choosing Player 2's fighter", true, t);
+            return;
+        }
+        // keep the stage in step with the game: one Back from the costume stage (and the next Shadow Lords
+        // team slot) only announces itself as an unconfirmed AS_SetSelections, so this is where the fighter
+        // cursor comes back to life
+        if (!confirmed) {
+            if (cs_stage_[side] != "fighter") { cs_stage_[side] = "fighter"; cs_last_.erase("fighter|" + std::to_string(side)); }
+        } else if (jtruthy(jget(sel, "isColorConfirmed"))) cs_stage_[side] = "waiting";
+        else if (jtruthy(jget(sel, "isCostumeConfirmed"))) cs_stage_[side] = "color";
+        else cs_stage_[side] = "costume";
         return;
     }
     if (fn == "AS_PlayerPickedFighter") {
@@ -864,6 +936,7 @@ void Narrator::on_charselect_ei(const std::string& fn, const std::string& js, in
         std::string disp = fname.empty() ? "Fighter" : fighterName(lower(fname), fname);
         say(p2 + disp + " chosen. Costume", true, t);
     } else if (fn == "AS_PlayerPickedCostume") {
+        if (!confirmed) cs_stage_[side] = "costume";   // stepping back from the color stage re-sends this unconfirmed
         const json& costumes = jget(jget(data, "CostumeSelection"), fname.c_str());
         const json& ci = jget(sel, "CostumeIndex");
         if (jisInt(ci)) cs_costume_[side] = ci.get<int>();
@@ -883,6 +956,7 @@ void Narrator::on_charselect_ei(const std::string& fn, const std::string& js, in
         else if (!cs_last_.count(lk) || cs_last_[lk] != text) say(p2 + text, true, t);
         cs_last_[lk] = text;
     } else if (fn == "AS_PlayerPickedColor") {
+        if (!confirmed) cs_stage_[side] = "color";   // un-readying a player re-sends the color unconfirmed
         const json& colors = cs_colors_[side];
         const json& bi = jget(sel, "ColorIndex");
         std::string text;
@@ -902,9 +976,20 @@ void Narrator::on_charselect_ei(const std::string& fn, const std::string& js, in
             cs_color_[side] = num > 0 ? num : pos + 1;
             cs_color_name_[side] = pos >= 0 ? S.resolve(jget(colors[pos], "name")) : "";
         }
+        {   // brief hint of what the colour looks like (the full line stays on the appearance hotkey)
+            std::string cname = cs_color_name_.count(side) ? lower(cs_color_name_[side]) : "";
+            auto fc = cs_fighter_code_.find(side);
+            if (fc != cs_fighter_code_.end() && cs_color_[side] > 1 && startsWith(cname, "color")) {
+                std::string costume = cs_costume_.count(side) && cs_costume_[side] == 1 ? "retro" : "default";
+                std::string brief = color_brief(fc->second, costume, cs_color_[side]);
+                if (!brief.empty()) text += ", mainly " + brief;
+            }
+        }
         if (confirmed) { cs_stage_[side] = "waiting"; say(p2 + text + " chosen. Ready", true, t); }
         else if (!cs_last_.count(lk) || cs_last_[lk] != text) say(p2 + text, true, t);
         cs_last_[lk] = text;
+    } else if (fn == "AS_PlayerUnready") {
+        if (cs_stage_[side] == "waiting") cs_stage_[side] = "color";   // the unconfirmed AS_PlayerPickedColor that follows speaks
     } else if (fn == "AS_ResetPlayerSelection") {
         cs_stage_[side] = "fighter";
         cs_costume_.erase(side);
@@ -1079,6 +1164,7 @@ void Narrator::on_focus(const json& rec) {
         say((first ? "Music. " : "") + text, true, t);
         return;
     }
+    if (swf == "Story.swf") { on_story_focus(rec, t); return; }
     if (isNone(jget(rec, "index")) || swf == "CommandList.swf") return;
     const json& probe = jget(rec, "probe");
     if (swf == "ControllerConfig.swf") { on_controller_focus(rec, probe, deferred); return; }
@@ -1195,6 +1281,23 @@ void Narrator::on_focus(const json& rec) {
         }
     }
     std::string labelS = S.resolve(label);
+    if (swf == "StoreMain.swf" && !labelS.empty()) {
+        // the scan counts every visible tile, but the "What's New" tile can never take focus ("where is 1?"):
+        // number the selectable tiles from the Populate instead
+        const json& opts = jget(jget(populate_, "StoreMain.swf"), "Options");
+        if (opts.is_array()) {
+            int p = -1, n = 0;
+            for (const auto& o : opts) {
+                if (jget(o, "canBeHighlighted").is_boolean() && !jget(o, "canBeHighlighted").get<bool>()) continue;
+                if (jtruthy(jget(o, "hidden"))) continue;
+                std::string ol = S.resolve(jget(o, "key"));
+                if (ol.empty() || ol == jstr(o, "key")) ol = jstr(o, "debugText");
+                if (lower(ol) == lower(labelS)) p = n;
+                n++;
+            }
+            if (p >= 0) { pos = p; count = n; }
+        }
+    }
     std::string descS = jtruthy(desc) ? S.resolve(desc) : "";
     bool haveValue = jtruthy(value);
     std::string valueS = haveValue ? S.resolve(value) : "";
@@ -1270,6 +1373,20 @@ std::string Narrator::ga_summary(const std::string& swf) {
         std::string ph = S.resolve(jget(p, "healthDesc")), eh = S.resolve(jget(e, "healthDesc"));
         if (!ph.empty() && ph == eh) parts.push_back(ph);
         else { if (!ph.empty()) parts.push_back("your " + lower(ph)); if (!eh.empty()) parts.push_back("enemy " + lower(eh)); }
+        if (verbosity_ >= 1) {
+            // each side's buff list: guardian + consumables (player), power level and perks (enemy), plus the stat line
+            auto mods = [this](const json& c) {
+                std::vector<std::string> ms;
+                const json& list = jget(c, "modifiers");
+                if (list.is_array()) for (const auto& m : list) { std::string k = S.resolve(jget(m, "key")); if (!k.empty()) ms.push_back(k); }
+                std::string st = strip(S.resolve(jget(c, "stats")));
+                if (!st.empty()) ms.push_back(st);
+                return ms;
+            };
+            std::vector<std::string> pm = mods(p), em = mods(e);
+            if (!pm.empty()) parts.push_back("your buffs: " + join(pm, ", "));
+            if (!em.empty()) parts.push_back("enemy buffs: " + join(em, ", "));
+        }
         const json& ft = jget(data, "flavorText");
         if (jtruthy(jget(ft, "visible"))) { std::string m = S.resolve(jget(ft, "string")); if (!m.empty()) parts.push_back(m); }
         if (jtruthy(jget(data, "teamMission"))) parts.push_back("team mission");
@@ -1303,9 +1420,19 @@ std::string Narrator::ga_summary(const std::string& swf) {
     } else if (swf == "GA_MatchRewards.swf") {
         const json& ok = jget(data, "missionSucces");   // sic, the game's spelling
         if (ok.is_boolean()) parts.push_back(ok.get<bool>() ? "Mission complete" : "Mission failed");
-        const json& p = combatant(jget(data, "playerData"));
-        std::string pn = S.resolve(jget(p, "name")), ph = S.resolve(jget(p, "healthDesc"));
-        if (!pn.empty() && !ph.empty()) parts.push_back(pn + " " + lower(ph));
+        const json& fighters = jget(jget(data, "playerData"), "combatants");
+        if (fighters.is_array() && fighters.size() > 1) {   // team mission: every fighter's state
+            std::vector<std::string> names;
+            for (const auto& c : fighters) {
+                std::string n = S.resolve(jget(c, "name")), h = S.resolve(jget(c, "healthDesc"));
+                if (!n.empty()) names.push_back(n + (h.empty() ? "" : " " + lower(h)));
+            }
+            if (!names.empty()) parts.push_back(join(names, ", "));
+        } else {
+            const json& p = combatant(jget(data, "playerData"));
+            std::string pn = S.resolve(jget(p, "name")), ph = S.resolve(jget(p, "healthDesc"));
+            if (!pn.empty() && !ph.empty()) parts.push_back(pn + " " + lower(ph));
+        }
         std::vector<std::string> items;
         const json& rw = jget(jget(data, "rewardsData"), "rewards");
         if (rw.is_array()) for (const auto& r : rw) {
@@ -1343,7 +1470,7 @@ std::string Narrator::ga_summary(const std::string& swf) {
         if (cur.is_object()) {
             std::string gold = S.resolve(jget(cur, "kiGoldOwned")), tok = S.resolve(jget(cur, "tokensOwned"));
             if (!gold.empty()) parts.push_back(gold + " KI gold");
-            if (!tok.empty()) parts.push_back(tok + " tokens");
+            if (!tok.empty()) parts.push_back(tok + " astral gems");
         }
     }
     return parts.empty() ? "" : ". " + join(parts, ". ");
@@ -1398,7 +1525,7 @@ void Narrator::on_ga_focus(const std::string& swf, const json& rec, const std::s
             }
             json d = clean(jget(probe, "consDesc"));
             if (!isNone(d)) desc = sv(d);
-            if (verbosity_ >= 2 && !desc.empty()) parts.push_back(desc);
+            if (verbosity_ >= 1 && !desc.empty()) parts.push_back(desc);   // what the item does is only on this screen
             text = join(parts, ", ");
             key = "cons|" + text;
         } else if (open(jstr(probe, "petState"))) {
@@ -1431,7 +1558,7 @@ void Narrator::on_ga_focus(const std::string& swf, const json& rec, const std::s
             }
             json d = clean(jget(probe, "petDesc"));
             if (!isNone(d)) desc = sv(d);
-            if (verbosity_ >= 2 && !desc.empty()) parts.push_back(desc);
+            if (verbosity_ >= 1 && !desc.empty()) parts.push_back(desc);   // what the guardian does is only on this screen
             text = join(parts, ", ");
             key = "pet|" + text;
         } else if (fg.is_object() && !jtruthy(jget(fg, "hidden")) && jget(fg, "index").is_number()) {
@@ -1479,6 +1606,44 @@ void Narrator::on_ga_focus(const std::string& swf, const json& rec, const std::s
         last_probe_[lk] = key;
         last_focus_ = json{{"swf", swf}, {"label", text}, {"desc", desc}};
         say(text, base_why != "ScreenShown", t);
+        return;
+    }
+    if (swf == "GA_Barracks.swf") {
+        // the fighter's artifact inventory (Enter on a fighter): tier tabs on Q / E, a 2 x 5 item grid, the item's
+        // name, description and "n/m" are the popup's own text (the roster itself is read from the rotation event)
+        auto open = [](const std::string& l) { return !l.empty() && l != "Off" && l != "BuildOff"; };
+        std::string lk = swf + "|inv";
+        if (!open(jstr(probe, "invState"))) { last_probe_.erase(lk); return; }
+        json title = clean(jget(probe, "invTitle")), cat = clean(jget(probe, "invCat")), pos = clean(jget(probe, "invPos"));
+        std::vector<std::string> parts;
+        bool first = last_probe_.find(lk) == last_probe_.end();
+        if (first) {
+            std::string who = isNone(clean(jget(probe, "invChar"))) ? "" : sv(clean(jget(probe, "invChar")));
+            std::string hp = isNone(clean(jget(probe, "invHealth"))) ? "" : sv(clean(jget(probe, "invHealth")));
+            parts.push_back("Artifacts" + (who.empty() ? "" : ": " + who) + (hp.empty() ? "" : ", " + lower(hp)));
+        }
+        std::string desc;
+        if (isNone(title) || sv(title).empty()) parts.push_back("no artifacts" + (isNone(cat) ? std::string() : " in " + sv(cat)));
+        else {
+            parts.push_back(sv(title));
+            if (!isNone(cat)) parts.push_back(sv(cat));
+            if (verbosity_ >= 1 && !isNone(pos)) {
+                std::string p = sv(pos);
+                size_t s = p.find('/');
+                parts.push_back(s == std::string::npos ? p : p.substr(0, s) + " of " + p.substr(s + 1));
+            }
+            json d = clean(jget(probe, "invDesc"));
+            if (!isNone(d)) desc = sv(d);
+            if (verbosity_ >= 1 && !desc.empty()) parts.push_back(desc);
+        }
+        std::string text = join(parts, ", ");
+        // keyed on the selection, not the spoken text (the one-time header would otherwise make the next probe re-speak)
+        std::string key = "inv|" + (isNone(title) ? std::string() : sv(title)) + "|" + (isNone(cat) ? std::string() : sv(cat)) + "|" + (isNone(pos) ? std::string() : sv(pos));
+        auto it = last_probe_.find(lk);
+        if (it != last_probe_.end() && it->second == key) return;
+        last_probe_[lk] = key;
+        last_focus_ = json{{"swf", swf}, {"label", isNone(title) ? "" : sv(title)}, {"desc", desc}};
+        say(text, !first, t);
         return;
     }
     if (swf == "GA_SpiritLair.swf") {
@@ -1740,8 +1905,7 @@ void Narrator::say_mission(int idx, bool interrupt, int64_t t) {
     if (!diff.empty() && diff != jstr(m, "difficulty")) parts.push_back(diff);
     if (verbosity_ >= 1) parts.push_back(std::to_string(idx + 1) + " of " + std::to_string(ms.size()));
     if (jtruthy(jget(m, "teamMission"))) parts.push_back("team mission");
-    std::string days = strip(S.resolve(jget(m, "days")));
-    if (!days.empty()) parts.push_back(days);
+    // m["days"] ("(0) Turns Remaining") is dead data: no script in GA_WarRoom.swf ever shows it, and the count is always 0
     const json& opp = jget(m, "opponents");
     if (opp.is_array() && !opp.empty()) {
         // the enemy is only shown as a portrait: ".../CharacterSelect/<code>_icon.dds", "<code>_mimic_icon.dds" for a Mimic
@@ -1783,11 +1947,74 @@ void Narrator::on_preload_dialogue(int64_t t) {
     say((speaker.empty() ? std::string(who == 0 ? "You" : "Enemy") : speaker) + ": " + text, true, t);
 }
 
+// ---- Shadow Lords status on demand (Ctrl+Shift+I): wallet, turn record, roster ----
+// Values come from the most recent Populate of the screens that carry them; each screen re-sends its payload
+// as it opens, so they are as fresh as the last screen visited.
+void Narrator::read_status() {
+    std::vector<std::string> parts;
+    for (const char* s : {"GA_HUB.swf", "GA_Barracks.swf", "GA_WarRoom.swf", "GA_Emporium.swf"}) {
+        const json& cur = jget(jget(populate_, s), "currency");
+        if (!cur.is_object()) continue;
+        std::string gold = strip(S.resolve(jget(cur, "kiGoldOwned"))), gems = strip(S.resolve(jget(cur, "tokensOwned")));
+        if (!gold.empty()) parts.push_back(gold + " KI gold");
+        if (!gems.empty()) parts.push_back(gems + " astral gems");
+        break;
+    }
+    int ae = jint(jget(jget(populate_, "GA_SpiritLair.swf"), "astralEnergyInInventory"), -1);
+    if (ae >= 0) parts.push_back(std::to_string(ae) + " astral energy");
+    const json& pt = jget(jget(populate_, "GA_WarRoom.swf"), "PlaythroughData");
+    if (pt.is_object()) {
+        int turn = jint(jget(pt, "TurnCount"), -1), w = jint(jget(pt, "Wins"), -1), l = jint(jget(pt, "Losses"), -1);
+        if (turn >= 0) parts.push_back("turn " + std::to_string(turn));
+        if (w >= 0 && l >= 0) parts.push_back(std::to_string(w) + (w == 1 ? " win, " : " wins, ") + std::to_string(l) + (l == 1 ? " loss" : " losses"));
+    }
+    const json& roster = jget(jget(populate_, "GA_WarRoom.swf"), "CharacterStatusData");
+    if (roster.is_array()) {
+        static const char* ST[] = {nullptr, "unavailable", "in a match", "deployed", "captured", "dead"};
+        std::vector<std::string> names;
+        for (const auto& c : roster) {
+            std::string n = S.resolve(jget(c, "name"));
+            if (n.empty()) continue;
+            int st = jint(jget(c, "status"), 0);
+            if (st >= 1 && st <= 5 && ST[st]) n += " " + std::string(ST[st]);
+            else { int h = jint(jget(c, "health"), -1); if (h >= 0) n += " health " + std::to_string(h) + "%"; }
+            names.push_back(n);
+        }
+        if (!names.empty()) parts.push_back(join(names, ", "));
+    }
+    say(parts.empty() ? "no Shadow Lords information yet; it fills in as screens are visited" : join(parts, ". "), true);
+}
+
 void Narrator::read_desc() {
     std::string d = jstr(last_focus_, "desc");
     if (d.empty() && current_swf_ == "CharacterSelect.swf") { read_appearance(); return; }
     say(d.empty() ? "no description" : d, true);
 }
+// The texture-derived colour line reads "Colour N: <scope>; dark blue becomes dark red, gold becomes silver, ...".
+// The brief hint for the colour grid is the first two result colours: "dark red and silver".
+std::string Narrator::color_brief(const std::string& code, const std::string& costume, int num) {
+    const json& cc = jget(jget(costume_colors_, code.c_str()), costume.c_str());
+    std::string line = jstr(cc, std::to_string(num).c_str());
+    size_t semi = line.find("; ");
+    if (semi == std::string::npos) return "";
+    std::string rest = line.substr(semi + 2);
+    if (!rest.empty() && rest.back() == '.') rest.pop_back();
+    std::vector<std::string> outs;
+    size_t start = 0;
+    while (outs.size() < 2 && start <= rest.size()) {
+        size_t end = rest.find(", ", start);
+        std::string clause = rest.substr(start, end == std::string::npos ? std::string::npos : end - start);
+        size_t b = clause.find(" becomes ");
+        if (b != std::string::npos) {
+            std::string target = clause.substr(b + 9);
+            if (outs.empty() || outs[0] != target) outs.push_back(target);   // two areas often turn the same colour
+        }
+        if (end == std::string::npos) break;
+        start = end + 2;
+    }
+    return join(outs, " and ");
+}
+
 void Narrator::read_appearance() {
     if (current_swf_ != "CharacterSelect.swf") { say("appearance descriptions are available on the character select screen", true); return; }
     int side = cs_desc_side_;
