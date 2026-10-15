@@ -24,6 +24,7 @@ New in this version:
 
 * The Store's content pages (Skins, Extras, Profile Card, Currency, Boosters and What's New) are read: the page's name on entry, then each item as you move with its price and your level where shown ("Jago Mimic Skin, Your Current Jago Level is 3, price 600, item 19"), plus "on sale", "equipped" or "locked" when they apply. The item's description is on Ctrl+Shift+D. Paging through long lists keeps the numbering.
 * The daily rewards overlay inside the Shadow Lords hub is read. It opens by itself when you have just earned a daily reward and it swallows the hub's keys while open; it now announces today's reward with its day and whether it is collected, how many of the ten days you have collected, the Multiplayer Gauntlet and Shadow Mission Loot objectives with their rewards, and that Escape closes it. Closing it says "Daily rewards closed" so you know the hub is listening again.
+* The whole Shadow Lords mission flow of v0.2.4 has now been heard on a real mission: the target-selection encounter with its choices as you move, the dossier that resolves the choice, the versus screen with the enemy's buffs, the "New Enemy Power" popup at the start of the fight, and the match rewards naming the right fighter with fresh health, win or lose.
 
 New in v0.2.4:
 

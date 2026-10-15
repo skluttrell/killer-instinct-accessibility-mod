@@ -82,10 +82,43 @@ among the Populate entries with `canBeHighlighted && !hidden`: "Bundles, 1 of 7"
 "becomes" targets of the colour's line — "Color 2, 2 of 17, mainly dark red". Full line stays on
 Ctrl+Shift+A. Skins (Mimic/Shadow/Gold) and Colour 1 get no hint.
 
+## Midday additions (committed 9de8d91)
+
+* **Store content pages** (StoreContentOverview.swf — Skins, Extras, Profile Card, Currency, Boosters,
+  What's New): `ei PreviewItem {Id}` fires on every cursor move; items come from `inv PopulateItems`
+  (a 6-item window, `MinIndex` from `GetItemsInCategory` keeps the numbering continuous). Verified live
+  on Skins (paging) and Boosters. The Bundles and Fighters tiles open different movies (StoreBundles /
+  StoreFighters), still unread.
+* **Hub daily rewards overlay**: `PopulateDailyRewardExpanded.dailyRewardData` with
+  `currentRewardData{displayName, day, quantity, completed}`, `previewRewardData[10]`,
+  `multiplayerRewardData[4]` / `shadowMissionRewardData[3]` `{title, reward, completed}` (fields from
+  the GA_HUB decompile, GA_Daily_Rewards_Expanded.Populate). It auto-opens from
+  `GA_HUB.AS_BuildOnComplete` only right after a daily reward is earned, so the expanded announcement
+  could not be re-triggered the same day; the close path and the quiet no-open path were verified live.
+
+## Post-match flow verified on a real mission (2026-10-15 midday, user-approved burn)
+
+Played Cleanup Protocol (Turn 3, Fulgore vs a buffed clone) end to end with fightbot. All of the
+v0.2.4 code-only fixes heard live:
+
+* Mission-start **target-selection encounter** read in full, and the choice cursor spoke on every move
+  ("Target 704-H311_51ng, 2 of 5") — the GA_WarRoom-over-loadout probe works.
+* The **resolution dossier** after choosing read in full ("Name: von Sabrewulf, Konrad ... Rewards:
+  Sabrewulf appeared!") — the choice changed the opponent from Riptor to Sabrewulf.
+* **Versus screen buffs**: "FULGORE versus SABREWULF. Ravensburg. your health: 100%. enemy health:
+  110%. enemy buffs: Power Level II, Overdrive, Shadow Bond, +10% DMG".
+* A **"New Enemy Power" popup** opens over the fight start and pauses it until Enter — it was read
+  with its Continue button (fightbot does not press Enter; a human must, or the fight never starts).
+* **Match rewards** announced the right fighter with fresh data: "Mission failed. Fulgore health: 0%"
+  (the fight was lost — the clone's 110% health + three powers beat the bot). Turn advance ("TURN 4"),
+  the new mission list ("Relic Hunt (2/6) ... versus Mimic Mira") and the War Room summary followed.
+
+Save state after the burn: mission failed, Fulgore at 0% (unavailable), Kim Wu available again at 43%,
+turn advanced to 4. Backed out cleanly; game exited.
+
 ## Open / not verified live
 
-* Post-match flow (encounter choice cursor, fresh match-rewards summary, VS buffs) — needs a real
-  mission played to the end. The loadout popup, consumable path and all menu readers were re-verified.
+* Hub daily rewards overlay's expanded announcement (needs the next daily reward).
 * The hub's own Daily Rewards overlay (opens over the hub, swallowed input, says nothing — the main
   menu one is read). Noted in README known issues.
 * Pack reveal still untested (needs 500 gems; save has 307).
