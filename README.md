@@ -8,7 +8,7 @@ Adds screen reader output to the menus of Killer Instinct (Steam version, free b
 Known Issues:
 
 * This is a TEST BUILD. The mod writes kiaccess\speech.log in your Killer Instinct folder each session with every announcement. If anything goes wrong, please attach that file to your bug report.
-* Shadow Lords: not read yet are the guardian details and recharge popups in the Spirit Lair, the Archives and the leaderboard. The hub's daily rewards overlay reader is new in this version and has not been heard live yet (it only appears right after a daily reward is earned); if it stays silent for you, please attach kiaccess\speech.log. The subtitles of the story cinematics are not spoken either; the cinematics are voiced.
+* Shadow Lords: the leaderboard and the Spirit Lair's excess-guardian popup are not read yet. The hub's daily rewards overlay reader is new in this version and has not been heard live yet (it only appears right after a daily reward is earned); if it stays silent for you, please attach kiaccess\speech.log. The subtitles of the story cinematics are not spoken either; the cinematics are voiced.
 * The mural screen's announcement after finishing a ladder is built from a captured run but has not been re-heard live yet; if it stays silent after your next ladder, please attach kiaccess\speech.log.
 * When a popup opens, the first thing spoken can be a button of the previous popup (for example "Purchase 300 KI Gold" just before "Exit Shadow Lords?"). The popup itself follows at once.
 * The Store's front page and its content pages are read; the Bundles and Fighters pages and the online lobbies are not read yet beyond their basic layout.
@@ -29,6 +29,8 @@ New in this version:
 * Level-up banners on the match results screen are read ("Sabrewulf Level Up: Sabrewulf Background 1").
 * The game silently runs a hidden calibration match in a void stage after some fights; the mod no longer announces it as if a real fight were loading.
 * The Emporium pack reveal has now been heard with a real purchase: all cards read as you turn them, forward and backward, with tier and quantity ("Phoenix Relic, killer, quantity 2, 1 of 4").
+* Shadow Lords Archives are read: the four category tiles, the fighter grid ("Jago, 1 of 29"), every entry with its position and unlock state ("Guardians: Origins I, 11 of 37. Dossier Unlocked", or the hint telling you how to unlock it), and the dossier reading view itself — opening an unlocked dossier reads its full lore text, with Up and Down turning the pages and Escape closing.
+* Shadow Lords Spirit Lair: the guardian details popup is read (energy, abilities with their descriptions; Up and Down move through your cards of that guardian), the recharge popup reads its cost and your remaining energy as Left and Right change the amount, the dismantle confirmation is read, and trying to recharge a full guardian or one you cannot afford says why nothing happened.
 
 New in v0.2.5:
 

@@ -144,10 +144,33 @@ line ("Pack opened, 4 cards. Right turns the next card, Escape leaves the pack")
 every card turned forward AND backward with tier and quantity, the return to the pack list, and the
 updated wallet in the hub. Pack-reveal caveat removed from the README.
 
+## Archives + Spirit Lair readers (afternoon, commits b3845e0 + follow-up; all verified live)
+
+Decompiled GA_Archives.swf and GA_SpiritLair.swf, captured a browse session, then built probe-driven
+readers:
+
+* **Archives** (`scan` mode — note: `"custom": "none"` silently skips scan groups, cost one build):
+  four category tiles (names resolved from `navigationTabData` keys, "new content" from the
+  notification flag), fighter grid, entry grids (name via each view's own `mcItemTitle` text, desc via
+  `mcCharacterUnlocks.mcDescriptionText`, "n of m" by matching the name in the stored `PopulateContent`
+  list), and the dossier reading view (`mcPopup` title + body probes; pages turn with Up/Down and have
+  NO sound, so later pages surface on the deferred probe ticks). Locked entries read their unlock hint.
+  Useful events: `AS_ClearAllNotificationsForItem {itemId}` fires per cursor move (unused — probes
+  suffice), `AS_GetCategoryData`/`AS_GetCharacterData` on entry, `AS_PlayCinematic {path, name}` when a
+  video entry opens (the videos are voiced).
+* **Spirit Lair**: details popup (deck's pet from `spiritPetData[deck]`, card via the `cardIdx` call;
+  energy + abilities), recharge popup (the popup's own `mcAstralEnergyWallet` / `mcRequiresText` texts
+  update per Left/Right — "Requires: x20, Astral Energy Remaining: 173"), dismantle confirmation
+  (fixed string keys GA_MODE_SPIRITPET_DISMANTLE_POPUP_*), `AS_RechargePetBlocked` messages. All gated
+  by the popups' timeline labels (`.visible` always true, as everywhere in the mode).
+* GA screens now clear every `swf|...` dedup key on ScreenShown, so re-entering re-announces.
+
 ## Open / not verified live
 
 * Hub daily rewards overlay's expanded announcement (needs the next daily reward).
 * StoryMuralPopup announcement (built from the captured payload; re-heard on the next finished ladder).
+* Spirit Lair excess-guardian popup and dismantle popup (reader built; the popup needs a dismantle-able
+  spare guardian / an overfull lair to appear).
 * The hub's own Daily Rewards overlay (opens over the hub, swallowed input, says nothing — the main
   menu one is read). Noted in README known issues.
 * Pack reveal still untested (needs 500 gems; save has 307).
