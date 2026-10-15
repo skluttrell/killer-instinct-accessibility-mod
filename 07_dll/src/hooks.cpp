@@ -170,7 +170,7 @@ static uint64_t hookDispatcher(void* wrapper, const char* method, GValue* args, 
             if (!(s_currentSwf == "GA_Loadout_Popup.swf" && script == "GA_WarRoom")) s_currentSwf = sw;
         }
         swf = s_currentSwf;
-        if (g_cfg.logEvents) logLine("ei " + script + "." + fn + " " + js.substr(0, 200));
+        if (g_cfg.logEvents) logLine("ei " + script + "." + fn + " " + js.substr(0, 2000));
         {
             std::lock_guard<std::recursive_mutex> g(g_lock);
             s_nar->on_ei(script, fn, js, nowMs());
@@ -197,7 +197,7 @@ static uint8_t hookRootInvoke(void* self, const char* name, GValue* result, GVal
         if (n == "root.Invoke") {
             isInvoke = true;
             for (unsigned i = 0; i < argc && i < 3; i++) a[i] = argStr(args + i);
-            if (g_cfg.logEvents) logLine("inv " + a[0] + "." + a[1] + " " + a[2].substr(0, 300));
+            if (g_cfg.logEvents) logLine("inv " + a[0] + "." + a[1] + " " + a[2].substr(0, 4000));
             if (a[0] == "Popup.swf" && a[1] == "Close" && s_currentSwf == "Popup.swf" && !s_prevSwf.empty()) s_currentSwf = s_prevSwf;   // popup closed
             std::lock_guard<std::recursive_mutex> g(g_lock);
             s_nar->on_inv(a[0], a[1], a[2]);
