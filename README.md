@@ -1,5 +1,5 @@
 ﻿Killer Instinct Accessibility Mod
-v.0.2.6
+v.0.2.7
 
 Purpose:
 
@@ -8,7 +8,7 @@ Adds screen reader output to the menus of Killer Instinct (Steam version, free b
 Known Issues:
 
 * This is a TEST BUILD. The mod writes kiaccess\speech.log in your Killer Instinct folder each session with every announcement. If anything goes wrong, please attach that file to your bug report.
-* Shadow Lords: the leaderboard and the Spirit Lair's excess-guardian popup are not read yet. The hub's daily rewards overlay reader is new in this version and has not been heard live yet (it only appears right after a daily reward is earned); if it stays silent for you, please attach kiaccess\speech.log. The subtitles of the story cinematics are not spoken either; the cinematics are voiced.
+* Shadow Lords: the leaderboard, the items dropped on the arena floor after some fights, and the Spirit Lair's excess-guardian popup are not read yet. The hub's daily rewards overlay reader has not been heard live yet (it only appears right after a daily reward is earned); if it stays silent for you, please attach kiaccess\speech.log. The subtitles of the story cinematics are not spoken either; the cinematics are voiced.
 * The mural screen's announcement after finishing a ladder is built from a captured run but has not been re-heard live yet; if it stays silent after your next ladder, please attach kiaccess\speech.log.
 * When a popup opens, the first thing spoken can be a button of the previous popup (for example "Purchase 300 KI Gold" just before "Exit Shadow Lords?"). The popup itself follows at once.
 * The whole Store is read; only the online lobbies are not read yet beyond their basic layout.
@@ -22,6 +22,18 @@ Known Issues:
 * If a future game update changes the executable so that the mod can no longer find its hook points, the narrator stays silent and writes the reason to kiaccess\speech.log. The game itself still runs normally.
 
 New in this version:
+
+* The whole Fight Archive is read (requested in the 2026-10-16 beta report):
+  - Fight Stats: the summary page reads your total XP and play time, then the Ranked, Non-Ranked and Offline panels with their matches, win rates and your top three fighters ("no matches" when a panel is empty). Y (R on the default keyboard binds) opens All Stats; each page (Overall, Breaker, Combo, Combat, Character) is read in full, Q/E and Left/Right switch pages, Escape returns to the summary.
+  - Fight Challenges: the total, then each category as you move (fighter, trophies, position). Enter reads the category's whole challenge list with the actual progress of each bar ("Aerial Attacks, 92 of 100").
+  - Leaderboards: each row with its named columns as you move and page, the category and subcategory on every switch, the All/Friends filter, and your own entry at the bottom ("You: rank 1292..." or "You have no entry on this board").
+  - Shadow Leaderboards: each row with rank, player, fighter and the columns of the chosen category.
+  - Replays: the count on entry, then each replay with its date, time and favorite state. Y adds or removes a favorite, X switches to the favorites-only list ("Favorites only, 2 replays"), Enter loads the replay.
+  - The Achievements entry says that the Steam overlay has opened and that Shift+Tab returns to the game.
+* Line-by-line review (requested in the 2026-10-16 beta report): Ctrl+Shift+Down and Ctrl+Shift+Up step through the last announcement one line at a time, for long dumps like the post-fight report. The first press silences the running announcement and says how many lines there are; the ends say "Top" and "Bottom". Ctrl+Shift+R still repeats the whole announcement.
+* Fixed (reported in the 2026-10-16 beta report): entering a menu section could first read the previously selected entry before the real one ("Practice" just before "Dojo" when entering Master). The menu is now silent while it rebuilds and only the real selection is read.
+
+New in v0.2.6:
 
 * The story dossier before an arcade ladder (the Ultratech databank page after picking your fighter in Story mode) is read in full: name, height, weight, age, threat level, last known location, the character's story text, and the continue prompt with your bound key.
 * The arcade ladder tower is read: your difficulty, total wins and score, how many fights the ladder has, and the opponent you are at ("Next opponent: Riptor, 2 of 7"), spoken again with fresh numbers each time you return to the tower after a match.
@@ -110,6 +122,7 @@ Keys
 All hotkeys work anywhere in the game, but only while the game window is the active window. When you switch to another program, the mod releases them so that program can use the same key combinations:
 
 Ctrl+Shift+R: Repeat the last announcement.
+Ctrl+Shift+Down and Ctrl+Shift+Up: Step through the last announcement line by line (next and previous line). The first press silences the current announcement and starts at the first line. The plain arrow keys still work in the game as usual.
 Ctrl+Shift+D: Read the description of the focused item.
 Ctrl+Shift+A: On Character Select, describe the physical appearance of the fighter under the cursor, or the chosen fighter. On the costume stage the retro costume gets its own text. Ctrl+Shift+D does the same there, since fighters have no description.
 Ctrl+Shift+T: Read the ticker / message of the day.

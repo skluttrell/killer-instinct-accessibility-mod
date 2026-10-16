@@ -84,3 +84,33 @@ reads after the gate.
 5. Line-by-line review mode for long dumps (post-fight report etc.) — the archive readers read
    everything at once by design ("fine to read out all the text", report item 5).
 6. Shadow Lords ground loot after a fight (items to pick up; no capture yet).
+
+# 2026-10-16 (later) — beta items 1 and 5, v0.2.7 packaged
+
+## Main menu stale reads (beta item 1)
+
+The tester's example ("Practice" just before "Dojo" when entering the Master menu) is the in-movie state
+switch: `MainMenu.Select()` calls `StateExit` (plays `mcMenuGroup` "BuildOff") *before* the PlayAccept
+sound, and only when that animation finishes does `MainMenuBuildOffDone` → `StateEnter` →
+`ResetMenuButtons` reset `SelectionIndex` to 0 and repopulate the buttons. Every snapshot in between
+(immediate PlayAccept + the settle reads) sees the *new* state (`mm_state_` was already pushed) at the
+*old* index. Same shape as the archive fix: MainMenu.swf now probes `mcMenuGroup.currentLabel` (state
+switch) and the root `currentLabel` (leaving the screen) and `on_focus` returns while either is
+"BuildOff". The correct read still arrives: `ResetMenuButtons` fires `CheckIsDestInstalled` (a trigger),
+whose +1-frame settle snapshot runs after `mcMenuGroup` goes "BuildOn" with the cursor at 0 and the new
+texts in place. `Back()` takes the same path (Exit → PopState → PlayBack), so it is covered too. Source:
+the MainMenu decompile from a previous session's scratchpad (still on disk).
+
+## Line-by-line review (beta item 5)
+
+Ctrl+Shift+Down / Ctrl+Shift+Up step through the last announcement one line at a time; the first press
+interrupts the running mass read ("silence the mass reading" in the report) and says "Review, n lines"
+before line 1. Lines are the announcement's sentences (split on ". ", "; ", "! ", "? "; the archive
+dumps, match stats and dossiers all join their rows with ". " so they split naturally). Stepping past
+the ends says "Top" / "Bottom" and stays. The review lines are spoken outside `say()` so `last_text_`
+(and with it Ctrl+Shift+R and the review source itself) is not disturbed; any new announcement rebuilds
+the cursor on the next step. Hotkeys registered like the others (game-foreground only); plain arrows
+still reach the game.
+
+Both features build clean; not yet heard live (next session: enter Master from Single Player and listen
+for a single "Dojo..." read; dump a post-fight report and step through it).

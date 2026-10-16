@@ -36,11 +36,14 @@ and forwards the call to `C:\Windows\System32\dinput8.dll`.
 ## Use
 Speech starts with "Killer Instinct narrator ready". Hotkeys (registered with `RegisterHotKey` only while a window of
 the game process is in the foreground, checked every 200 ms, released otherwise so other programs keep the combinations;
-`05_tools/hotkey_probe.py` checks this with an Alt+Tab): Ctrl+Shift+R repeat, Ctrl+Shift+D description
-of the focused item, Ctrl+Shift+A physical appearance of the fighter on Character Select (the one under the cursor, or
-the chosen one; on the costume stage the retro costume gets its own text; Ctrl+Shift+D does the same there since
-fighters have no description), Ctrl+Shift+T ticker / MOTD, Ctrl+Shift+V cycle verbosity (0 label, 1 + position,
-2 + description), Ctrl+Shift+Q narrator on/off, Ctrl+Shift+P opponent radar on/off, Ctrl+Shift+U unload the DLL (development). The appearance texts are
+`05_tools/hotkey_probe.py` checks this with an Alt+Tab): Ctrl+Shift+R repeat, Ctrl+Shift+Down / Ctrl+Shift+Up step
+through the last announcement line by line (beta report 2026-10-16 item 5: the first press interrupts the running
+read and starts at "Review, n lines"; lines are the announcement's sentences; "Top" / "Bottom" at the ends; spoken
+outside `say()` so the reviewed announcement stays the last one and Ctrl+Shift+R still repeats it whole), Ctrl+Shift+D
+description of the focused item, Ctrl+Shift+A physical appearance of the fighter on Character Select (the one under
+the cursor, or the chosen one; on the costume stage the retro costume gets its own text; Ctrl+Shift+D does the same
+there since fighters have no description), Ctrl+Shift+T ticker / MOTD, Ctrl+Shift+V cycle verbosity (0 label,
+1 + position, 2 + description), Ctrl+Shift+Q narrator on/off, Ctrl+Shift+P opponent radar on/off, Ctrl+Shift+U unload the DLL (development). The appearance texts are
 hand-written in `data\fighter_appearance.json` in this folder (copied into `kiaccess\data` by the build; keyed by the game's internal fighter codes, see `fighter_names.json`;
 `default` and optional `retro` per fighter): edit them freely, the file is read at start. Settings in `kiaccess\kiaccess.ini`
 (`verbosity`, `speech`, `log_events`, `dump_populate`, and the `radar_*` keys below). Every utterance goes to `kiaccess\speech.log` with the hook
@@ -53,6 +56,13 @@ placeholders in popup text (`LIGHT_PUNCH`, `PUNCH_X_3`), which the game renders 
 attack name. A popup repopulated with identical text within 3 s is spoken once (the Shadow Lords tutorial does this
 every frame). Shadow Lords screens (`GA_*.swf`) are loaded together and switched by the mode itself, so they are
 announced from their `ScreenShown` event rather than from `LoadDestination`.
+
+Menus that animate between states suppress reads while they do (beta report 2026-10-16 item 1, "the last thing that
+was selected ... before it tells you what is currently selected"): a state switch inside MainMenu.swf (Enter on Fight,
+Escape back) plays `mcMenuGroup` off and only resets the cursor to 0 when the animation has finished, so snapshots are
+dropped while `mcMenuGroup.currentLabel` (or the root's, when leaving the screen) is "BuildOff"; `StateEnter`'s own
+`CheckIsDestInstalled` then triggers the read of the real selection. The Fight Archive menu has the same gate on its
+root label and `transitioning`.
 
 Also read (beta report 1, 2026-10-10): the game settings popup on Character Select (`GameSettingsPopUp.swf`, scan of
 `mcGSPopUpText.mcBtn{i}`; announced from `LoadDestinationComplete` since it has no `LoadDestination`, ignored once it
