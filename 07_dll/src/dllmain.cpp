@@ -22,8 +22,8 @@ static HANDLE s_hotkeyThread = nullptr;
 static DWORD s_hotkeyThreadId = 0;
 static bool s_initialized = false;
 
-// ---- hotkeys: Ctrl+Shift+R repeat, D description, A fighter appearance, T ticker, I Shadow Lords status, V verbosity, Q toggle narration, U unload (development) ----
-enum { HK_REPEAT = 1, HK_DESC, HK_APPEARANCE, HK_TICKER, HK_STATUS, HK_VERBOSITY, HK_TOGGLE, HK_RADAR, HK_UNLOAD };
+// ---- hotkeys: Ctrl+Shift+R repeat, D description, A fighter appearance, T ticker, I Shadow Lords status, V verbosity, Q toggle narration, Up/Down review lines, U unload (development) ----
+enum { HK_REPEAT = 1, HK_DESC, HK_APPEARANCE, HK_TICKER, HK_STATUS, HK_VERBOSITY, HK_TOGGLE, HK_RADAR, HK_REVIEW_PREV, HK_REVIEW_NEXT, HK_UNLOAD };
 static void unloadSelf();
 
 // The hotkeys are system-wide while registered, which would take Ctrl+Shift+R and friends away from every other program
@@ -38,7 +38,8 @@ static bool gameHasFocus() {
 }
 
 static DWORD WINAPI hotkeyThread(LPVOID) {
-    const std::pair<int, int> keys[] = {{HK_REPEAT, 'R'}, {HK_DESC, 'D'}, {HK_APPEARANCE, 'A'}, {HK_TICKER, 'T'}, {HK_STATUS, 'I'}, {HK_VERBOSITY, 'V'}, {HK_TOGGLE, 'Q'}, {HK_RADAR, 'P'}, {HK_UNLOAD, 'U'}};
+    const std::pair<int, int> keys[] = {{HK_REPEAT, 'R'}, {HK_DESC, 'D'}, {HK_APPEARANCE, 'A'}, {HK_TICKER, 'T'}, {HK_STATUS, 'I'}, {HK_VERBOSITY, 'V'}, {HK_TOGGLE, 'Q'}, {HK_RADAR, 'P'},
+                                        {HK_REVIEW_PREV, VK_UP}, {HK_REVIEW_NEXT, VK_DOWN}, {HK_UNLOAD, 'U'}};
     bool registered = false;
     auto setRegistered = [&](bool on) {
         if (on == registered) return;
@@ -58,6 +59,8 @@ static DWORD WINAPI hotkeyThread(LPVOID) {
         std::lock_guard<std::recursive_mutex> g(g_lock);
         switch ((int)msg.wParam) {
             case HK_REPEAT: s_nar->repeat(); break;
+            case HK_REVIEW_PREV: s_nar->review_step(-1); break;
+            case HK_REVIEW_NEXT: s_nar->review_step(1); break;
             case HK_DESC: s_nar->read_desc(); break;
             case HK_APPEARANCE: s_nar->read_appearance(); break;
             case HK_TICKER: s_nar->read_ticker(); break;

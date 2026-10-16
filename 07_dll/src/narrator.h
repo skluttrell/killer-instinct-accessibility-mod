@@ -22,6 +22,7 @@ public:
 
     // hotkeys
     void repeat();
+    void review_step(int dir);             // Ctrl+Shift+Up / Down: step through the last announcement line by line
     void read_desc();
     void read_status();
     void read_appearance();                // Ctrl+Shift+A: physical appearance of the fighter on Character Select
@@ -41,6 +42,9 @@ private:
     std::vector<std::string> lastParts_;   // its (swf, index, label, value, state) parts
     bool hasLast_ = false;
     std::string last_text_;
+    std::string review_src_;               // the announcement the review cursor was built from (beta report 2026-10-16 item 5)
+    std::vector<std::string> review_lines_;
+    int review_idx_ = -1;
     json last_focus_;                      // {swf,index,label,desc,value} or null
     std::string ticker_, motd_, current_swf_;
     std::map<int, std::string> cs_stage_{{0, "fighter"}, {1, "fighter"}};

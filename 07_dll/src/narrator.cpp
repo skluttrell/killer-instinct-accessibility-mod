@@ -1774,6 +1774,16 @@ void Narrator::on_focus(const json& rec) {
         const json& bs = jget(probe, "buildState");
         if ((bs.is_string() && bs.get<std::string>() == "BuildOff") || jtruthy(jget(probe, "transitioning"))) return;
     }
+    if (swf == "MainMenu.swf") {
+        // a state switch inside the menu (Enter / Escape) plays mcMenuGroup off, and only when that animation has
+        // finished does StateEnter reset the cursor to 0 and repopulate the buttons: a snapshot in between reads the
+        // new state's list at the old index (beta report 2026-10-16: "Practice" just before "Dojo" entering Master).
+        // StateEnter's own CheckIsDestInstalled triggers the read of the real selection once the group builds on again.
+        for (const char* k : {"buildState", "menuState"}) {
+            const json& bs = jget(probe, k);
+            if (bs.is_string() && bs.get<std::string>() == "BuildOff") return;
+        }
+    }
     if (swf == "ControllerConfig.swf") { on_controller_focus(rec, probe, deferred); return; }
     if (startsWith(swf, "GA_")) { on_ga_focus(swf, rec, base_why, deferred, t); return; }
     if (swf == "Popup.swf") {   // the legend shows the keyboard key behind each gamepad button ("Enter", "Tab"): remember it
@@ -1944,6 +1954,55 @@ void Narrator::on_focus(const json& rec) {
 
 // ---- hotkeys ----
 void Narrator::repeat() { say(last_text_.empty() ? "nothing to repeat" : last_text_, true); }
+
+// Line-by-line review of the last announcement (beta report 2026-10-16 item 5: long dumps such as the post-fight
+// report should be steppable at the player's own pace). The lines are the announcement's sentences; stepping
+// interrupts the running speech, and a new announcement rebuilds the cursor on the next step.
+static std::vector<std::string> review_split(const std::string& text) {
+    std::vector<std::string> out;
+    std::string cur;
+    for (size_t i = 0; i < text.size(); i++) {
+        char c = text[i];
+        if ((c == '.' || c == ';' || c == '!' || c == '?') && i + 1 < text.size() && text[i + 1] == ' ') {
+            if (c == '!' || c == '?') cur += c;   // keep the punctuation that carries tone
+            std::string t = strip(cur);
+            if (!t.empty()) out.push_back(t);
+            cur.clear();
+            i++;   // the separating space
+        } else cur += c;
+    }
+    std::string t = strip(cur);
+    if (!t.empty() && t.back() == '.') { t.pop_back(); t = strip(t); }
+    if (!t.empty()) out.push_back(t);
+    return out;
+}
+
+void Narrator::review_step(int dir) {
+    if (last_text_ != review_src_) {   // a new announcement since the last step: review it from the top
+        review_src_ = last_text_;
+        review_lines_ = review_split(last_text_);
+        review_idx_ = -1;
+    }
+    if (review_lines_.empty()) {
+        logLine("REVIEW: nothing to review");
+        if (g_cfg.speech) speech::speak("Nothing to review", true);
+        return;
+    }
+    int n = (int)review_lines_.size();
+    std::string prefix;
+    if (review_idx_ < 0) {
+        review_idx_ = 0;
+        prefix = "Review, " + std::to_string(n) + (n == 1 ? " line. " : " lines. ");
+    } else {
+        int i = review_idx_ + dir;
+        if (i < 0) { i = 0; prefix = "Top. "; }
+        else if (i >= n) { i = n - 1; prefix = "Bottom. "; }
+        review_idx_ = i;
+    }
+    std::string text = prefix + review_lines_[review_idx_];   // spoken outside say(): the reviewed announcement stays the last one
+    logLine("REVIEW " + std::to_string(review_idx_ + 1) + " of " + std::to_string(n) + ": " + text);
+    if (g_cfg.speech) speech::speak(text, true);
+}
 // ---------------- Shadow Lords ----------------
 // The mode's screens keep their state in the Populate payload and navigate inside ActionScript; the only engine traffic
 // is the mode's sound events (PlaySoundString) and a few AS_* calls, so the readers trigger on those and read the

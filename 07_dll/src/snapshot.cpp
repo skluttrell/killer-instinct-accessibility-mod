@@ -9,7 +9,8 @@ namespace snap {
 // index mode: the screen's public getter (indexFn, default GetSelectionIndex) + the item at that index;
 // scan mode: every item's state label, the focused one reported with its position among visible, labelled items.
 static const char* SCREENS_JSON = R"JSON({
- "MainMenu.swf": {"groups": {"main": {"item": "mcMenuGroup.mcMenuBtn{i}.mcBtn",
+ "MainMenu.swf": {"probe": {"buildState": "currentLabel", "menuState": "mcMenuGroup.currentLabel"},
+    "groups": {"main": {"item": "mcMenuGroup.mcMenuBtn{i}.mcBtn",
     "fields": {"label": "mcTxt.txtButton.text", "desc": "mcDescription.mcDescriptionContainer.txtDescription.text", "state": "currentLabel"}}}},
  "OptionsMenu.swf": {"groups": {
     "entries": {"item": "mcMenuGroup.mcOptionsMain.mcBtn{i}", "fields": {"label": "mcTxtLarge.txt.text", "desc": "mcTextDesc.mcTextHolder.txtDescription.text", "state": "currentLabel"}},
