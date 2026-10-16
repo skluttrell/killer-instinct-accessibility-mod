@@ -86,6 +86,18 @@ private:
     json store_page_items_;                // current window of PopulateItems
     int store_page_min_ = 0;               // MinIndex of that window (GetItemsInCategory)
     std::string store_page_cat_;           // last announced category name
+
+    // Fight Archive content pages (Stats, FightTitles, Leaderboards, ShadowLeaderboards, Replays)
+    json lb_rows_;                         // Leaderboards: the visible window of ReceiveLeaderboardRecords (8 rows)
+    int lb_top_ = 0;                       // its topIndex (global index of row 0)
+    json lb_headers_;                      // resolved column header texts (PopulateColumnHeaders)
+    bool titles_details_ = false;          // FightTitles: a category's challenge list is open (list spoken from its payload)
+    int stats_cat_ = 0, stats_sub_ = 0;    // Stats details: category/sub of the last GetStatsByCategoryAndSubIndex request
+    bool stats_details_ = false;           // the All Stats detail view is open (Y from the summary)
+    bool replays_fav_ = false;             // Replays: the favorites filter is active (X); we mirror the game's filtered list
+    void say_stats_summary(const json& data);                    // the Fight Stats landing page
+    void say_stats_category(const std::string& fn, const json& data);   // one All Stats page (PopulateOverall, ...)
+    json replays_list() const;             // the list the cursor moves in (all replays, or favorites only)
     std::string ga_summary(const std::string& swf);   // what to say after the screen name
     void on_ga_focus(const std::string& swf, const json& rec, const std::string& base_why, bool deferred, int64_t t);
     void on_preload_dialogue(int64_t t);

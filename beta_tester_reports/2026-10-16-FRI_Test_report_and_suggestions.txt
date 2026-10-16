@@ -1,0 +1,19 @@
+* Some times when you enter a menu it will say the last thing that was selected in that menu before it tells you what is currently selected. The game always seems to default to the top most selection so that's all I should hear when entering a menu. For example: sometimes when I enter the "Master" menu in "Single Player" it tells me that "practice" is selected just before it tells me "Dojo" is the actual selection.
+* I think I would like a practice mode where, when activated, narrator tells me what the button I am pressing does. For example: when I hit light, medium, or heavy punch or kick, I get vocal feedback that tells me which one I have pressed. It would not need to include directional buttons, but special moves being vocally identified would be ideal as well. This narrator mode should not be on by default. It should only be active at the user's request.
+* In the character command list I want to be able to go through each part of the moves individually to make it easier to hear how they are performed. E.G. "Wind Kick. down down-back back plus any kick" I want to be able to hit some keys that will move back and forth through each part: forward key "down", forward key "down-back", forward key "back plus any kick", back key "down-back", back key "down", etc.
+* An accessibility menu with the settings has been requested. This need only be an audio menu provided by the narrator when one of the function keys is pressed. Perhaps f1 if that is not being used by the game itself, otherwise the next available function key. The game should save all changes to the ini file upon any change so settings stay persistent across game sessions. The ctrl+shift switches that already exist can stay the same. This would just be another way to alter the accessibility settings.
+* For screens with large amounts of text such as the post fight reports, there should be a way to scroll through individual lines so the player can digest the information presented better. It's fine to read out all the text when it appears, but the player should be able to take control of the information dump at their convenience and silence the mass reading to go line-by-line.
+* Fighter archive still needs to be read out.
+Relevant screenshots:
+"C:\Users\sklut\Documents\Programming\Claude\killer_instinct\Screenshots\2026-10-16_11-06-45-fight_archive-stats.jpg"
+"C:\Users\sklut\Documents\Programming\Claude\killer_instinct\Screenshots\2026-10-16_11-10-41_fight_challenges.jpg"
+"C:\Users\sklut\Documents\Programming\Claude\killer_instinct\Screenshots\2026-10-16_11-12-46-fight_challenges-Jago.jpg"
+"C:\Users\sklut\Documents\Programming\Claude\killer_instinct\Screenshots\2026-10-16_11-14-33-leaderboard.jpg"
+"C:\Users\sklut\Documents\Programming\Claude\killer_instinct\Screenshots\2026-10-16_11-15-49-leaderboard-steam_overlay.jpg"
+"C:\Users\sklut\Documents\Programming\Claude\killer_instinct\Screenshots\2026-10-16_11-17-17-shadow_leaderboards.jpg"
+"C:\Users\sklut\Documents\Programming\Claude\killer_instinct\Screenshots\2026-10-16_11-18-31-achievements.jpg"
+"C:\Users\sklut\Documents\Programming\Claude\killer_instinct\Screenshots\2026-10-16_11-19-37-replays.jpg"
+* After a fight in the Shadow Lords section I was presented with items that had to be picked up from the arena floor. We will have to come up with a solution for this to let players know there are things to pick up and what they are, otherwise new players will not know why the fight has ended but the stage is still active and returning players won't know what rewards they got from the fight.
+
+Sightless Kombat
+Can confirm - tank chests seem to be clarified, I haven't managed to unlock one of the ones that requires a key yet unfortunately.

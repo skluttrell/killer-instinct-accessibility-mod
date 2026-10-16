@@ -14,7 +14,8 @@ static const std::map<std::string, std::string> SCREEN_NAMES = {
     {"CommandList.swf", "Command list"}, {"Dojo.swf", "Dojo"}, {"Trials.swf", "Trials"}, {"SinglePlayerLadder.swf", "Arcade ladder"},
     {"MatchOutcome.swf", "Match results"}, {"LoadingScreen.swf", "Loading"}, {"StoreFighters.swf", "Store, fighters"},
     {"StoreBundles.swf", "Store, bundles"}, {"StoreContent.swf", "Store, content"}, {"StoreContentOverview.swf", "Store page"},
-    {"Leaderboards.swf", "Leaderboards"}, {"Stats.swf", "Stats"},
+    {"Leaderboards.swf", "Leaderboards"}, {"Stats.swf", "Fight stats"}, {"FightTitles.swf", "Fight challenges"},
+    {"ShadowLeaderboards.swf", "Shadow leaderboards"}, {"ReplayBrowser.swf", "Replay browser"},
     {"Replays.swf", "Replays"}, {"ComboBreakerOptions.swf", "Combo breaker options"}, {"ShadowHub.swf", "Shadow Lab"},
     {"MultiplayerRanked.swf", "Ranked"}, {"MultiplayerExhibition.swf", "Exhibition"}, {"Story.swf", "Story"}, {"StoryMuralPopup.swf", "Story mural"},
     {"GA_HUB.swf", "Shadow Lords hub"},
@@ -411,6 +412,33 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
                 std::string title = S.resolve(jget(data, "ScreenTitle"));
                 if (!title.empty() && title != jstr(data, "ScreenTitle")) say(title, false);
             }
+            if (swf == "Stats.swf") {
+                // the Fight Stats landing page: header totals and the three match panels are all in the payload
+                stats_details_ = false;
+                stats_cat_ = stats_sub_ = 0;
+                say_stats_summary(data);
+            }
+            if (swf == "FightTitles.swf") {
+                // Fight Challenges: category list (one row per fighter plus General); rows read by the focus snapshot
+                titles_details_ = false;
+                last_probe_.erase("FightTitles.swf|item");
+                std::string tot = jtostr(clean(jget(data, "TotalTitles")));
+                if (!tot.empty() && tot != "null") say(S.resolve(std::string("FAMENU_TOTAL_TITLES")) + " " + tot, false);
+            }
+            if (swf == "Leaderboards.swf") {
+                lb_rows_ = json();
+                lb_headers_ = json();
+                lb_top_ = 0;
+                for (const char* k : {"Leaderboards.swf|row", "Leaderboards.swf|cat", "Leaderboards.swf|filter", "Leaderboards.swf|you"}) last_probe_.erase(k);
+            }
+            if (swf == "ShadowLeaderboards.swf")
+                for (const char* k : {"ShadowLeaderboards.swf|row", "ShadowLeaderboards.swf|cat", "ShadowLeaderboards.swf|filter"}) last_probe_.erase(k);
+            if (swf == "Replays.swf") {
+                replays_fav_ = false;
+                last_probe_.erase("Replays.swf|item");
+                const json& rl = jget(data, "ReplayList");
+                if (rl.is_array()) say(rl.empty() ? "No replays" : std::to_string(rl.size()) + (rl.size() == 1 ? " replay" : " replays"), false);
+            }
             if (swf == "CharacterSelect.swf") {
                 cs_stage_ = {{0, "fighter"}, {1, "fighter"}};
                 cs_fighter_code_.clear();
@@ -586,6 +614,66 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
         // the entry list of the grid that just opened (a category's items or a fighter's dossiers)
         populate_["GA_Archives.swf:content"] = data;
         last_probe_.erase("GA_Archives.swf|entry");
+    } else if (swf == "FightTitles.swf" && fn == "PopulateTitleDetails" && data.is_array()) {
+        // one fighter's challenge list (Enter on a category row): everything is in the payload, read it in full
+        std::vector<std::string> rows;
+        for (const auto& e : data) {
+            if (!e.is_object()) continue;
+            std::string ti = strip(S.resolve(jget(e, "Title")));
+            if (ti.empty()) continue;
+            std::string line = ti;
+            std::string cnt = jtostr(clean(jget(e, "Count")));
+            if (!cnt.empty() && cnt != "null") line += ", " + cnt + (cnt == "1" ? " trophy" : " trophies");
+            const json& prev = jget(e, "Previous");
+            const json& next = jget(e, "Next");
+            const json& fill = jget(e, "FillAmount");
+            if (next.is_number()) {
+                if (prev.is_number() && fill.is_number()) {   // the bar runs from the last tier to the next: recover the actual count
+                    long cur = (long)(prev.get<double>() + fill.get<double>() * (next.get<double>() - prev.get<double>()) + 0.5);
+                    line += ", " + std::to_string(cur) + " of " + jtostr(next);
+                } else line += ", next at " + jtostr(next);
+            }
+            rows.push_back(line);
+        }
+        say(rows.empty() ? "No challenges" : std::to_string(rows.size()) + " challenges. " + join(rows, ". "), false);
+    } else if (swf == "Stats.swf" && (fn == "PopulateOverall" || fn == "PopulateBreaker" || fn == "PopulateCombo" ||
+                                      fn == "PopulateCombat" || fn == "PopulateCharacters")) {
+        say_stats_category(fn, data);
+    } else if (swf == "Leaderboards.swf" && fn == "ReceiveLeaderboardRecords" && data.is_object()) {
+        lb_rows_ = jget(data, "data");
+        lb_top_ = jint(jget(data, "topIndex"), 0);
+        last_probe_.erase("Leaderboards.swf|row");   // a new page: the focused row is news even if the text repeats
+    } else if (swf == "Leaderboards.swf" && fn == "PopulateColumnHeaders" && data.is_object()) {
+        lb_headers_ = json::array();
+        for (const char* k : {"Column1", "Column2", "Column3"}) lb_headers_.push_back(strip(S.resolve(jget(data, k))));
+    } else if (swf == "Leaderboards.swf" && fn == "PopulatePlayerData" && data.is_object()) {
+        // the footer with your own entry on this board
+        const json& p = jget(data, "PlayerData");
+        std::string rank = strip(S.resolve(jget(p, "Rank")));
+        std::vector<std::string> parts;
+        if (rank.empty() || rank == "-") parts.push_back("You have no entry on this board");
+        else {
+            parts.push_back("You: rank " + rank);
+            for (int c = 0; c < 3; c++) {
+                std::string v = strip(S.resolve(jget(p, ("Column" + std::to_string(c + 1)).c_str())));
+                if (v.empty() || v == "-") continue;
+                std::string h = lb_headers_.is_array() && c < (int)lb_headers_.size() ? lb_headers_[c].get<std::string>() : "";
+                parts.push_back(h.empty() ? v : h + " " + v);
+            }
+        }
+        std::string text = join(parts, ", ");
+        if (!last_probe_.count("Leaderboards.swf|you") || last_probe_["Leaderboards.swf|you"] != text) {
+            last_probe_["Leaderboards.swf|you"] = text;
+            say(text, false);
+        }
+    } else if (swf == "Leaderboards.swf" && fn == "ReceiveColumnUpdate" && data.is_object()) {
+        // async column fill (time / score arrive late): patch the stored window, the next snapshot re-reads if focused
+        int row = jint(jget(data, "row"), -1), col = jint(jget(data, "column"), -1);
+        if (jtruthy(jget(data, "forPlayer"))) {}   // footer: spoken from PopulatePlayerData
+        else if (lb_rows_.is_array() && row >= 0 && row < (int)lb_rows_.size() && col >= 0 && col < 3)
+            lb_rows_[row]["column" + std::to_string(col + 1)] = jget(data, "text");
+    } else if (swf == "ShadowLeaderboards.swf" && fn == "ReceiveLeaderboardRecords") {
+        last_probe_.erase("ShadowLeaderboards.swf|row");   // new page: re-read the focused row from the screen
     } else if (swf == "StoreContentOverview.swf" && fn == "PopulateItems" && data.is_object()) {
         store_page_items_ = jget(data, "Items");   // the visible window; PreviewItem announces the cursor
     } else if (swf == "GA_HUB.swf" && fn == "PopulateDailyRewardExpanded" && data.is_object()) {
@@ -697,6 +785,144 @@ void Narrator::say_popup(const json& data) {
     last_popup_text_ = text;
     last_popup_ms_ = now;
     if (!repeat) say(text, true);
+}
+
+// ---- Fight Stats (Stats.swf) ----
+// The landing page payload: KP/TotTime/OLTime header pairs and three panels (Ranked/Unranked/Offline), each
+// {title, stats[] (labels; the last two head the fighter table), values[], chars[] (top three fighters)}.
+void Narrator::say_stats_summary(const json& data) {
+    if (!data.is_object()) return;
+    std::vector<std::string> parts;
+    for (const char* k : {"KP", "TotTime", "OLTime"}) {
+        const json& e = jget(data, k);
+        std::string ti = strip(S.resolve(jget(e, "title"))), v = strip(S.resolve(jget(e, "value")));
+        if (!v.empty()) parts.push_back(ti.empty() ? v : ti + " " + v);
+    }
+    for (const char* k : {"Ranked", "Unranked", "Offline"}) {
+        const json& p = jget(data, k);
+        if (!p.is_object()) continue;
+        std::string title = strip(S.resolve(jget(p, "title")));
+        if (title.empty()) title = k;
+        const json& st = jget(p, "stats");
+        const json& vals = jget(p, "values");
+        const json& chars = jget(p, "chars");
+        int nStats = st.is_array() ? (int)st.size() : 0, nVals = vals.is_array() ? (int)vals.size() : 0;
+        int plain = nStats >= 2 ? nStats - 2 : nStats;   // the last two stat labels are the fighter-table column heads
+        if (plain > nVals) plain = nVals;
+        std::string first = plain > 0 ? strip(S.resolve(vals[0])) : "";
+        if (first == "0") { parts.push_back(title + ": no matches"); continue; }
+        std::vector<std::string> rows;
+        for (int i = 0; i < plain; i++) {
+            std::string v = strip(S.resolve(vals[i]));
+            if (v.empty()) continue;
+            std::string lb = strip(S.resolve(st[i]));
+            rows.push_back(lb.empty() ? v : lb + " " + v);
+        }
+        std::string h1 = nStats >= 2 ? strip(S.resolve(st[nStats - 2])) : "usage";
+        std::string h2 = nStats >= 1 ? strip(S.resolve(st[nStats - 1])) : "win rate";
+        int nChars = chars.is_array() ? (int)chars.size() : 0;
+        for (int j = 0; j < nChars; j++) {   // the fighter table's values are column-major: all usage rates, then all win rates
+            std::string name = strip(S.resolve(chars[j]));
+            if (name.empty() || name.find_first_not_of('-') == std::string::npos) continue;
+            std::string line = name;
+            int a = plain + j, b = plain + nChars + j;
+            if (a < nVals) { std::string v = strip(S.resolve(vals[a])); if (!v.empty()) line += ", " + h1 + " " + v; }
+            if (b < nVals) { std::string v = strip(S.resolve(vals[b])); if (!v.empty()) line += ", " + h2 + " " + v; }
+            rows.push_back(line);
+        }
+        if (!rows.empty()) parts.push_back(title + ": " + join(rows, ", "));
+    }
+    if (!parts.empty()) say(join(parts, ". ") + ". Y for all stats", false);
+}
+
+// One page of the All Stats detail view. The value order is fixed by the screen (Stats.as PopulateX);
+// the row labels come with the landing payload as CategoryStatLabels[category][slot].
+void Narrator::say_stats_category(const std::string& fn, const json& data) {
+    if (!data.is_object()) return;
+    static const std::map<std::string, std::pair<int, std::vector<const char*>>> PAGES = {
+        {"PopulateOverall", {0, {"NumFights", "NumWins", "NumLosses", "NumDraws", "WinRate", "WinStreak", "NumSupremeWins",
+                                 "NumAwesomeWins", "NumPerfectWins", "AverageMatchLength", "MaxCombo", "MaxDamage", "ComboBreakersPerMatch"}}},
+        {"PopulateBreaker", {1, {"NumberOfComboBreakers", "DoubleBreakerRatio", "ManualBreakerRatio", "NonShadowLinkerBreakerRatio",
+                                 "ShadowLinkerBreakerRatio", "EndersBreakerRatio", "FailedBreakers", "BluffAttempts", "CounterBreakers",
+                                 "TimesComboBroken", "DoubleBrokenRatio", "ManualBrokenRatio", "NonShadowLinkerBrokenRatio",
+                                 "ShadowLinkerBrokenRatio", "EndersBrokenRatio", "LockoutsBaited", "ShadowCounterAttempts", "ShadowCounters"}}},
+        {"PopulateCombo", {2, {"CombosPerformed", "PercentEnded", "PercentBroken", "PercentDropped", "PercentNotOpened", "AverageHits",
+                               "AvarageDamage", "LightLinkers", "MediumLinkers", "HeavyLinkers", "ShadowLinkers", "LightDoubles",
+                               "MediumDoubles", "HeavyDoubles", "LightManuals", "MediumManuals", "HeavyManuals", "AverageNumAdds",
+                               "AverageNumLinkers", "AverageEnderLevel"}}},
+        {"PopulateCombat", {3, {"OverheadAttacks", "MidAttacksHit", "LowAttacksHit", "ThrowAttempts", "SuccessfulThrows", "ShadowBarGain",
+                                "ShadowBarUsed", "ShadowUsedInCombo", "ShadowUsedOutOfCombo", "OverheadAgainst", "MidAgainstHit",
+                                "LowAgainstHit", "ThrowsAgainst", "SuccessfulTechs", "InstinctPerMatch", "DamageDoneWhileActive",
+                                "DamageTakenWhileActive"}}},
+        {"PopulateCharacters", {4, {}}},
+    };
+    auto it = PAGES.find(fn);
+    if (it == PAGES.end()) return;
+    int cat = it->second.first;
+    const json& top = jget(populate_, "Stats.swf");
+    std::string prefix;
+    const json& cats = jget(top, "Categories");
+    if (cats.is_array() && cat < (int)cats.size()) prefix = strip(S.resolve(cats[cat]));
+    const json& subs = jget(top, "SubCategories");
+    if (subs.is_array() && stats_sub_ >= 0 && stats_sub_ < (int)subs.size()) {
+        std::string s = strip(S.resolve(subs[stats_sub_]));
+        if (!s.empty()) prefix += (prefix.empty() ? "" : ", ") + s;
+    }
+    std::vector<std::string> rows;
+    if (fn == "PopulateCharacters") {
+        const json& hdr = jget(top, "CharacterStatsHeaders");
+        auto h = [&](int i, const char* def) {
+            std::string s = hdr.is_array() && i < (int)hdr.size() ? strip(S.resolve(hdr[i])) : "";
+            return s.empty() ? std::string(def) : s;
+        };
+        const json& cd = jget(data, "CharacterData");
+        if (cd.is_array()) for (const auto& c : cd) {
+            if (!c.is_object()) continue;
+            std::string name = strip(S.resolve(jget(c, "CharacterName")));
+            if (name.empty()) continue;
+            std::vector<std::string> cols;
+            const std::pair<const char*, int> F[] = {{"Usage", 1}, {"WinRate", 2}, {"MaxCombo", 3}};
+            for (auto& f : F) {
+                std::string v = strip(S.resolve(jget(c, f.first)));
+                if (!v.empty()) cols.push_back(h(f.second, f.first) + " " + v);
+            }
+            rows.push_back(name + (cols.empty() ? "" : ": " + join(cols, ", ")));
+        }
+    } else {
+        static const json noLabels;
+        const json& allLabels = jget(top, "CategoryStatLabels");
+        const json& labels = allLabels.is_array() && cat < (int)allLabels.size() ? allLabels[cat] : noLabels;
+        const auto& fields = it->second.second;
+        auto lab = [this](const json& v) {   // some labels carry literal "\t" sequences ("Overhead Attacks \t\t(% hit)")
+            return strip_markup(replaceAll(S.resolve(v), "\\t", " "));
+        };
+        for (int i = 0; i < (int)fields.size(); i++) {
+            std::string v = strip(S.resolve(jget(data, fields[i])));
+            if (v.empty()) continue;
+            std::string lb = labels.is_array() && i < (int)labels.size() ? lab(labels[i]) : "";
+            rows.push_back((lb.empty() ? std::string(fields[i]) : lb) + " " + v);
+        }
+        if (fn == "PopulateOverall") {
+            int n = (int)fields.size();
+            std::string best = strip(S.resolve(jget(data, "BestCharacter"))), bw = strip(S.resolve(jget(data, "BestCharacterTotalWins")));
+            std::string lb = labels.is_array() && n < (int)labels.size() ? lab(labels[n]) : "Best character";
+            if (!best.empty()) rows.push_back(lb + " " + best + (bw.empty() ? "" : ", " + bw));
+            std::string rival = strip(S.resolve(jget(data, "RivalCharacter"))), rl = strip(S.resolve(jget(data, "RivalCharacterLosses")));
+            lb = labels.is_array() && n + 1 < (int)labels.size() ? lab(labels[n + 1]) : "Rival character";
+            if (!rival.empty()) rows.push_back(lb + " " + rival + (rl.empty() ? "" : ", " + rl));
+        }
+    }
+    if (rows.empty()) { say((prefix.empty() ? "" : prefix + ". ") + "No data", true); return; }   // e.g. no fighters played ranked
+    last_focus_ = json{{"swf", "Stats.swf"}, {"label", prefix.empty() ? "Stats" : prefix}, {"desc", join(rows, ". ")}};
+    say((prefix.empty() ? "" : prefix + ". ") + join(rows, ". "), true);
+}
+
+json Narrator::replays_list() const {
+    const json& all = jget(jget(populate_, "Replays.swf"), "ReplayList");
+    if (!replays_fav_ || !all.is_array()) return all;
+    json out = json::array();
+    for (const auto& e : all) if (jtruthy(jget(e, "IsAFavorite"))) out.push_back(e);
+    return out;
 }
 
 void Narrator::on_ei(const std::string& script, const std::string& fn, const std::string& js, int64_t t) {
@@ -819,6 +1045,37 @@ void Narrator::on_ei(const std::string& script, const std::string& fn, const std
         }
     } else if (script == "StoreContentOverview" && fn == "PreviewItem") {
         on_store_preview(js, t);
+    } else if (script == "FightTitles" && fn == "GetTitleDetailsForCategory") {
+        titles_details_ = true;   // the list itself follows as PopulateTitleDetails
+    } else if (fn == "PlayBack" && current_swf_ == "FightTitles.swf" && titles_details_) {   // sounds arrive as uiSounds.<name>
+        titles_details_ = false;
+        last_probe_.erase("FightTitles.swf|item");   // back on the category list: re-read the row under the cursor
+    } else if (script == "Stats" && fn == "GetStatsByCategoryAndSubIndex") {
+        json j = json::parse(js, nullptr, false, true);
+        stats_cat_ = jint(jget(j, "CategoryIndex"), 0);
+        stats_sub_ = jint(jget(j, "SubIndex"), 0);
+        stats_details_ = true;
+    } else if (fn == "PlayBack" && current_swf_ == "Stats.swf" && stats_details_) {
+        stats_details_ = false;
+        say("Summary. Y for all stats", true, t);
+    } else if (fn == "PlayMetal_HitLarge" && current_swf_ == "Replays.swf") {
+        // X toggles the favorites filter; the game keeps a separate filtered list, mirror it
+        replays_fav_ = !replays_fav_;
+        last_probe_.erase("Replays.swf|item");
+        json list = replays_list();
+        int n = list.is_array() ? (int)list.size() : 0;
+        say(replays_fav_ ? "Favorites only, " + std::to_string(n) + (n == 1 ? " replay" : " replays") : "All replays", true, t);
+    } else if (script == "Replays" && fn == "ToggleFavorite") {
+        json j = json::parse(js, nullptr, false, true);
+        bool fav = jtruthy(jget(j, "IsFavorite"));
+        json& all = populate_["Replays.swf"]["ReplayList"];
+        if (all.is_array()) for (auto& e : all)
+            if (jget(e, "LegacyId") == jget(j, "ReplayId")) { e["IsAFavorite"] = fav; break; }
+        say(fav ? "Favorite added" : "Favorite removed", true, t);
+    } else if (script == "Replays" && fn == "LoadReplayById") {
+        say("Loading replay", true, t);
+    } else if (script == "FightArchiveMain" && fn == "CallAchievements") {
+        say("Steam achievements overlay opened. The overlay is separate from the game and not read by this mod; Shift Tab returns to the game", true, t);
     } else if (script == "StageSelect" && fn == "StageSelectionChanged") {
         on_stage_changed(js, t);
     } else if (script == "CommandList" && fn == "EntrySelected") {
@@ -1352,6 +1609,126 @@ void Narrator::on_focus(const json& rec) {
         return;
     }
     if (swf == "Story.swf") { on_story_focus(rec, t); return; }
+    if (swf == "Leaderboards.swf") {
+        const json& pr = jget(rec, "probe");
+        json fil = clean(jget(pr, "filter"));
+        if (!isNone(fil)) {   // All / Friends (X): announced when it changes
+            std::string f = sv(fil), fk = swf + "|filter";
+            bool had = last_probe_.count(fk) > 0;
+            if (had && last_probe_[fk] != f) say(f, true, t);
+            last_probe_[fk] = f;
+        }
+        if (jget(pr, "loading").is_boolean() && jget(pr, "loading").get<bool>()) return;
+        std::string prefix;
+        json cat = clean(jget(pr, "category")), sub = clean(jget(pr, "subcategory"));
+        std::string catSub = (isNone(cat) ? "" : sv(cat)) + "|" + (isNone(sub) ? "" : sv(sub));
+        std::string ck = swf + "|cat";
+        if (catSub != "|" && (!last_probe_.count(ck) || last_probe_[ck] != catSub)) {
+            last_probe_[ck] = catSub;
+            prefix = (isNone(cat) ? "" : sv(cat)) + (isNone(sub) ? "" : (isNone(cat) ? "" : ", ") + sv(sub)) + ". ";
+        }
+        int bidx = jint(jget(rec, "index"), -1);
+        if (!lb_rows_.is_array() || bidx < 0 || bidx >= (int)lb_rows_.size() || !lb_rows_[bidx].is_object()) {
+            if (!prefix.empty()) say(prefix.substr(0, prefix.size() - 2), true, t);
+            return;
+        }
+        const json& r = lb_rows_[bidx];
+        std::vector<std::string> parts;
+        std::string rank = strip(S.resolve(jget(r, "rank"))), tag = strip(S.resolve(jget(r, "gamertag")));
+        parts.push_back((rank.empty() ? "rank " + std::to_string(lb_top_ + bidx + 1) : "rank " + rank) + (tag.empty() ? "" : ", " + tag));
+        for (int c = 0; c < 3; c++) {
+            std::string v = strip(S.resolve(jget(r, ("column" + std::to_string(c + 1)).c_str())));
+            if (v.empty() || v.find_first_not_of('-') == std::string::npos) continue;
+            std::string h = lb_headers_.is_array() && c < (int)lb_headers_.size() && lb_headers_[c].is_string() ? lb_headers_[c].get<std::string>() : "";
+            parts.push_back(h.empty() ? v : h + " " + v);
+        }
+        std::string rowText = join(parts, ", ");
+        std::string k = swf + "|row";
+        if (last_probe_.count(k) && last_probe_[k] == rowText) return;
+        last_probe_[k] = rowText;
+        last_focus_ = json{{"swf", swf}, {"index", bidx}, {"label", parts[0]}, {"desc", ""}, {"value", nullptr}};
+        say(prefix + rowText, true, t);
+        return;
+    }
+    if (swf == "ShadowLeaderboards.swf") {
+        const json& pr = jget(rec, "probe");
+        json fil = clean(jget(pr, "filter"));
+        if (!isNone(fil)) {
+            std::string f = sv(fil), fk = swf + "|filter";
+            bool had = last_probe_.count(fk) > 0;
+            if (had && last_probe_[fk] != f) say(f, true, t);
+            last_probe_[fk] = f;
+        }
+        if (jget(pr, "loading").is_boolean() && jget(pr, "loading").get<bool>()) return;
+        std::string prefix;
+        json cat = clean(jget(pr, "category"));
+        std::string ck = swf + "|cat";
+        if (!isNone(cat) && (!last_probe_.count(ck) || last_probe_[ck] != sv(cat))) {
+            last_probe_[ck] = sv(cat);
+            prefix = sv(cat) + ". ";
+        }
+        const json& g = jget(jget(rec, "groups"), "rows");
+        json tag = clean(jget(g, "tag"));
+        if (isNone(tag)) { if (!prefix.empty()) say(prefix.substr(0, prefix.size() - 2), true, t); return; }
+        std::vector<std::string> parts;
+        json rank = clean(jget(g, "rank"));
+        parts.push_back((isNone(rank) ? "" : "rank " + sv(rank) + ", ") + sv(tag));
+        json cn = clean(jget(g, "charname"));
+        if (!isNone(cn)) parts.push_back(sv(cn));
+        const std::pair<const char*, const char*> COLS[] = {{"wins", "hdrWins"}, {"losses", "hdrLosses"}, {"ranking", "hdrRank"}};
+        for (auto& cp : COLS) {
+            json v = clean(jget(g, cp.first));
+            if (isNone(v)) continue;
+            std::string vs = strip(sv(v));
+            if (vs.empty() || vs.find_first_not_of('-') == std::string::npos) continue;
+            json h = clean(jget(pr, cp.second));
+            parts.push_back(isNone(h) ? vs : sv(h) + " " + vs);
+        }
+        std::string rowText = join(parts, ", ");
+        std::string k = swf + "|row";
+        if (last_probe_.count(k) && last_probe_[k] == rowText) return;
+        last_probe_[k] = rowText;
+        last_focus_ = json{{"swf", swf}, {"index", jint(jget(pr, "rowIdx"), -1)}, {"label", sv(tag)}, {"desc", ""}, {"value", nullptr}};
+        say(prefix + rowText, true, t);
+        return;
+    }
+    if (swf == "FightTitles.swf") {
+        if (titles_details_) return;   // the open challenge list was read in full from its payload
+        int fidx = jint(jget(rec, "index"), -1);
+        const json& cats = jget(jget(populate_, swf.c_str()), "TitleCategoryNames");
+        if (!cats.is_array() || fidx < 0 || fidx >= (int)cats.size() || !cats[fidx].is_object()) return;
+        const json& e = cats[fidx];
+        std::string name = strip(S.resolve(jget(e, "Title")));
+        std::string text = name.empty() ? "category " + std::to_string(fidx + 1) : name;
+        std::string cnt = jtostr(clean(jget(e, "Count")));
+        if (!cnt.empty() && cnt != "null") text += ", " + cnt + (cnt == "1" ? " challenge" : " challenges");
+        if (verbosity_ >= 1) text += ", " + std::to_string(fidx + 1) + " of " + std::to_string((int)cats.size());
+        std::string k = swf + "|item";
+        if (last_probe_.count(k) && last_probe_[k] == text) return;
+        last_probe_[k] = text;
+        last_focus_ = json{{"swf", swf}, {"index", fidx}, {"label", name}, {"desc", ""}, {"value", nullptr}};
+        say(text, true, t);
+        return;
+    }
+    if (swf == "Replays.swf") {
+        int ridx = jint(jget(rec, "index"), -1);
+        json list = replays_list();
+        if (!list.is_array() || ridx < 0 || ridx >= (int)list.size() || !list[ridx].is_object()) return;
+        const json& e = list[ridx];
+        std::string name = strip(S.resolve(jget(e, "ReplayName")));
+        std::string text = name.empty() ? "replay " + std::to_string(ridx + 1) : name;
+        std::string dt = strip(S.resolve(jget(e, "Date"))), tm = strip(S.resolve(jget(e, "Time")));
+        if (!dt.empty()) text += ", " + dt;
+        if (!tm.empty()) text += ", " + tm;
+        if (jtruthy(jget(e, "IsAFavorite"))) text += ", favorite";
+        if (verbosity_ >= 1) text += ", " + std::to_string(ridx + 1) + " of " + std::to_string((int)list.size());
+        std::string k = swf + "|item";
+        if (last_probe_.count(k) && last_probe_[k] == text) return;
+        last_probe_[k] = text;
+        last_focus_ = json{{"swf", swf}, {"index", ridx}, {"label", name}, {"desc", ""}, {"value", nullptr}};
+        say(text, true, t);
+        return;
+    }
     if (isNone(jget(rec, "index")) || swf == "CommandList.swf") return;
     if (swf == "StoreContentOverview.swf") return;   // event-driven (PreviewItem); the generic reader only knows "item N"
     if (swf == "StoreFighters.swf") {
@@ -1392,6 +1769,11 @@ void Narrator::on_focus(const json& rec) {
         return;
     }
     const json& probe = jget(rec, "probe");
+    if (swf == "FightArchiveMain.swf") {
+        // selecting an entry resets the menu's index to 0 while it animates off: do not read the stale cursor
+        const json& bs = jget(probe, "buildState");
+        if ((bs.is_string() && bs.get<std::string>() == "BuildOff") || jtruthy(jget(probe, "transitioning"))) return;
+    }
     if (swf == "ControllerConfig.swf") { on_controller_focus(rec, probe, deferred); return; }
     if (startsWith(swf, "GA_")) { on_ga_focus(swf, rec, base_why, deferred, t); return; }
     if (swf == "Popup.swf") {   // the legend shows the keyboard key behind each gamepad button ("Enter", "Tab"): remember it

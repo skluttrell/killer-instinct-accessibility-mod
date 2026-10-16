@@ -101,6 +101,38 @@ is read from the display objects. While the popup is up, its calls into the host
 must not switch the probed movie back to the War Room (`hooks.cpp`). Not read yet: Archives, leaderboard, the Barracks
 artifact list, Spirit Lair guardian details, daily rewards, cinematic subtitles.
 
+### Fight Archive
+All five content pages are read (beta report 2026-10-16, "Fighter archive still needs to be read out"):
+
+* **Fight Stats** (`Stats.swf`): the landing page is spoken from its Populate payload — the XP / play time header,
+  then each match panel (Ranked / Non-Ranked / Offline) with its stats and the top-three fighter table ("no matches"
+  when empty; the fighter table's `values` are column-major: all usage rates, then all win rates). Y opens All Stats;
+  each detail page (Overall, Breaker, Combo, Combat, Character) is spoken in full when its `Populate<Category>`
+  payload arrives, with labels from `CategoryStatLabels` in the landing payload (the value order is fixed in
+  `Stats.as`; literal `\t` sequences in some labels are stripped). The category/sub names prefix the page
+  (LB/RB = Q/E and Left/Right toggle them); Escape back to the landing page says "Summary".
+* **Fight Challenges** (`FightTitles.swf`): total count, then the category list (one row per fighter plus General)
+  by `GetSelectionIndex` with name, trophy count and position. Enter reads the category's whole challenge list from
+  the `PopulateTitleDetails` payload; each row's actual progress is recovered from the bar
+  (`Previous + FillAmount * (Next - Previous)`, spoken "92 of 100"). Scrolling inside the details repopulates in
+  ActionScript only and is deliberately silent — the list was already read in full.
+* **Leaderboards** (`Leaderboards.swf`): rows come from the `ReceiveLeaderboardRecords` window (8 per page, patched
+  by `ReceiveColumnUpdate`), the focused row by `GetSelectionIndex`, columns named from `PopulateColumnHeaders`;
+  "-" columns are skipped. Board switches (LB/RB category, Left/Right subcategory, Y top, LT/RT page) re-announce
+  "category, subcategory" once, the X filter toggle speaks the new filter text, and your own footer row is spoken
+  from `PopulatePlayerData` ("You have no entry on this board" when it is all dashes). Nothing is read while the
+  loading spinner is visible.
+* **Shadow Leaderboards** (`ShadowLeaderboards.swf`): a scan of `mcListItems.mcListItem0-4` (GainFocus timeline
+  label) reads rank, player, fighter and the visible value columns, named from the on-screen column headers (the
+  columns differ per category). Category and filter changes prefix / announce as above.
+* **Replays** (`Replays.swf`): list count on entry, then each row (name, date, time, "favorite", position) from the
+  `ReplayList` payload by `GetSelectionIndex`. Y ("Favorite added / removed") updates the mirrored list; X switches
+  to the game's favorites-only list, which is mirrored by filtering `IsAFavorite` ("Favorites only, n replays").
+  Enter says "Loading replay".
+* **Achievements** opens the Steam overlay; the narrator says so and that the overlay is outside the game
+  (Shift+Tab returns). The archive menu itself suppresses reads while it animates off (`currentLabel == "BuildOff"`
+  or `transitioning`): selecting an entry resets its cursor to 0, which used to speak a stale "Fight Stats, 1 of 6".
+
 ### Opponent radar
 During a fight a soft two-harmonic pulse (90 ms, 4 ms attack, 30 ms release) tells you where the opponent is relative
 to you as Player 1: it is panned to the side the opponent is on (harder the further away), it repeats faster the
