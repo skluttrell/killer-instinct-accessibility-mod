@@ -19,6 +19,8 @@ public:
     void on_inv(const std::string& swf, const std::string& fn, const std::string& js);
     void on_focus(const json& rec);
     void on_match_live(int32_t levelId);   // from the radar thread (under g_lock): announce the stage when it was not chosen explicitly
+    void on_training(const std::string& event, const json& data, int64_t t);
+    void flush_training(int64_t t);        // coalesce native HUD events; called by the hotkey thread under g_lock
 
     // hotkeys
     void repeat();
@@ -72,6 +74,17 @@ private:
     std::map<int, std::string> cs_color_name_;   // side -> that entry's name ("Color 3", "Mimic Skin")
     std::wstring names_path_;
 
+    json training_state_ = json::object(), training_spoken_ = json::object();
+    std::set<std::string> training_dirty_;
+    std::set<std::string> training_completed_;
+    int64_t training_since_ = 0, training_changed_ = 0;
+    int64_t training_reset_ms_ = 0;
+    bool training_reset_spoken_ = false;
+    bool training_objective_completed_ = false;
+    bool training_pending_ = false, training_popup_focus_ = false, training_popup_open_ = false;
+    void clear_training();
+    std::string training_description() const;
+    void training_focus();
     // Shadow Lords
     int preload_dialog_i_ = 0;             // next line of the versus-screen dialogue (dialogData index)
     std::string ga_announced_;             // GA screen whose ScreenShown summary was spoken last

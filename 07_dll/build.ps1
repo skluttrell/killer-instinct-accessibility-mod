@@ -6,7 +6,14 @@ $build = Join-Path $root "build"
 New-Item -ItemType Directory -Force $build | Out-Null
 $vcvars = "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
 if (-not (Test-Path $vcvars)) { $vcvars = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat" }
-$src = @("src\dllmain.cpp", "src\common.cpp", "src\gfx.cpp", "src\strings.cpp", "src\speech.cpp", "src\snapshot.cpp", "src\narrator.cpp", "src\hooks.cpp", "src\pak.cpp", "src\radar.cpp",
+if (-not (Test-Path $vcvars)) {
+    $vcvars = Get-ChildItem "${env:ProgramFiles}\Microsoft Visual Studio", "${env:ProgramFiles(x86)}\Microsoft Visual Studio" -Directory -ErrorAction SilentlyContinue |
+        Get-ChildItem -Directory |
+        ForEach-Object { Join-Path $_.FullName "VC\Auxiliary\Build\vcvars64.bat" } |
+        Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+}
+if (-not $vcvars) { throw "MSVC x64 build tools not found" }
+$src = @("src\dllmain.cpp", "src\common.cpp", "src\gfx.cpp", "src\strings.cpp", "src\speech.cpp", "src\snapshot.cpp", "src\narrator.cpp", "src\hooks.cpp", "src\pak.cpp", "src\radar.cpp", "src\training.cpp",
          "deps\minhook\src\buffer.c", "deps\minhook\src\hook.c", "deps\minhook\src\trampoline.c", "deps\minhook\src\hde\hde64.c")
 $srcList = ($src | ForEach-Object { '"' + (Join-Path $root $_) + '"' }) -join " "
 $cmd = "call `"$vcvars`" >nul 2>&1 && cd /d `"$build`" && cl /nologo /O2 /MT /EHsc /std:c++17 /W3 /DWIN32_LEAN_AND_MEAN /DNDEBUG /I`"$root\deps\minhook\include`" $srcList /link /DLL /MAP:kiaccess.map /OUT:kiaccess.dll /DEF:`"$root\src\exports.def`" user32.lib bcrypt.lib"

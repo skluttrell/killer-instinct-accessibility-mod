@@ -3,7 +3,7 @@
 #include <cstdint>
 namespace ki {
 static const char* KNOWN_EXE_SHA256 = "33bbd291e1a4e280fc07f614fc6a10039c1de7cd2dea33153b0e9c315c31edf6";
-struct Sig { const char* name; uint32_t rva; const char* pattern; };
+struct Sig { const char* name; uint32_t rva; const char* pattern; bool optional = false; };
 static const Sig SIGS[] = {
   {"dispatcher", 0x5dfe50, "48 89 5c 24 08 48 89 74 24 10 48 89 7c 24 20 55 41 56 41 57 48 8d 6c 24 b9 48 81 ec ?? ?? ?? ?? 45 8b f9 4d 8b f0 49 8b 50 20 41 8b 40 18 c1 e8 06"},
   {"rootInvoke", 0x1122ef0, "40 53 55 56 57 41 54 41 55 41 56 41 57 48 81 ec ?? ?? ?? ?? 48 8b 05 ?? ?? ?? ?? 48 33 c4 48 89 84 24 c0 02 00 00"},
@@ -12,7 +12,12 @@ static const Sig SIGS[] = {
   {"valueRelease", 0x350bd0, "40 53 48 83 ec 20 48 8b d9 8b 41 18 c1 e8 06 a8 01 74 ?? 48 8b 49 10 48 8b 01"},
   {"advance", 0xe4a700, "48 8b c4 48 89 58 10 48 89 70 18 48 89 78 20 55 41 54 41 55 41 56 41 57 48 8d 68 c8 48 81 ec ?? ?? ?? ?? 0f 29 70 c8 0f 29 78 b8 44 0f 29 40 a8 44 0f 29 48 98 48 8b 05 ?? ?? ?? ?? 48 33 c4 48 89 45 c0"},
   {"matchState", 0x9d7240, "48 8b 05 ?? ?? ?? ?? 48 85 c0 74 ?? f7 40 48 ?? ?? ?? ?? 75 ?? 33 c0 c3 cc cc cc cc cc cc cc cc 48 89 5c 24 18 48 89 4c 24 08 55 56 57 41 54 41 55 41 56 41 57 48 83 ec 30 4c 8b f1 e8 ?? ?? ?? ??"},
-  {"levelState", 0x68b020, "48 8b 05 ?? ?? ?? ?? 8b 80 fc 0b 00 00 c3 cc cc 48 8b 05 ?? ?? ?? ?? 48 63 d1 f3 0f 10 84 90 c0 10 00 00 c3"},
-  {"roundState", 0x74d520,"48 8b 05 ?? ?? ?? ?? 48 85 c0 74 ?? f7 40 48 ?? ?? ?? ?? 75 ?? 33 c0 c3 cc cc cc cc cc cc cc cc 89 54 24 10 48 83 ec 28 4c 8b 09 44 8b c2 4c 8b 51 08"},
+  {"roundState", 0x74d520, "48 8b 05 ?? ?? ?? ?? 48 85 c0 74 ?? f7 40 48 ?? ?? ?? ?? 75 ?? 33 c0 c3 cc cc cc cc cc cc cc cc 89 54 24 10 48 83 ec 28 4c 8b 09 44 8b c2 4c 8b 51 08"},
+  {"levelState", 0x68b020, "48 8b 05 ?? ?? ?? ?? 8b 80 fc 0b 00 00 c3 cc cc 48 8b 05 ?? ?? ?? ?? 48 63 d1"},
+  {"nativeDispatch", 0x62acf0, "48 85 d2 0f ?? ?? ?? ?? ?? 48 89 5c 24 08 55 56 57 48 81 ec ?? ?? ?? ?? 48 8b f2 48 8b e9 4c 8d 8a c0 00 00 00 49 8b 01 49 3b c1 0f ?? ?? ?? ?? ?? 45 8b 00 44 39 40 10 74 ?? 48 8b 00 49 3b c1 75 ?? e9 ?? ?? ?? ?? 48 8d 78 10 48 85 ff 0f ?? ?? ?? ?? ?? 8b 57 34 85 d2 0f ?? ?? ?? ?? ?? 48 8b 05 ?? ?? ?? ?? 48 8b 88 b8 00 00 00 33 db 48 89 5c 24 58 0f 57 c0 f3 0f 7f 44 24 60 4c 8d 44 24 58 e8 ?? ?? ?? ?? 84 c0 0f ?? ?? ?? ?? ?? 48 89 75 08 48 89 5c 24 40 0f 57 c0 f3 0f 7f 44 24 48 4c 8d 44 24 40 33 d2 48 8d 4c 24 58 e8 ?? ?? ?? ?? 8b 57 30 48 8d 4c 24 40 e8 ?? ?? ?? ?? 83 7c 24 54 01 0f ?? ?? ?? ?? ?? 48 8b d5 48 8d 4c 24 78 e8 ?? ?? ?? ?? 48 8b f0 48 89 84 24 28 01 00 00 48 8b 6c 24 40 48 8b d0 48 8d 8c 24 b8 00 00 00 e8 ?? ?? ?? ?? 48 8b f8 48 89 84 24 38 01 00 00", true},
+  {"trainingCommands", 0x68b4b0, "48 8b 05 ?? ?? ?? ?? 48 8b 88 e8 08 00 00 48 2b 88 e0 08 00 00 48 b8 ab aa aa aa aa aa aa 2a", true},
+  {"trainingObjective", 0x68c140, "48 8b 05 ?? ?? ?? ?? 48 05 00 09 00 00 48 83 78 18 10 72 ?? 48 8b 00 c3", true},
+  {"trainingEntryCopy", 0x65dc70, "48 89 5c 24 10 48 89 4c 24 08 57 48 83 ec 20 48 8b da 48 8b f9 48 c7 41 10 00 00 00 00 48 c7 41 18 0f 00 00 00 48 8b 42 20 48 89 41 20 49 c7 c1 ff ff ff ff 45 33 c0 e8 ?? ?? ?? ?? 90 48 8d 53 28 48 8d 4f 28 48 c7 41 10 00 00 00 00 48 c7 41 18 0f 00 00 00 48 8b 42 20 48 89 41 20 49 c7 c1 ff ff ff ff 45 33 c0 e8 ?? ?? ?? ?? 8b 43 50 89 47 50 8b 43 54 89 47 54 8b 43 58 89 47 58 0f b6 43 5c 88 47 5c 48 8b c7 48 8b 5c 24 38 48 83 c4 20 5f c3 cc cc cc cc cc cc cc cc cc cc cc cc cc", true},
+  {"trainingClearCommands", 0x5eda00, "48 89 5c 24 18 48 89 74 24 20 57 48 81 ec a0 00 00 00 33 ff 89 bc 24 b0 00 00 00", true},
 };
 }

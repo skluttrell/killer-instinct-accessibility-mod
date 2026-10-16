@@ -23,6 +23,7 @@ Known Issues:
 
 New in this version:
 
+* Tutorial HUD goals are spoken as they appear, with progress and completion updates. Ctrl+Shift+D reads the current objective and goal counts. Repeated frame updates and retry completions stay quiet, restarted lessons read again, and explanation popups keep speech priority. Duplicate attack names from button glyphs are removed.
 * The whole Fight Archive is read (requested in the 2026-10-16 beta report):
   - Fight Stats: the summary page reads your total XP and play time, then the Ranked, Non-Ranked and Offline panels with their matches, win rates and your top three fighters ("no matches" when a panel is empty). Y (R on the default keyboard binds) opens All Stats; each page (Overall, Breaker, Combo, Combat, Character) is read in full, Q/E and Left/Right switch pages, Escape returns to the summary.
   - Fight Challenges: the total, then each category as you move (fighter, trophies, position). Enter reads the category's whole challenge list with the actual progress of each bar ("Aerial Attacks, 92 of 100").
@@ -123,7 +124,7 @@ All hotkeys work anywhere in the game, but only while the game window is the act
 
 Ctrl+Shift+R: Repeat the last announcement.
 Ctrl+Shift+Down and Ctrl+Shift+Up: Step through the last announcement line by line (next and previous line). The first press silences the current announcement and starts at the first line. The plain arrow keys still work in the game as usual.
-Ctrl+Shift+D: Read the description of the focused item.
+Ctrl+Shift+D: Read the description of the focused item, or the current objectives and goal counts when the tutorial HUD has focus.
 Ctrl+Shift+A: On Character Select, describe the physical appearance of the fighter under the cursor, or the chosen fighter. On the costume stage the retro costume gets its own text. Ctrl+Shift+D does the same there, since fighters have no description.
 Ctrl+Shift+T: Read the ticker / message of the day.
 Ctrl+Shift+V: Cycle verbosity: 0 label only, 1 label and position, 2 label, position and description.

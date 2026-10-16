@@ -1,7 +1,7 @@
 # kiaccess (Phase 2): the narrator as an in-process DLL
 
 C++17, MSVC x64, static CRT. No Frida, no Python at runtime: the game loads the DLL itself as a `dinput8.dll` proxy,
-the DLL installs three MinHook detours and speaks through Prism. Behaviour is the same as the Phase 1 prototype
+the DLL installs three core and two optional native training MinHook detours and speaks through Prism. The menu readers are based on the Phase 1 prototype
 (`06_narrator/`): the `SCREENS` table (`src/snapshot.cpp`) and the narration model (`src/narrator.cpp`) are direct ports
 of `agent.js` and `narrator.py`.
 
@@ -13,6 +13,7 @@ of `agent.js` and `narrator.py`.
 | `src/gfx.cpp` | GFx::Value API: `root.GetSWFRefFromString`, `ObjectInterface::GetMember/Invoke`, `ValueRelease`. Managed Values are tracked by address by the engine: never copy one before releasing it |
 | `src/snapshot.cpp` | per-screen reader table (JSON literal) + index-mode / scan-mode snapshots -> the same JSON records the Frida agent produced |
 | `src/narrator.cpp` | the narration model on nlohmann::json (localization, state stacks, character select, controller config, popups, hotkeys) |
+| `src/training.cpp` | guarded snapshots of native tutorial HUD objectives and commands, including progress and completion |
 | `src/strings.cpp` | `strings_en.tsv` loader, CRC32 (zlib) key hashing |
 | `src/pak.cpp` | read-only PAK_ v4 record lookup + type-26 string table decoder: regenerates `kiaccess\data\strings_en.tsv` from the game's own `PAK\DX11\GLOBAL.PAK` on first run (and again when the PAK is newer than the TSV, i.e. after a game update), so the mod ships none of the game's text |
 | `src/speech.cpp` | prism.dll loader + speech worker thread (the UI thread never waits on the screen reader) |
@@ -162,11 +163,48 @@ found through their getter functions (`matchState`, `roundState` signatures) and
 2. Test, read `build\kiaccess\speech.log` (set `log_events=1` to see every engine event).
 3. Ctrl+Shift+U unloads it; rebuild; inject again. Run only one of Frida narrator / DLL at a time: both hook the same functions.
 
+### Native training HUD
+Lesson popups use the Scaleform menu path, but the on-screen goals come from `AddLocalizedTrainingCommand`
+(RVA `0x5ed4b0`) and `SetLocalizedTrainingObjective` (`0x5ee2b0`). They queue `UpdateTrainingCommands`,
+`UpdateTrainingObjective` and `ClearTrainingObjective` to the native Lua `HUD` script. The optional hook on
+`uiQueuedEvent::Dispatch` (`0x62acf0`) observes these events, including producers that inline queue insertion.
+It copies the localized instruction strings, required/current counts and completion flags while the event is
+dispatched. No game pointers reach the hotkey or speech threads. `ClearTrainingCommands` (`0x5eda00`) is also
+observed because a lesson can clear and rebuild an identical list before its queued events are dispatched.
+
+The narrator combines changes after 50 ms of quiet, with a maximum wait of 200 ms, and queues new goals after
+popup explanations. An objective's headline is read once when command rows supply the progress; its aggregate
+counter remains in the manual description. New commands include their input sequence, while later progress
+uses just the action name and count. Completion is announced once per command per exercise, without also
+reading "1 of 1"; repeated retry completions remain silent. Resets produce one brief action/reset message
+("Progress reset" for multiple rows), rate-limited to once every three seconds. Rows are matched by instruction
+and target rather than array index, so removing a completed row does not reread the remaining actions. A new
+explanation suppresses a pending all-complete goal batch instead of reading it after the next exercise's popup.
+Popup attack placeholders and their identical parenthesized glyph echoes collapse to one name; distinct inputs
+and non-ASCII text are preserved. Clears reset the deduplication baseline; clearing
+an objective explicitly forgets its text, since the game leaves the native text in memory. Ctrl+Shift+D reads
+the current goals when the training HUD has speech focus. Menus retain their own descriptions. Loading a new
+match or returning to the front end discards cached goals. Dojo's loading `Populate` also updates the narrator's
+screen context, since it can arrive without `LoadDestination`; this keeps lesson screen context current.
+The reader applies to every mode using these HUD
+events; other native text widgets have no automatic reader yet.
+
+The hook, reset and state-layout signatures are optional. On an unknown executable they must each match
+uniquely, and both getters must reference the same UI manager; otherwise only training narration is disabled.
+The layout signatures retain field offsets and counters rather than wildcarding them.
+
+Run `powershell -ExecutionPolicy Bypass -File 07_dll/tests/run.ps1` from the repository root for synthetic native
+memory and narration tests (no game needed). Checked: retail hash-only event keys, inline/heap strings, malformed
+pointers and vector bounds, progress/completion, frame deduplication, bounded coalescing, clears and lesson restarts,
+popup ordering, attack/direction words, description/repeat, upstream line review and cleanup when leaving a fight.
+The contributor reports successful live testing of the tutorial HUD changes; the integration with upstream v0.2.7
+is checked by the regression suite.
+
 ## Safety
-Read-only with respect to the game and its files: no memory writes besides MinHook's trampolines on the three hooked
+Read-only with respect to the game and its files: no memory writes besides MinHook's trampolines on the hooked
 functions; the GFx calls are the engine's public Value API on the UI thread; nothing is sent anywhere. Unknown game
-builds are handled by the signature scan; if a signature is missing the narrator logs it and stays disabled (the
-proxy still forwards DirectInput so the game runs normally).
+builds are handled by the signature scan. A missing core signature disables the narrator; missing optional training
+signatures disable only the training reader. The proxy still forwards DirectInput so the game runs normally.
 
 ## Verified live (2026-10-09, radar)
 Practice, Jago vs a Fulgore dummy, driven from the terminal with `sendkeys.py` and `radar_debug=1`: positions start at

@@ -1,6 +1,6 @@
 // kiaccess - Killer Instinct accessibility narrator, Phase 2 in-process DLL.
 // Loaded either as the dinput8.dll proxy (copy next to KILLERINSTINCTX64_R.EXE as dinput8.dll) or injected for
-// development (05_tools/inject.py). Read-only with respect to the game: three MinHook detours, the GFx::Value API
+// development (05_tools/inject.py). Read-only with respect to the game: three core and two optional training MinHook detours, the GFx::Value API
 // called on the UI thread, Prism for speech. Files live in <dll dir>\kiaccess\ (kiaccess.ini, prism.dll, data\, speech.log).
 #include "common.h"
 #include "gfx.h"
@@ -50,9 +50,16 @@ static DWORD WINAPI hotkeyThread(LPVOID) {
         registered = on;
     };
     MSG msg;
+    int64_t nextFocusCheck = 0;
     while (true) {
-        DWORD w = MsgWaitForMultipleObjects(0, nullptr, FALSE, 200, QS_ALLINPUT);
-        if (w == WAIT_TIMEOUT) { setRegistered(gameHasFocus()); continue; }
+        DWORD w = MsgWaitForMultipleObjects(0, nullptr, FALSE, 50, QS_ALLINPUT);
+        int64_t now = nowMs();
+        if (now >= nextFocusCheck) { setRegistered(gameHasFocus()); nextFocusCheck = now + 200; }
+        {
+            std::lock_guard<std::recursive_mutex> g(g_lock);
+            if (hooks::enabled()) s_nar->flush_training(now);
+        }
+        if (w == WAIT_TIMEOUT) continue;
         if (!PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE)) continue;
         if (msg.message == WM_QUIT) break;
         if (msg.message != WM_HOTKEY) continue;
