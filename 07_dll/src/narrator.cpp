@@ -50,6 +50,33 @@ static std::string glyph_words(const std::string& text) {
     return out;
 }
 
+static std::string input_key(const std::string& text) {
+    static const std::regex plus("\\bplus\\b", std::regex::icase);
+    std::string out;
+    for (unsigned char ch : std::regex_replace(lower(text), plus, "")) if (isalnum(ch) || ch >= 0x80) out += (char)ch;
+    return out;
+}
+
+// Popup prose sometimes includes both an attack placeholder and a parenthesized
+// button glyph. Once both render as attack names, only one copy is useful.
+static std::string attack_echoes(std::string text) {
+    text = glyph_words(text);
+    size_t from = 0;
+    while (true) {
+        size_t begin = text.find('(', from), end = begin == std::string::npos ? begin : text.find(')', begin + 1);
+        if (end == std::string::npos) break;
+        std::string inside = text.substr(begin + 1, end - begin - 1), key = input_key(inside);
+        bool attack = false;
+        for (const auto& glyph : GLYPH_WORDS) if (lower(inside).find(glyph.second) != std::string::npos) { attack = true; break; }
+        std::string preceding = input_key(text.substr(0, begin));
+        if (attack && !key.empty() && endsWith(preceding, key.c_str())) text.erase(begin, end - begin + 1);
+        else from = end + 1;
+    }
+    static const std::regex repeatedLabel("\\b(light|medium|heavy|any|triple)\\s+\\1\\s+(punch|kick)\\b", std::regex::icase);
+    static const std::regex whitespace("\\s+"), punctuation("\\s+([,.;!?])");
+    return std::regex_replace(std::regex_replace(std::regex_replace(text, repeatedLabel, "$1 $2"), whitespace, " "), punctuation, "$1");
+}
+
 static const std::map<std::string, std::string> CMD_TOKENS = {
     {"DOWN", "down"}, {"DOWNBACK", "down-back"}, {"BACK", "back"}, {"UPBACK", "up-back"}, {"UP", "up"}, {"UPFORWARD", "up-forward"},
     {"FORWARD", "forward"}, {"DOWNFORWARD", "down-forward"}, {"LOWPUNCH", "light punch"}, {"MEDPUNCH", "medium punch"},
@@ -70,8 +97,11 @@ static std::string strip(const std::string& s) {
     return s.substr(a, b - a);
 }
 static std::string tokenWord(const std::string& tok) {
-    auto it = CMD_TOKENS.find(upper(strip(tok)));
-    return it != CMD_TOKENS.end() ? it->second : lower(strip(tok));
+    std::string key = upper(strip(tok));
+    auto it = CMD_TOKENS.find(key);
+    if (it != CMD_TOKENS.end()) return it->second;
+    auto glyph = GLYPH_WORDS.find(key);
+    return glyph != GLYPH_WORDS.end() ? glyph->second : lower(strip(tok));
 }
 
 std::string humanize_command(const json& cmd) {
@@ -313,7 +343,187 @@ static std::string repair_json(const std::string& js) {
 }
 
 // ---------------- events ----------------
+static std::string training_instruction(const json& entry, bool labelOnly = false) {
+    std::string text = glyph_words(humanize_command(jget(entry, "text")));
+    size_t split = text.find(" - ");
+    if (split != std::string::npos && (labelOnly || input_key(text.substr(0, split)) == input_key(text.substr(split + 3))))
+        text = text.substr(0, split);
+    return strip(text);
+}
+
+static bool training_same_instruction(const json& a, const json& b) {
+    return a.is_object() && b.is_object() && training_instruction(a) == training_instruction(b) &&
+        jint(jget(a, "target")) == jint(jget(b, "target"));
+}
+
+static std::string training_entry_text(const json& entry, bool automatic = false, bool labelOnly = false) {
+    std::string text = training_instruction(entry, labelOnly);
+    if (text.empty()) return "";
+    int target = jint(jget(entry, "target")), count = jint(jget(entry, "count"));
+    bool complete = jtruthy(jget(entry, "complete"));
+    if (target > 0 && (!complete || count >= target) && !(automatic && (complete || (target == 1 && count == 0))))
+        text += ", " + std::to_string(count) + " of " + std::to_string(target);
+    if (complete) text += ", complete";
+    return text;
+}
+
+void Narrator::clear_training() {
+    training_state_ = json::object();
+    training_spoken_ = json::object();
+    training_dirty_.clear();
+    training_completed_.clear();
+    training_reset_spoken_ = false;
+    training_objective_completed_ = false;
+    training_pending_ = false;
+    training_popup_focus_ = false;
+    training_popup_open_ = false;
+    if (jstr(last_focus_, "swf") == "HUD") last_focus_ = nullptr;
+}
+
+std::string Narrator::training_description() const {
+    std::vector<std::string> parts;
+    std::string objective = training_entry_text(jget(training_state_, "objective"));
+    if (!objective.empty()) parts.push_back("Objective: " + objective);
+    const json& commands = jget(training_state_, "commands");
+    if (commands.is_array()) for (const auto& entry : commands) {
+        std::string text = training_entry_text(entry);
+        if (!text.empty()) parts.push_back(text);
+    }
+    return join(parts, ". ");
+}
+
+void Narrator::training_focus() {
+    std::string text = training_description();
+    if (!text.empty()) last_focus_ = json{{"swf", "HUD"}, {"desc", text}};
+    else if (jstr(last_focus_, "swf") == "HUD") last_focus_ = nullptr;
+}
+
+void Narrator::on_training(const std::string& event, const json& data, int64_t t) {
+    std::string channel;
+    if (event == "ClearTrainingCommands") {
+        training_state_["commands"] = json::array();
+        training_spoken_.erase("commands");
+        training_dirty_.erase("commands");
+        training_completed_.clear();
+        training_reset_spoken_ = false;
+        if (jstr(last_focus_, "swf") == "HUD") training_focus();
+        return;
+    }
+    if (event == "ClearTrainingObjective") {
+        training_state_.erase("objective");
+        training_spoken_.erase("objective");
+        training_dirty_.erase("objective");
+        training_objective_completed_ = false;
+        if (jstr(last_focus_, "swf") == "HUD") training_focus();
+        return;
+    }
+    if (event == "UpdateTrainingCommands" && data.is_array()) channel = "commands";
+    else if (event == "UpdateTrainingObjective" && data.is_object()) channel = "objective";
+    else return;
+    if (jget(training_state_, channel.c_str()) == data) return;   // identical per-frame updates do not extend the wait
+    training_state_[channel] = data;
+    // An empty command list ends the current set. Forget its baseline so identical
+    // instructions in a restarted lesson are read again, even within this batch.
+    if (channel == "commands" && data.empty()) { training_spoken_.erase(channel); training_completed_.clear(); training_reset_spoken_ = false; }
+    training_dirty_.insert(channel);
+    if (!training_pending_) { training_pending_ = true; training_since_ = t; }
+    training_changed_ = t;
+    if (jstr(last_focus_, "swf") == "HUD") training_focus();
+}
+
+void Narrator::flush_training(int64_t t) {
+    if (!training_pending_ || (t - training_changed_ < 50 && t - training_since_ < 200)) return;
+    training_pending_ = false;
+    std::vector<std::string> announcements;
+    std::vector<std::string> resets;
+    const json& commands = jget(training_state_, "commands");
+    bool hasCommands = commands.is_array() && !commands.empty();
+    bool allComplete = hasCommands;
+    bool allFresh = hasCommands;
+    if (hasCommands) for (const auto& command : commands) {
+        if (!jtruthy(jget(command, "complete"))) allComplete = false;
+        if (jtruthy(jget(command, "complete")) || jint(jget(command, "count")) != 0) allFresh = false;
+    }
+    const json& objective = jget(training_state_, "objective");
+    bool newExercise = allFresh && !training_instruction(objective).empty() &&
+        !training_same_instruction(objective, jget(training_spoken_, "objective"));
+    if (newExercise) { training_completed_.clear(); training_reset_spoken_ = false; }
+    for (const char* channel : {"objective", "commands"}) {
+        if (!training_dirty_.count(channel)) continue;
+        const json& state = jget(training_state_, channel), &previous = jget(training_spoken_, channel);
+        if (std::string(channel) == "objective") {
+            if (state != previous) {
+                if (!training_same_instruction(state, previous)) {
+                    training_objective_completed_ = false;
+                    // The headline is useful once. Its aggregate count repeats
+                    // the command progress when the HUD also has action rows.
+                    std::string text = hasCommands ? training_instruction(state) : training_entry_text(state, true);
+                    if (!text.empty()) announcements.push_back("Objective: " + text);
+                } else if (!hasCommands) {
+                    if (jint(jget(state, "count")) < jint(jget(previous, "count"))) resets.push_back("Objective");
+                    else if (jtruthy(jget(state, "complete")) && !training_objective_completed_) announcements.push_back("Objective complete");
+                    else if (!jtruthy(jget(state, "complete")) && jint(jget(state, "count")) != jint(jget(previous, "count")))
+                        announcements.push_back("Objective, " + std::to_string(jint(jget(state, "count"))) + " of " + std::to_string(jint(jget(state, "target"))));
+                }
+            }
+            if (jtruthy(jget(state, "complete"))) training_objective_completed_ = true;
+        } else if (state.is_array()) {
+            std::vector<bool> used(!newExercise && previous.is_array() ? previous.size() : 0, false);
+            std::map<std::string, int> occurrences;
+            for (size_t i = 0; i < state.size(); i++) {
+                const json& entry = state[i];
+                size_t match = used.size();
+                // Prefer an exact match, then the same instruction. Completed
+                // rows can disappear and shift unchanged rows to another index.
+                for (int pass = 0; pass < 2 && match == used.size(); ++pass)
+                    for (size_t j = 0; j < used.size(); ++j) if (!used[j] &&
+                        (pass == 0 ? entry == previous[j] : training_same_instruction(entry, previous[j]))) { match = j; break; }
+                std::string identity = training_instruction(entry) + "|" + std::to_string(jint(jget(entry, "target")));
+                std::string key = identity + "|" + std::to_string(occurrences[identity]++);
+                bool complete = jtruthy(jget(entry, "complete"));
+                bool repeatedCompletion = complete && training_completed_.count(key);
+                if (complete) training_completed_.insert(key);
+                if (match < used.size()) {
+                    used[match] = true;
+                    const json& before = previous[match];
+                    if (entry == before) continue;
+                    if (jint(jget(entry, "count")) < jint(jget(before, "count")) ||
+                        (!complete && jtruthy(jget(before, "complete")))) {
+                        resets.push_back(training_instruction(entry, true));
+                        continue;
+                    }
+                }
+                if (repeatedCompletion) continue;
+                std::string text = training_entry_text(entry, true, match < used.size());
+                if (!text.empty()) announcements.push_back(text);
+            }
+        }
+        training_spoken_[channel] = state;
+    }
+    if (!resets.empty() && (!training_reset_spoken_ || t - training_reset_ms_ >= 3000)) {
+        announcements.push_back(resets.size() == 1 ? resets[0] + ", reset" : "Progress reset");
+        training_reset_ms_ = t;
+        training_reset_spoken_ = true;
+    }
+    // A new explanation already signals that the exercise ended. Do not queue
+    // its final completion after the next lesson's popup (seen in the test log).
+    if (training_popup_open_ && (allComplete || (!hasCommands && jtruthy(jget(jget(training_state_, "objective"), "complete"))))) announcements.clear();
+    training_dirty_.clear();
+    if (training_popup_open_) { if (!announcements.empty()) training_popup_focus_ = true; }
+    else if (current_swf_ != "PauseMenu.swf" && current_swf_ != "PracticePauseMenu.swf" &&
+             current_swf_ != "CommandList.swf" && current_swf_ != "ControllerConfig.swf" &&
+             (jstr(last_focus_, "swf") == "HUD" || !announcements.empty())) training_focus();
+    // Queue after the lesson popup, preserving its explanation and button legend.
+    if (!announcements.empty()) say(join(announcements, ". "), false, training_since_);
+}
+
 void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::string& js) {
+    if ((swf == "Popup.swf" || swf == "ShadowPopup.swf") && fn == "Close") {
+        popup_spoken_ = false;
+        training_popup_open_ = false;
+        if (training_popup_focus_) training_focus();
+        training_popup_focus_ = false;
+    }
     json data;
     if (!js.empty()) {
         data = json::parse(js, nullptr, false, true);
@@ -457,6 +667,8 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
             if (!parts.empty()) say("Tutorial. " + join(parts, " "), false);
             else if (!state.empty()) logLine("tutorial prompt without text: " + state);
         } else if (swf == "Popup.swf" || swf == "ShadowPopup.swf") {
+            if (!training_popup_open_) training_popup_focus_ = jstr(last_focus_, "swf") == "HUD";
+            training_popup_open_ = data.is_object();
             popup_spoken_ = data.is_object();
             say_popup(data);
         } else if (swf == "Toast.swf" && data.is_object()) {
@@ -466,6 +678,8 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
             if (!isNone(xp) && !(xp.is_string() && xp.get<std::string>().empty())) parts.push_back(S.resolve(xp) + " XP");
             say("Notification. " + join(parts, ". "), false);
         } else if (swf == "LoadingScreen.swf" && data.is_object()) {
+            current_swf_ = swf; // Dojo loads this through Populate without LoadDestination
+            clear_training();
             std::vector<std::string> names;
             for (const char* k : {"p1Thumb", "p2Thumb"}) {
                 std::string v = jstr(data, k);
@@ -776,7 +990,7 @@ void Narrator::say_popup(const json& data) {
     if (parts.empty())   // unknown shape: speak every string value
         for (auto it = data.begin(); it != data.end(); ++it) if (it.value().is_string() && !it.value().get<std::string>().empty()) parts.push_back(S.resolve(it.value()));
     std::vector<std::string> nonEmpty;
-    for (auto& p : parts) if (!p.empty()) nonEmpty.push_back(p);
+    for (auto& p : parts) if (!p.empty()) nonEmpty.push_back(attack_echoes(p));
     std::string text = "Popup. " + join(nonEmpty, ". ");
     if (!buttons.empty()) text += ". Buttons: " + join(buttons, ", ");
     // the Shadow Lords tutorial repopulates the same lesson popup every frame for about two seconds: speak it once
@@ -930,6 +1144,8 @@ void Narrator::on_ei(const std::string& script, const std::string& fn, const std
         json j = json::parse(js, nullptr, false, true);
         std::string dest = jstr(j, "Destination");
         if (!dest.empty()) {
+            if (dest != "Popup.swf" && dest != "ShadowPopup.swf" && dest != "PauseMenu.swf" &&
+                dest != "PracticePauseMenu.swf" && dest != "CommandList.swf" && dest != "ControllerConfig.swf") clear_training();
             current_swf_ = dest;
             hasLast_ = false;
             ga_announced_.clear();   // so the next ScreenShown of any GA screen is announced again (the loadout popup reopened from the War Room)
@@ -949,6 +1165,7 @@ void Narrator::on_ei(const std::string& script, const std::string& fn, const std
             bool named = swf == current_swf_;
             ga_announced_ = swf;
             current_swf_ = swf;
+            clear_training();
             hasLast_ = false;
             // re-announce the screen's own focus keys each time it appears (tab, grid entry, open popups, ...)
             for (auto it = last_probe_.begin(); it != last_probe_.end();) {
@@ -2784,6 +3001,7 @@ void Narrator::read_status() {
 }
 
 void Narrator::read_desc() {
+    if (training_popup_open_ && jstr(last_focus_, "swf") == "HUD") { say(last_popup_text_, true); return; }
     std::string d = jstr(last_focus_, "desc");
     if (d.empty() && current_swf_ == "CharacterSelect.swf") { read_appearance(); return; }
     say(d.empty() ? "no description" : d, true);

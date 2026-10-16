@@ -3,9 +3,11 @@
 #include "radar.h"
 #include "snapshot.h"
 #include "sigs.h"
+#include "training.h"
 #include "../deps/minhook/include/MinHook.h"
 #include <bcrypt.h>
 #include <set>
+#include <atomic>
 #pragma comment(lib, "bcrypt.lib")
 
 namespace ki {
@@ -14,8 +16,9 @@ namespace hooks {
 using gfx::GValue;
 
 static Narrator* s_nar = nullptr;
-static bool s_enabled = true;
+static std::atomic<bool> s_enabled{true};
 static bool s_installed = false;
+static uintptr_t s_nativeDispatch = 0, s_trainingGlobal = 0, s_clearTrainingCommands = 0;
 
 // ---- address resolution ----
 static std::string sha256File(const std::wstring& path) {
@@ -39,7 +42,7 @@ static std::string sha256File(const std::wstring& path) {
     return out;
 }
 
-static uintptr_t aobScan(uintptr_t base, const char* pattern) {
+static uintptr_t aobScan(uintptr_t base, const char* pattern, bool requireUnique = false) {
     // parse "48 89 ?? 24" into bytes + mask
     std::vector<int> pat;
     for (const char* p = pattern; *p;) {
@@ -53,6 +56,7 @@ static uintptr_t aobScan(uintptr_t base, const char* pattern) {
     auto* dos = (IMAGE_DOS_HEADER*)base;
     auto* nt = (IMAGE_NT_HEADERS64*)(base + dos->e_lfanew);
     auto* sec = IMAGE_FIRST_SECTION(nt);
+    uintptr_t match = 0;
     for (unsigned s = 0; s < nt->FileHeader.NumberOfSections; s++, sec++) {
         if (memcmp(sec->Name, ".text", 5) != 0) continue;
         const uint8_t* text = (const uint8_t*)(base + sec->VirtualAddress);
@@ -61,10 +65,14 @@ static uintptr_t aobScan(uintptr_t base, const char* pattern) {
             if (text[i] != pat[0]) continue;
             bool ok = true;
             for (size_t k = 1; k < n && ok; k++) if (pat[k] >= 0 && text[i + k] != pat[k]) ok = false;
-            if (ok) return (uintptr_t)(text + i);
+            if (ok) {
+                if (!requireUnique) return (uintptr_t)(text + i);
+                if (match) return 0;
+                match = (uintptr_t)(text + i);
+            }
         }
     }
-    return 0;
+    return match;
 }
 
 bool resolveAddresses() {
@@ -75,9 +83,14 @@ bool resolveAddresses() {
     std::string hash = sha256File(path);
     bool known = hash == KNOWN_EXE_SHA256;
     logLine(std::string("exe sha256 ") + hash.substr(0, 16) + (known ? " (known build: fixed offsets)" : " (unknown build: signature scan)"));
+    uintptr_t trainingCommands = 0, trainingObjective = 0, trainingEntryCopy = 0;
     for (const Sig& s : SIGS) {
-        uintptr_t addr = known ? base + s.rva : aobScan(base, s.pattern);
-        if (!addr) { logLine(std::string("signature not found: ") + s.name); return false; }
+        uintptr_t addr = known ? base + s.rva : aobScan(base, s.pattern, s.optional);
+        if (!addr) {
+            logLine(std::string("signature not found: ") + s.name);
+            if (s.optional) continue;
+            return false;
+        }
         std::string n = s.name;
         if (n == "dispatcher") gfx::g_fn.dispatcher = addr;
         else if (n == "rootInvoke") gfx::g_fn.rootInvoke = addr;
@@ -88,8 +101,18 @@ bool resolveAddresses() {
         else if (n == "matchState") radar::setMatchGetter(addr);
         else if (n == "roundState") radar::setRoundGetter(addr);
         else if (n == "levelState") radar::setLevelGetter(addr);
+        else if (n == "nativeDispatch") s_nativeDispatch = addr;
+        else if (n == "trainingCommands") trainingCommands = addr;
+        else if (n == "trainingObjective") trainingObjective = addr;
+        else if (n == "trainingEntryCopy") trainingEntryCopy = addr;
+        else if (n == "trainingClearCommands") s_clearTrainingCommands = addr;
         if (!known) logLine(n + " found at +0x" + [](uintptr_t v) { char b[32]; snprintf(b, sizeof b, "%llx", (unsigned long long)v); return std::string(b); }(addr - base));
     }
+    // These optional signatures verify the native state/string/counter layout as
+    // well as finding its manager. A missing HUD hook must not disable the menus.
+    uintptr_t commandsGlobal = training::managerGlobal(trainingCommands), objectiveGlobal = training::managerGlobal(trainingObjective);
+    if (s_nativeDispatch && s_clearTrainingCommands && trainingEntryCopy && commandsGlobal && commandsGlobal == objectiveGlobal) s_trainingGlobal = commandsGlobal;
+    else { s_nativeDispatch = 0; logLine("native training reader unavailable: hook or layout signatures missing"); }
     return true;
 }
 
@@ -146,9 +169,42 @@ static void runPending() {
 using DispatcherFn = uint64_t (*)(void* wrapper, const char* method, GValue* args, unsigned argc);
 using RootInvokeFn = uint8_t (*)(void* self, const char* name, GValue* result, GValue* args, unsigned argc);
 using AdvanceFn = float (*)(void* self, float deltaT, unsigned frameCatchUp, bool capture);
+// uiQueuedEvent::Dispatch (slot 9): event, target Lua script, event-name key.
+// Observe consumption rather than queue insertion: some producers inline the queue.
+using NativeDispatchFn = void (*)(void* event, void* script, void* eventKey);
+using ClearTrainingCommandsFn = void (*)();
 static DispatcherFn s_origDispatcher = nullptr;
 static RootInvokeFn s_origRootInvoke = nullptr;
 static AdvanceFn s_origAdvance = nullptr;
+static NativeDispatchFn s_origNativeDispatch = nullptr;
+static ClearTrainingCommandsFn s_origClearTrainingCommands = nullptr;
+
+static void hookClearTrainingCommands() {
+    s_origClearTrainingCommands();
+    if (s_enabled) {
+        // A clear and rebuild can precede dispatch in the same frame. The queued
+        // UpdateTrainingCommands events then both see the rebuilt list; capture
+        // the clear here so identical goals in a restarted lesson are read again.
+        std::lock_guard<std::recursive_mutex> g(g_lock);
+        s_nar->on_training("ClearTrainingCommands", nullptr, nowMs());
+    }
+}
+
+static void hookNativeDispatch(void* event, void* script, void* eventKey) {
+    if (s_enabled) {
+        training::Event kind = training::identify((uintptr_t)script, (uintptr_t)eventKey);
+        if (kind != training::Event::None) {
+            json state;
+            if (training::snapshotGlobal(s_trainingGlobal, kind, state)) {
+                const char* name = training::eventName(kind);
+                if (g_cfg.logEvents) logLine(std::string("hud ") + name + " " + state.dump().substr(0, 1500));
+                std::lock_guard<std::recursive_mutex> g(g_lock);
+                s_nar->on_training(name, state, nowMs());
+            } else if (g_cfg.logEvents) logLine("hud training state unreadable");
+        }
+    }
+    s_origNativeDispatch(event, script, eventKey);
+}
 
 static uint64_t hookDispatcher(void* wrapper, const char* method, GValue* args, unsigned argc) {
     std::string script, fn, js, swf;
@@ -228,6 +284,16 @@ bool install(Narrator* nar) {
         MH_CreateHook((void*)gfx::g_fn.advance, (void*)hookAdvance, (void**)&s_origAdvance) != MH_OK) {
         logLine("MH_CreateHook failed");
         return false;
+    }
+    if (s_nativeDispatch) {
+        if (MH_CreateHook((void*)s_nativeDispatch, (void*)hookNativeDispatch, (void**)&s_origNativeDispatch) == MH_OK &&
+            MH_CreateHook((void*)s_clearTrainingCommands, (void*)hookClearTrainingCommands, (void**)&s_origClearTrainingCommands) == MH_OK)
+            logLine("native training hooks installed");
+        else {
+            MH_RemoveHook((void*)s_nativeDispatch);
+            MH_RemoveHook((void*)s_clearTrainingCommands);
+            logLine("native training hooks unavailable: menus remain enabled");
+        }
     }
     if (MH_EnableHook(MH_ALL_HOOKS) != MH_OK) { logLine("MH_EnableHook failed"); return false; }
     s_installed = true;
