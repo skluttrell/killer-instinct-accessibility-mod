@@ -1330,12 +1330,13 @@ void Narrator::on_controller_focus(const json& rec, const json& probe, bool) {
             if (prompt.empty()) prompt = S.resolve(jget(data, side == 0 ? "PressStartText" : "P2PressStartText"));
             if (prompt.empty()) prompt = "Press Enter";
             if (prompt != "missing text") say("Player " + std::to_string(side + 1) + ": " + prompt + " to edit controls", side == 0);
+            cc_hinted_[side] = false;   // entering fresh: the panel hint should fire on the first binding read
             continue;
         }
         const json& g = jget(groups, pn.c_str());
         const json& ex = jget(groups, (pn + "exit").c_str());
         std::string text, key;
-        bool have = false;
+        bool have = false, remapping = false;
         const json& gi = jget(g, "index");
         if (!isNone(gi)) {
             int i = jint(gi, -1);
@@ -1354,7 +1355,7 @@ void Narrator::on_controller_focus(const json& rec, const json& probe, bool) {
                     }
                 }
                 text = words.empty() ? "command " + std::to_string(i + 1) : words;
-                bool remapping = jstr(g, "state") == "RemappingLoop";
+                remapping = jstr(g, "state") == "RemappingLoop";
                 if (remapping) text += ". Press a key";
                 else if (haveBound && !bound.empty()) text += ": " + bound;
                 else text += ": unassigned";
@@ -1379,8 +1380,16 @@ void Narrator::on_controller_focus(const json& rec, const json& probe, bool) {
         std::string lk = "cc|" + std::to_string(side);
         if (cs_last_.count(lk) && cs_last_[lk] == key) continue;
         cs_last_[lk] = key;
+        std::string hint;
+        if (!cc_hinted_[side]) {
+            // the panel drops straight onto the "up" binding and walks through every button as you press keys; the way
+            // out to Save / Reset to Default is to press Up. Say that once on entry so it is not a silent trap.
+            cc_hinted_[side] = true;
+            hint = "Controller config. Press Up for the Save and Reset to Default buttons";
+            hint += remapping ? ", or press another key to rebind. " : ". ";
+        }
         last_focus_ = json{{"swf", "ControllerConfig.swf"}, {"index", jget(g, "index")}, {"label", text}, {"desc", ""}, {"value", nullptr}};
-        say((side == 1 ? "Player 2: " : "") + text, true, t);
+        say((side == 1 ? "Player 2: " : "") + hint + text, true, t);
     }
 }
 

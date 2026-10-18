@@ -58,6 +58,7 @@ private:
     int cs_desc_side_ = 0;                         // side the appearance hotkey describes: the one spoken about last
     std::map<std::string, std::string> cs_last_;   // "fighter|0" etc. -> text / key
     int cs_active_ = 0;
+    bool cc_hinted_[2] = {false, false};           // per side: the "press Up for Save/Default" hint has been spoken this visit to the controls panel
     std::map<std::string, std::string> last_probe_; // "swf|probe" -> text
     json cmdlist_ = json::object();
     bool cmd_group_spoken_ = false;
