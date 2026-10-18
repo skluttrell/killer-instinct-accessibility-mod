@@ -6,6 +6,7 @@ namespace gfx {
 
 Entry g_fn;
 void* g_root = nullptr;
+thread_local int g_selfDepth = 0;
 
 using RootInvokeFn = uint8_t (*)(void* self, const char* name, GValue* result, GValue* args, unsigned argc);
 using ObjInvokeFn = uint8_t (*)(void* iface, void* pdata, GValue* result, const char* name, GValue* args, uint64_t nargs, uint8_t isdobj);
@@ -69,7 +70,10 @@ void* findRoot(void* wrapper) {
 
 bool rootInvoke(const char* name, GValue& out, GValue* args, unsigned argc) {
     if (!g_root) return false;
-    return ((RootInvokeFn)g_fn.rootInvoke)(g_root, name, &out, args, argc) != 0;
+    g_selfDepth++;
+    uint8_t r = ((RootInvokeFn)g_fn.rootInvoke)(g_root, name, &out, args, argc);
+    g_selfDepth--;
+    return r != 0;
 }
 
 std::string rootCallStr(const char* name) {
@@ -168,8 +172,10 @@ json invoke(const GValue& obj, const char* name, const std::vector<json>& args) 
         }
     }
     GValue out;
+    g_selfDepth++;
     uint8_t ok = ((ObjInvokeFn)g_fn.objInvoke)(iface, obj.pdata(), &out, name, args.empty() ? nullptr : argv.data(), (uint64_t)args.size(),
                                               obj.kind() == 0xA ? 1 : 0);
+    g_selfDepth--;
     json r = ok ? read(out) : json(json::value_t::discarded);
     release(out);
     return r;

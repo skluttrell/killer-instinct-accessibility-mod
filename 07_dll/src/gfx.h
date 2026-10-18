@@ -22,6 +22,7 @@ struct Entry {
 };
 extern Entry g_fn;
 extern void* g_root;          // AS3::MovieRoot of the host shell (ForegroundShell.swf)
+extern thread_local int g_selfDepth;   // >0 while our own code is inside a hooked engine entry point (discovery hooks skip these)
 
 void release(GValue& v);                    // ValueRelease for managed values, then zero
 json read(const GValue& v);                 // -> json (discarded = undefined, null, bool, number, string, {"obj":kind})

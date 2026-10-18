@@ -25,8 +25,12 @@ const uint32_t FLAG_LIVE = 0x8000;
 // activity, so the pulse only stops when both the timer and the fighters are frozen for 3 s (pause, round end, menus).
 const int PULSE_MS = 90, STALL_MS = 3000;
 
-uintptr_t s_global = 0, s_roundGlobal = 0, s_levelGlobal = 0;
+uintptr_t s_global = 0, s_roundGlobal = 0, s_levelGlobal = 0, s_lootGlobal = 0;
 static void (*s_onMatchLive)(int32_t) = nullptr;   // narrator hook for the stage announcement
+static void (*s_onLoot)(int, int) = nullptr;       // narrator hook: loot phase start (count) / end
+// GAssault loot sub-state: manager + 0x6490; the WillAwardLootRewards counter (total ground loot) is u32 at +0x2cc of
+// that, i.e. manager + 0x675c. OFF_FLAGS (0x48) / FLAG_LIVE (0x8000) are the engine's standard liveness, as for the match.
+const uintptr_t OFF_LOOT_AWARD = 0x675c;
 std::atomic<bool> s_enabled{true}, s_run{false};
 HANDLE s_thread = nullptr;
 
@@ -110,11 +114,70 @@ struct FloorTracker {
     void reset() { samples.clear(); }
 };
 
+// ---- Shadow Lords (GAssault) loot-collect probe (discovery only, read-only) ----
+// Decoded from the Lua bindings against the known build (exe sha256 33bbd291...):
+//   manager   = *(base + 0x27dc690), live when [+0x48] & 0x8000   (GAssault_IsActive singleton)
+//   IsActive  = [manager + 0x4a08] != 0 || [manager + 0x64a0] != 0
+//   loot sub-state = manager + 0x6490; pending-loot counter (WillAwardLootRewards) = [manager + 0x675c] (u32)
+// The window below spans the loot sub-state so the capture shows which byte is the live pickup count as items are
+// collected. Logs only on change (rate-limited) so a static screen does not flood the log.
+namespace {
+const uintptr_t LOOT_SUBSTATE = 0x6490;
+const size_t LOOT_WIN = 0xd0;   // 0x6490 .. 0x6560: covers the sub-state head incl. +0x2cc (pending) and +0x10 (active byte)
+
+// Read the total ground-loot count from the GAssault manager; false when not in a loot-bearing state or no global set.
+bool readLootState(int& award) {
+    uintptr_t mgr = 0;
+    uint32_t flags = 0, aw = 0;
+    if (!s_lootGlobal || !readT(s_lootGlobal, mgr) || !mgr) return false;
+    if (!readT(mgr + OFF_FLAGS, flags) || !(flags & FLAG_LIVE)) return false;
+    if (!readT(mgr + OFF_LOOT_AWARD, aw)) return false;
+    award = (int)aw;
+    return true;
+}
+
+void probeLoot(const Pos& me, const Pos& opp, bool haveFighters) {
+    static uint8_t lastWin[LOOT_WIN];
+    static bool had = false;
+    static int64_t lastLog = 0;
+    uintptr_t mgr = 0;
+    uint32_t flags = 0;
+    if (!s_lootGlobal || !readT(s_lootGlobal, mgr) || !mgr || !readT(mgr + OFF_FLAGS, flags) || !(flags & FLAG_LIVE)) {
+        if (had) { logLine("loot: GAssault manager gone"); had = false; }
+        return;
+    }
+    uint8_t b1 = 0, b2 = 0;
+    uint32_t award = 0;
+    uint8_t win[LOOT_WIN];
+    if (!readT(mgr + 0x4a08, b1) || !readT(mgr + 0x64a0, b2) || !readT(mgr + 0x675c, award) ||
+        !readBytes(mgr + LOOT_SUBSTATE, win, LOOT_WIN))
+        return;
+    bool changed = !had || memcmp(win, lastWin, LOOT_WIN) != 0;
+    int64_t now = nowMs();
+    if (!changed && now - lastLog < 1000) return;   // heartbeat at most once a second even when static
+    memcpy(lastWin, win, LOOT_WIN);
+    had = true;
+    lastLog = now;
+    char hdr[160];
+    snprintf(hdr, sizeof hdr, "loot: active(%u/%u) award=%u%s", b1, b2, award, changed ? " [changed]" : "");
+    std::string line = hdr;
+    if (haveFighters) {
+        char pb[128];
+        snprintf(pb, sizeof pb, " | me(%.2f %.2f %.2f) opp(%.2f %.2f %.2f)", me.v[0], me.v[1], me.v[2], opp.v[0], opp.v[1], opp.v[2]);
+        line += pb;
+    }
+    line += " | win:";
+    char hx[4];
+    for (size_t i = 0; i < LOOT_WIN; i++) { snprintf(hx, sizeof hx, "%02x", win[i]); line += hx; }
+    logLine(line);
+}
+}  // namespace
+
 DWORD WINAPI thread(LPVOID) {
     uintptr_t lastMatch = 0;
     FloorTracker floor;
     int64_t lastLog = 0;
-    bool wasLive = false, wasRunning = false;
+    bool wasLive = false, wasRunning = false, wasLoot = false, lootPrimed = false;
     uint32_t lastClock[3] = {0, 0, 0};
     float lastPos[6] = {0, 0, 0, 0, 0, 0};
     int64_t lastFrameChange = 0;
@@ -154,6 +217,17 @@ DWORD WINAPI thread(LPVOID) {
             } else running = false;
         }
         if (live && running != wasRunning) { logLine(running ? "radar: fight clock running" : "radar: fight clock stopped"); wasRunning = running; }
+        // Shadow Lords loot-collect phase: announce it once and keep the pulse alive (toward the downed opponent, where
+        // the loot lies) so it guides the player even while they stand still to collect. Runs regardless of the radar
+        // enable/running gates so the spoken cue still fires when the pulse is off; the pulse itself still obeys them.
+        int lootAward = 0;
+        bool lootRead = readLootState(lootAward);
+        bool lootNow = lootRead && lootAward > 0;
+        if (!lootPrimed && lootRead) { lootPrimed = true; wasLoot = lootNow; }   // loaded mid-phase: adopt the state, don't announce it
+        else if (lootNow && !wasLoot) { logLine("loot: collect phase, " + std::to_string(lootAward) + " items"); if (s_onLoot) s_onLoot(0, lootAward); wasLoot = true; }
+        else if (!lootNow && wasLoot) { if (s_onLoot) s_onLoot(1, 0); wasLoot = false; }
+        if (lootNow) running = true;
+        if (g_cfg.lootProbe) probeLoot(me, opp, live);
         if (!live || !running || !s_enabled) { floor.reset(); Sleep(150); continue; }
         if (m != lastMatch) { lastMatch = m; floor.reset(); }
         const int H = g_cfg.radarAxisH, V = g_cfg.radarAxisV;
@@ -204,6 +278,8 @@ static uintptr_t decodeGlobal(uintptr_t fn, const char* what) {
 void setMatchGetter(uintptr_t fn) { s_global = decodeGlobal(fn, "match-state"); if (!s_global) logLine("radar: disabled"); }
 void setLevelGetter(uintptr_t fn) { s_levelGlobal = decodeGlobal(fn, "level"); }
 void setMatchLiveCallback(void (*cb)(int32_t)) { s_onMatchLive = cb; }
+void setLootManagerGlobal(uintptr_t global) { s_lootGlobal = global; }
+void setLootCallback(void (*cb)(int, int)) { s_onLoot = cb; }
 int32_t levelId() {
     uintptr_t lv = 0;
     int32_t id = 0;

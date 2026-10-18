@@ -114,3 +114,13 @@ still reach the game.
 
 Both features build clean; not yet heard live (next session: enter Master from Single Player and listen
 for a single "Dojo..." read; dump a post-fight report and step through it).
+
+## MainMenu gate verified live (from the installed speech.log)
+
+A game session at 17:41 (after the v0.2.7 install at 17:27) exercised the main menu. Entering the Master
+menu read "Dojo, 1 of 4" directly — the two intermediate snapshots (PlayAccept with a stale "Master" at
+index 1, then CheckIsDestInstalled with a stale "Fight" at index 0) both carried `menuState: "BuildOff"`
+and were dropped by the gate; the read fired only once `menuState` reached "BuildOn" with the cursor at 0
+and the Master substate's text in place. Zero SAY lines fired during a BuildOff window in the whole
+session. Beta item 1 is fixed live. Line-by-line review (item 5) was not exercised in this session —
+still unheard live.

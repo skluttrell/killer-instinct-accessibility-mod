@@ -84,6 +84,8 @@ void loadConfig() {
         if (k == "verbosity") g_cfg.verbosity = atoi(v.c_str());
         else if (k == "speech") g_cfg.speech = v != "0";
         else if (k == "log_events") g_cfg.logEvents = v != "0";
+        else if (k == "log_all_invokes") g_cfg.logAllInvokes = v != "0";
+        else if (k == "loot_probe") g_cfg.lootProbe = v != "0";
         else if (k == "dump_populate") g_cfg.dumpPopulate = v != "0";
         else if (k == "radar") g_cfg.radar = v != "0";
         else if (k == "radar_volume") g_cfg.radarVolume = atoi(v.c_str());

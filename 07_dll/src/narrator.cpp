@@ -23,7 +23,8 @@ static const std::map<std::string, std::string> SCREEN_NAMES = {
     {"GA_WarRoom.swf", "War Room"}, {"GA_Barracks.swf", "Barracks"}, {"GA_Emporium.swf", "Emporium"}, {"GA_SpiritLair.swf", "Spirit Lair"},
     {"GA_PreLoad.swf", "Versus screen"}, {"GA_MatchRewards.swf", "Match rewards"}, {"GA_Loadout_Popup.swf", "Loadout"}, {"GA_Archives.swf", "Archives"},
     {"GA_WrapUp.swf", "Wrap up"}, {"GA_Leaderboard.swf", "Shadow Lords leaderboard"}, {"GA_Daily_Rewards.swf", "Daily rewards"}, {"GA_FTUE.swf", "Tutorial"},
-    {"GameSettingsPopUp.swf", "Game settings"},
+    {"GameSettingsPopUp.swf", "Game settings"}, {"PerfResult_Popup.swf", "Performance test results"},
+    {"MultiplayerLadder.swf", "Ranked Leagues"},
 };
 
 // Input tokens the game replaces with the player's bound key when it renders a popup ("LIGHT_PUNCH" -> "[J]"); we read the attack name.
@@ -74,15 +75,17 @@ static std::string tokenWord(const std::string& tok) {
     return it != CMD_TOKENS.end() ? it->second : lower(strip(tok));
 }
 
-std::string humanize_command(const json& cmd) {
-    if (!cmd.is_string()) return "";
-    std::string s = cmd.get<std::string>();
+// The command string is a run of <TT>token</TT> parts (directions, buttons) with "+" joiners; split it into the
+// individual input tokens ("down", "down-forward", "forward", "plus", "heavy punch") so a move can be read whole or
+// stepped one input at a time (Command List review).
+std::vector<std::string> command_tokens(const json& cmd) {
     std::vector<std::string> out;
+    if (!cmd.is_string()) return out;
+    std::string s = cmd.get<std::string>();
     size_t p = 0;
     while (p < s.size()) {
         size_t a = s.find("<TT>", p);
-        std::string plain = s.substr(p, a == std::string::npos ? std::string::npos : a - p);
-        std::string t = strip(plain);
+        std::string t = strip(s.substr(p, a == std::string::npos ? std::string::npos : a - p));
         if (t == "+") out.push_back("plus");
         else if (!t.empty()) out.push_back(t);
         if (a == std::string::npos) break;
@@ -91,8 +94,10 @@ std::string humanize_command(const json& cmd) {
         out.push_back(tokenWord(s.substr(a + 4, b - a - 4)));
         p = b + 5;
     }
-    return join(out, " ");
+    return out;
 }
+
+std::string humanize_command(const json& cmd) { return join(command_tokens(cmd), " "); }
 
 std::string icon_words(const json& name) {
     if (!name.is_string()) return "";
@@ -348,6 +353,13 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
             if (g_cfg.dumpPopulate) writeFile(dataDir() + L"data\\populate_" + wide(replaceAll(swf, ".swf", "")) + L".json", data.dump(1));
             if (swf == "OptionsMenu.swf") options_state_ = {jtruthy(jget(data, "GraphicsOptionOnly")) ? "Graphics" : "Main"};
             if (swf == "MainMenu.swf") { std::string st = jstr(data, "InitialState"); mm_state_ = {st.empty() ? "SinglePlayer" : st}; }
+            if (swf == "MultiplayerExhibition.swf") {
+                // one movie serves both Exhibition and Shadow Lords MP; the LoadDestination name is deferred to here
+                // because only this payload (IsShadowLords) tells them apart (MP_MULTIPLAYER_MENU_TITLE = "Shadow Lords MP").
+                // The front-screen focus read fires in this same event with interrupt, so stash the name and let that
+                // read speak it as a prefix ("Shadow Lords MP. Search, 1 of 7") instead of saying it here to be cut off.
+                mp_screen_name_ = jtruthy(jget(data, "IsShadowLords")) ? S.resolve(std::string("MP_MULTIPLAYER_MENU_TITLE")) : screenName(swf);
+            }
             if (swf == "StartScreen.swf") {
                 // cold start: the first screen arrives without a LoadDestination, so announce it here (on-screen text: "PRESS MENU / SPACE")
                 current_swf_ = swf;
@@ -487,6 +499,8 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
             last_probe_.erase("Story.swf|season");
         } else if (swf == "MatchOutcome.swf" && data.is_object()) {
             say_match_outcome(data);
+        } else if (swf == "PerfResult_Popup.swf" && data.is_object()) {
+            say_perf_result(data);
         }
     } else if (swf == "GA_HUB.swf" && fn == "LUA_ShowShadowMissionAnnouncementPopup") {
         // hub alert with fixed text (ShadowMissionAnnouncementPopup); Enter dismisses it
@@ -750,6 +764,36 @@ void Narrator::say_match_outcome(const json& data) {
     say(join(parts, ". "), true);
 }
 
+void Narrator::say_perf_result(const json& data) {
+    // Online performance test results (PerfResult_Popup.swf): the fight flow shows the movie itself (no LoadDestination
+    // of its own; HideScreen returns to the "MessageHandler"), so the Populate payload is the announcement.
+    // Fields per the decompile: PerfGrade 0 fail / 1 pass, PointsValue, PointsOutOf ("/1000"), SystemInfo (the CPU /
+    // settings block), HowToImprove (the verdict banner), SettignsChanged [sic] gating the Accept button.
+    current_swf_ = "PerfResult_Popup.swf";
+    hasLast_ = false;
+    std::vector<std::string> parts{S.resolve(std::string("PERF_SUMMARY_SCREEN_TITLE"))};
+    int grade = jint(jget(data, "PerfGrade"), -1);
+    if (grade == 0 || grade == 1)
+        parts.push_back(S.resolve(std::string(grade ? "PERF_SUMMARY_SCREEN_RESULT_PASS" : "PERF_SUMMARY_SCREEN_RESULT_FAIL")));
+    std::string score = strip(S.resolve(jget(data, "PointsValue"))), outOf = strip(S.resolve(jget(data, "PointsOutOf")));
+    if (!outOf.empty() && outOf[0] == '/') outOf = "out of " + strip(outOf.substr(1));   // shown as "1002 /1000"
+    if (!score.empty()) parts.push_back(strip(S.resolve(std::string("PERF_SUMMARY_SCORE_TITLE")) + " " + score + " " + outOf));
+    for (const char* k : {"SystemInfo", "HowToImprove"}) {
+        // multi-line blocks: one sentence per line so the line-by-line review steps through the settings
+        std::string v = strip(S.resolve(jget(data, k)));
+        if (v.empty()) continue;
+        v = replaceAll(replaceAll(replaceAll(v, "\r", ""), "\\n", "\n"), "\n", ". ");
+        parts.push_back(strip(v));
+    }
+    std::vector<std::string> buttons{key_labels_["YBUTTON"] + ": " + S.resolve(std::string("OPTION_GRAPHICS"))};
+    if (!jtruthy(jget(data, "SettignsChanged")))   // Accept is only offered when the tested settings are the current ones
+        buttons.push_back(key_labels_["ABUTTON"] + ": " + S.resolve(std::string("PERF_SUMMARY_SCREEN_PROMPT_ACCEPT")));
+    buttons.push_back(key_labels_["XBUTTON"] + ": " + S.resolve(std::string("PERF_SUMMARY_SCREEN_PROMPT_REDO")));
+    parts.push_back("Buttons: " + join(buttons, ", "));
+    last_focus_ = json{{"swf", "PerfResult_Popup.swf"}, {"label", parts.size() > 1 ? parts[1] : parts[0]}, {"desc", ""}};
+    say(join(parts, ". "), true);
+}
+
 void Narrator::say_popup(const json& data) {
     if (!data.is_object()) return;
     std::vector<std::string> parts;
@@ -929,11 +973,25 @@ void Narrator::on_ei(const std::string& script, const std::string& fn, const std
     if (fn == "LoadDestination") {
         json j = json::parse(js, nullptr, false, true);
         std::string dest = jstr(j, "Destination");
+        // some returns send the destination without the extension (e.g. "MainMenu" when exiting a ranked match); normalize
+        // it so current_swf_, the screen name, and the MainMenu PlayAccept/PlayBack state tracking all match "MainMenu.swf"
+        if (!dest.empty() && dest.find(".swf") == std::string::npos) dest += ".swf";
         if (!dest.empty()) {
             current_swf_ = dest;
             hasLast_ = false;
             ga_announced_.clear();   // so the next ScreenShown of any GA screen is announced again (the loadout popup reopened from the War Room)
-            say(screenName(dest), true, t);
+            if (dest == "MultiplayerRanked.swf") {
+                // a standalone full-screen spinner with no named text fields: its "Ranked Leagues / Syncing ladder
+                // information with the server." text is injected by Lua, so the generic reader sees nothing. The screen
+                // only ever shows this one message; speak it from the game's own strings (addressed by hash).
+                say(S.resolve(std::string("#1002906451")) + ". " + S.resolve(std::string("#3889741323")), true, t);
+            } else if (dest == "MultiplayerExhibition.swf") {
+                // name deferred to the Populate handler: IsShadowLords decides "Exhibition" vs "Shadow Lords MP"
+            } else if (dest == "MainMenu.swf" && jstr(j, "Current") == "LandingPage.swf") {
+                // arriving straight from a landing-page choice (Single Player / Multiplayer) that already named the
+                // destination: the "Main menu" name only gets cut off by the first item read ("Fight, 1 of N"), so skip
+                // it here. Returning to the main menu from a sub-screen (Current != LandingPage) still announces it.
+            } else say(screenName(dest), true, t);
         }
     } else if (script == "GameSettingsPopUp" && fn == "ScreenShown" && current_swf_ != "GameSettingsPopUp.swf") {
         // the game settings popup (Y on Character Select) has no LoadDestination of its own and stays loaded afterwards
@@ -1221,6 +1279,16 @@ void Narrator::on_match_live(int32_t levelId) {
     say("Stage: " + name, false);
 }
 
+// Shadow Lords loot-collect phase (from the radar thread). After a KO the stage stays up with no on-screen prompt while
+// loot sits on the ground near the downed opponent; the player must walk over and press the action button to collect
+// each item. Announce that once, with the count, and follow the opponent pulse to the loot. The GA_MatchRewards screen
+// that follows already names every item, so the end of the phase stays silent to avoid stepping on it.
+void Narrator::on_loot(int ev, int count) {
+    if (ev != 0 || count <= 0) return;
+    std::string n = std::to_string(count);
+    say("Enemy defeated. " + n + (count == 1 ? " item" : " items") + " to collect. Walk onto your opponent and press the action button to pick them up.", true);
+}
+
 // ---- command list (event-driven: EntrySelected {MoveIndex}; moves from the RefreshPage payload) ----
 void Narrator::on_move_selected(const std::string& js, int64_t t) {
     json j = json::parse(js, nullptr, false, true);
@@ -1241,6 +1309,9 @@ void Narrator::on_move_selected(const std::string& js, int64_t t) {
     last_focus_ = json{{"swf", "CommandList.swf"}, {"index", i}, {"label", name}, {"desc", desc}, {"value", cmd}};
     say(text, !cmd_group_spoken_, t);
     cmd_group_spoken_ = false;
+    // keep this move's input tokens so Ctrl+Shift+Down/Up can step through them one at a time (beta report item 3)
+    cmd_tokens_ = command_tokens(jget(m, "Command"));
+    cmd_tokens_src_ = last_text_;
 }
 
 // ---- controller config (scan groups p1/p2 = command rows + 2 toggles, p1exit/p2exit = Save/Default) ----
@@ -1729,6 +1800,156 @@ void Narrator::on_focus(const json& rec) {
         say(text, true, t);
         return;
     }
+    if (swf == "MultiplayerExhibition.swf") {
+        // one movie with three subscreens (front search / lobby / leaderboards) sharing GetSelectionIndex. The front
+        // Search screen interleaves two buttons (Search, Invite Player) with five toggles under one cursor, and the
+        // buttons and toggles store their text at different paths, so the label comes from the Populate payload
+        // (FrontScreen.Options[], one entry per menu row with its key and type) and the live toggle value from the
+        // screen (the payload's value is only the initial one). Handled only while a front-screen entry holds focus:
+        // the lobby and leaderboards subscreens deactivate these and have their own structure.
+        const json& pr = jget(rec, "probe");
+        bool frontActive = false;
+        for (const char* sk : {"s0", "s1", "s2", "s3", "s4", "s5", "s6"}) {
+            const json& st = jget(pr, sk);
+            if (st.is_string()) { const std::string& v = st.get_ref<const std::string&>();
+                if (v.find("Focus") != std::string::npos && !startsWith(v, "Lose") && !startsWith(v, "Unfocused")) { frontActive = true; break; } }
+        }
+        if (!frontActive) return;
+        if ((base_why == "PlayScrollLeftRight" || base_why == "PlayScrollLeftRight2") && !deferred) return;   // value not set yet
+        int idx = jint(jget(rec, "index"), -1);
+        const json& options = jget(jget(jget(populate_, swf.c_str()), "FrontScreen"), "Options");
+        if (!options.is_array() || idx < 0 || idx >= (int)options.size() || !options[idx].is_object()) return;
+        const json& e = options[idx];
+        std::string label = strip(S.resolve(jget(e, "key")));
+        if (label.empty()) label = "item " + std::to_string(idx + 1);
+        std::string text = label, value;
+        if (jstr(e, "type") != "Button") {
+            json v = (idx >= 1 && idx <= 5) ? clean(jget(pr, ("v" + std::to_string(idx)).c_str())) : json();
+            if (!isNone(v)) value = strip(sv(v));
+            if (value.empty()) {   // fall back to the payload's value index into textValues
+                const json& tv = jget(e, "textValues");
+                int vi = jint(jget(e, "value"), -1);
+                if (tv.is_array() && vi >= 0 && vi < (int)tv.size()) value = strip(S.resolve(tv[vi]));
+            }
+            if (!value.empty()) text += ", " + value;
+        }
+        if (verbosity_ >= 1) text += ", " + std::to_string(idx + 1) + " of " + std::to_string((int)options.size());
+        // dedup on the focused entry (label + index), not the value: a Left/Right change keeps the same entry and is
+        // announced by the shared-toggle SetVariables event (the bare value); only a move to a new entry reads in full.
+        std::string itemKey = label + "|" + std::to_string(idx);
+        std::string k = swf + "|item";
+        if (mp_screen_name_.empty() && last_probe_.count(k) && last_probe_[k] == itemKey) return;
+        last_probe_[k] = itemKey;
+        std::string spoken = text;
+        if (!mp_screen_name_.empty()) { spoken = mp_screen_name_ + ". " + text; mp_screen_name_.clear(); }   // name the screen on entry
+        last_focus_ = json{{"swf", swf}, {"index", idx}, {"label", label}, {"desc", ""}, {"value", value.empty() ? json(nullptr) : json(value)}};
+        say(spoken, true, t);
+        return;
+    }
+    if (swf == "MultiplayerLadder.swf") {
+        // the Ranked hub's tutorial overlay (mcTutotialScreen): a multi-page dialog shown on first entry and on rank
+        // changes. It has no Popup.swf of its own; each page is a frame of the tutorial movie, revealed via ShowTutorial
+        // which plays the "TutorialPopup" sound (our trigger) after an internal animation. Read the current page's
+        // title + body (mapped from the frame label); when no page is up, fall through to the menu reader.
+        const json& pr = jget(rec, "probe");
+        static const std::map<std::string, std::pair<const char*, const char*>> PAGES = {
+            {"Welcome", {"wT", "wB"}}, {"TimeToQualify", {"qT", "qB"}}, {"OnTrack", {"oT", "oB"}},
+            {"LadderRules_01", {"r1T", "r1B"}}, {"LadderRules_02", {"r2T", "r2B"}}, {"LadderRules_03", {"r3T", "r3B"}},
+            {"KillerCongrats", {"kcT", "kcB"}}, {"KillerRules", {"krT", "krB"}}, {"Reset", {"rsT", "rsB"}},
+            {"ProStatus", {"psT", "psB"}}, {"ProbationWarning", {"pwT", "pwB"}}, {"InProbation", {"ipT", "ipB"}},
+            {"MonthlyReset", {"mrT", "mrB"}}, {"InProbationDetails", {"idT", "idB"}},
+        };
+        auto pg = PAGES.find(jstr(pr, "tutState"));
+        if (pg != PAGES.end()) {
+            std::string title = strip(S.resolve(clean(jget(pr, pg->second.first))));
+            std::string body = strip(S.resolve(clean(jget(pr, pg->second.second))));
+            std::vector<std::string> parts;
+            if (!title.empty()) parts.push_back(title);
+            if (!body.empty() && body != title) parts.push_back(body);
+            if (parts.empty()) return;   // page frame active but text not set yet
+            parts.push_back(key_labels_["ABUTTON"] + " to continue");
+            std::string text = join(parts, ". ");
+            std::string k = swf + "|tut";
+            if (last_probe_.count(k) && last_probe_[k] == text) return;
+            last_probe_[k] = text;
+            last_focus_ = json{{"swf", swf}, {"label", title.empty() ? body : title}, {"desc", body}, {"value", nullptr}};
+            say(text, true, t);
+            return;
+        }
+        // no tutorial page up: fall through to the generic menu scan
+    }
+    if (swf == "MultiplayerLobby.swf") {
+        // one movie, three in-movie subscreens (main / create / search) sharing one cursor. Inactive subscreens keep
+        // their buttons in FocusedLoop, so the generic pick_group reads the wrong group (stale "Create Lobby" during a
+        // toggle's step, "Search Lobby" deduped to silence on the search screen). Select the active subscreen's group
+        // from mcLobby.currentLabel instead.
+        std::string screen = jstr(jget(rec, "probe"), "screen");
+        if (screen == "LobbyInside") {
+            // inside a lobby: a list of up to 8 players (name + win/loss record), the one at the front of the queue
+            // wears a crown. Navigation moves the cursor; the live player list streams in via UpdateLobbyInfo (not a
+            // snapshot trigger), so reads fire only on a move.
+            const json& g = jget(jget(rec, "groups"), "lobby");
+            json name = clean(jget(g, "label"));
+            if (isNone(name)) return;   // no focused player yet
+            std::string nameS = S.resolve(name);
+            std::vector<std::string> parts{nameS};
+            json ratio = clean(jget(g, "ratio"));
+            if (!isNone(ratio)) {
+                std::string r = strip(S.resolve(ratio));   // "wins / losses", e.g. "12 / 2"
+                size_t slash = r.find('/');
+                if (slash != std::string::npos) {
+                    std::string w = strip(r.substr(0, slash)), l = strip(r.substr(slash + 1));
+                    parts.push_back(w + (w == "1" ? " win, " : " wins, ") + l + (l == "1" ? " loss" : " losses"));
+                } else if (!r.empty()) parts.push_back(r);
+            }
+            if (jget(g, "crown").is_boolean() && jget(g, "crown").get<bool>()) parts.push_back("next to fight");
+            int lpos = jint(jget(g, "pos"), -1), lcount = jint(jget(g, "count"), 0);
+            if (lcount > 0 && lpos >= 0 && verbosity_ >= 1) parts.push_back(std::to_string(lpos + 1) + " of " + std::to_string(lcount));
+            std::string enter;
+            if (lobby_sub_ != "lobby") {   // name the player count once on entering the lobby
+                lobby_sub_ = "lobby";
+                last_probe_.erase(swf + "|item");
+                if (lcount > 0) enter = std::to_string(lcount) + (lcount == 1 ? " player in lobby. " : " players in lobby. ");
+            }
+            std::string itemKey = nameS + "|" + std::to_string(lpos);
+            std::string k = swf + "|item";
+            if (enter.empty() && last_probe_.count(k) && last_probe_[k] == itemKey) return;
+            last_probe_[k] = itemKey;
+            last_focus_ = json{{"swf", swf}, {"index", lpos}, {"label", nameS}, {"desc", ""}, {"value", nullptr}};
+            say(enter + join(parts, ", "), true, t);
+            return;
+        }
+        static const std::map<std::string, std::string> SUB = {{"LobbyMain", "main"}, {"LobbyCreate", "create"}, {"LobbySearching", "search"}};
+        auto si = SUB.find(screen);
+        if (si == SUB.end()) return;   // a transition label: not read here
+        const json& g = jget(jget(rec, "groups"), si->second.c_str());
+        json label = clean(jget(g, "label"));
+        if (isNone(label)) return;     // the active subscreen has no focused item yet (transitioning)
+        std::string enter;
+        if (si->second != lobby_sub_) {   // name the subscreen once on entry, then reset the item dedup so it reads
+            lobby_sub_ = si->second;
+            last_probe_.erase(swf + "|item");
+            if (si->second == "create") enter = "Create Lobby. ";
+            else if (si->second == "search") enter = "Search Lobby. ";
+        }
+        std::string labelS = S.resolve(label);
+        json value = clean(jget(g, "value"));
+        bool haveValue = jtruthy(value);
+        std::string valueS = haveValue ? S.resolve(value) : "";
+        int pos = jint(jget(g, "pos"), -1), count = jint(jget(g, "count"), 0);
+        // dedup on the focused item (label + position), not the value: a Left/Right change keeps the same item and is
+        // announced by the shared-toggle SetVariables event (the bare value); only a move to a new entry reads in full.
+        std::string itemKey = labelS + "|" + std::to_string(pos);
+        std::string k = swf + "|item";
+        if (enter.empty() && last_probe_.count(k) && last_probe_[k] == itemKey) return;
+        last_probe_[k] = itemKey;
+        std::string text = labelS;
+        if (haveValue) text += ", " + valueS;
+        if (count > 0 && pos >= 0 && verbosity_ >= 1) text += ", " + std::to_string(pos + 1) + " of " + std::to_string(count);
+        last_focus_ = json{{"swf", swf}, {"index", jint(jget(g, "index"), -1)}, {"label", labelS}, {"desc", ""}, {"value", haveValue ? json(valueS) : json(nullptr)}};
+        say(enter + text, true, t);
+        return;
+    }
     if (isNone(jget(rec, "index")) || swf == "CommandList.swf") return;
     if (swf == "StoreContentOverview.swf") return;   // event-driven (PreviewItem); the generic reader only knows "item N"
     if (swf == "StoreFighters.swf") {
@@ -1858,9 +2079,12 @@ void Narrator::on_focus(const json& rec) {
         if (jget(g, "done").is_boolean() && jget(g, "done").get<bool>()) flags.push_back("completed");
         if (swf == "MatchOutcome.swf" && (gname == "p2" || gname == "p2stats")) prefix = "Player 2: ";
     }
-    if (swf == "MainMenu.swf") {
+    if (swf == "MainMenu.swf" && isNone(label)) {
+        // the scan reads the on-screen buttons directly (ground truth; the BuildOff gate already drops reads during a
+        // state switch). Fall back to the state payload only if the scan couldn't read a button label -- the payload's
+        // state can lag behind the display on some returns (e.g. exiting a ranked match), which would read the wrong menu.
         json e = mm_entry(idx);
-        if (e.is_object()) {   // the JSON is authoritative here: the on-screen text lags behind state changes
+        if (e.is_object()) {
             json l = jtruthy(jget(e, "key")) ? jget(e, "key") : jget(e, "debugText");
             if (jtruthy(l)) label = l;
             if (jtruthy(jget(e, "description"))) desc = jget(e, "description");
@@ -1922,7 +2146,8 @@ void Narrator::on_focus(const json& rec) {
     std::vector<std::string> keyParts{swf, std::to_string(idx), labelS, haveValue ? valueS : "\x01None", stateKey};
     std::string key = keyOf(keyParts);
     last_focus_ = json{{"swf", swf}, {"index", idx}, {"label", labelS}, {"desc", descS}, {"value", haveValue ? json(valueS) : json(nullptr)}};
-    if ((base_why == "PlayScrollLeftRight" || base_why == "PlayScrollLeftRight2") && !deferred && (swf == "OptionsMenu.swf" || swf == "PracticePauseMenu.swf"))
+    if ((base_why == "PlayScrollLeftRight" || base_why == "PlayScrollLeftRight2") && !deferred &&
+        (swf == "OptionsMenu.swf" || swf == "PracticePauseMenu.swf" || swf == "MultiplayerLobby.swf"))
         return;   // the sound fires before the text changes; the deferred snapshot (or SetVariables) follows with the new value
     if ((base_why == "SetVariables" || base_why == "PlayNegative") && swf == "OptionsMenu.swf") {
         if (haveValue && !(deferred && hasLast_ && key == last_)) {
@@ -1980,7 +2205,9 @@ static std::vector<std::string> review_split(const std::string& text) {
 void Narrator::review_step(int dir) {
     if (last_text_ != review_src_) {   // a new announcement since the last step: review it from the top
         review_src_ = last_text_;
-        review_lines_ = review_split(last_text_);
+        // on the Command List, step the focused move's input tokens one at a time; otherwise the announcement's sentences
+        review_is_command_ = (last_text_ == cmd_tokens_src_ && !cmd_tokens_.empty());
+        review_lines_ = review_is_command_ ? cmd_tokens_ : review_split(last_text_);
         review_idx_ = -1;
     }
     if (review_lines_.empty()) {
@@ -1992,7 +2219,8 @@ void Narrator::review_step(int dir) {
     std::string prefix;
     if (review_idx_ < 0) {
         review_idx_ = 0;
-        prefix = "Review, " + std::to_string(n) + (n == 1 ? " line. " : " lines. ");
+        prefix = review_is_command_ ? ("Command, " + std::to_string(n) + (n == 1 ? " input. " : " inputs. "))
+                                     : ("Review, " + std::to_string(n) + (n == 1 ? " line. " : " lines. "));
     } else {
         int i = review_idx_ + dir;
         if (i < 0) { i = 0; prefix = "Top. "; }

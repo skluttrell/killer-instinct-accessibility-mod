@@ -1,5 +1,5 @@
 ﻿Killer Instinct Accessibility Mod
-v.0.2.7
+v.0.2.8
 
 Purpose:
 
@@ -11,7 +11,7 @@ Known Issues:
 * Shadow Lords: the leaderboard, the items dropped on the arena floor after some fights, and the Spirit Lair's excess-guardian popup are not read yet. The hub's daily rewards overlay reader has not been heard live yet (it only appears right after a daily reward is earned); if it stays silent for you, please attach kiaccess\speech.log. The subtitles of the story cinematics are not spoken either; the cinematics are voiced.
 * The mural screen's announcement after finishing a ladder is built from a captured run but has not been re-heard live yet; if it stays silent after your next ladder, please attach kiaccess\speech.log.
 * When a popup opens, the first thing spoken can be a button of the previous popup (for example "Purchase 300 KI Gold" just before "Exit Shadow Lords?"). The popup itself follows at once.
-* The whole Store is read; only the online lobbies are not read yet beyond their basic layout.
+* The whole Store is read. The online multiplayer menus are now read too (see below); a few screens that only appear in specific conditions are built but have not been heard live yet: the Ranked rank-change tutorial pages (promotion, probation, reaching Killer, monthly reset), and the lobby and leaderboard views reached after matchmaking connects you. If any of these stay silent, please attach kiaccess\speech.log.
 * The fighter appearance descriptions were written from memory of the game and have not yet been reviewed by a sighted person.
 * The opponent radar assumes you are Player 1 playing against the CPU. There is no radar for Player 2.
 * The opponent radar pauses during the "Ready, Fight" intro of a round and for up to 3 seconds after a round ends. Please keep reporting whether the pulse, its panning and its pitch are useful.
@@ -22,6 +22,16 @@ Known Issues:
 * If a future game update changes the executable so that the mod can no longer find its hook points, the narrator stays silent and writes the reason to kiaccess\speech.log. The game itself still runs normally.
 
 New in this version:
+
+* The online multiplayer menus are now read:
+  - The Performance Test results screen (required before ranked play): pass or fail, your score, your CPU, graphics card and current graphics settings, and whether you may play Ranked Leagues.
+  - The Lobby menu (Create Lobby / Search Lobby) and both of those screens, reading each setting and its value; changing a value with Left/Right speaks the new value. Inside a lobby, the player list reads each player's name, win-loss record and place in the battle queue ("next to fight").
+  - The Exhibition and Shadow Lords MP search screens, with their minimum and maximum rank, minimum performance and crossplay settings.
+  - Ranked Leagues: the "Syncing ladder information" screen, the hub menu (Search For Match, Leaderboards, Stats, Requalify), and the welcome and rank-change tutorial pages ("Enter to continue").
+* Command List: Ctrl+Shift+Down and Ctrl+Shift+Up now step through a move's inputs one at a time ("down", "down-forward", "heavy punch") when a move is focused, as well as reviewing other announcements line by line.
+* Fixed: entering the main menu from the landing page no longer speaks a clipped "main" before the first selection, and after you exit a ranked match the Multiplayer menu reads its own items again (it could read the Single Player list instead).
+
+New in v0.2.7:
 
 * The whole Fight Archive is read (requested in the 2026-10-16 beta report):
   - Fight Stats: the summary page reads your total XP and play time, then the Ranked, Non-Ranked and Offline panels with their matches, win rates and your top three fighters ("no matches" when a panel is empty). Y (R on the default keyboard binds) opens All Stats; each page (Overall, Breaker, Combo, Combat, Character) is read in full, Q/E and Left/Right switch pages, Escape returns to the summary.

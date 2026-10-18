@@ -90,6 +90,10 @@ bool resolveAddresses() {
         else if (n == "levelState") radar::setLevelGetter(addr);
         if (!known) logLine(n + " found at +0x" + [](uintptr_t v) { char b[32]; snprintf(b, sizeof b, "%llx", (unsigned long long)v); return std::string(b); }(addr - base));
     }
+    // Shadow Lords loot-collect feature: the GAssault manager global (the singleton the GAssault_* bindings read at
+    // +0x27dc690). Known build only — a fixed data offset, no signature yet, so it stays off on an unrecognised build.
+    if (known) { radar::setLootManagerGlobal(base + 0x27dc690); logLine("loot: GAssault manager global at +0x27dc690"); }
+    else logLine("loot: unknown build, Shadow Lords loot cue disabled");
     return true;
 }
 
@@ -104,7 +108,7 @@ static const std::set<std::string> TRIGGERS = {"PlayScroll", "PlayPauseMenuButto
     "PlayExitMenu", "ResetPauseMenuButtons", "PlayTransIn", "PlayScroll1", "PlayScroll2", "PlayPostMatchButtonsP1", "PlayPostMatchButtonsP2",
     "PlayAcceptP1", "PlayAcceptP2", "AS_ListenForAnyKey", "GetEntriesInCategory", "UpdateCategoryIndex", "AS_EnteredPracticeTab",
     "EntrySelected", "StageSelectionChanged", "CallPostMatchSelectionChanged", "UpdateMenuIndices",
-    "PlayMetalSlide", "PlayMetal_HitLarge"};
+    "PlayMetalSlide", "PlayMetal_HitLarge", "TutorialPopup"};
 static const std::set<std::string> INV_TRIGGERS = {"Populate", "Lua_Populate", "PopulateEntries", "PopulateStatesOnly", "RefreshPage",
     "Lua_ChangeSelectionTo", "Lua_ReceiveAnyKeyPress", "CancelMapping", "UpdatePlayerMenuIndex",
     "ReceiveLeaderboardRecords", "PopulatePlayerData", "PopulateTitleDetails"};
@@ -121,6 +125,18 @@ static std::string argStr(const GValue* v) {
     if (j.is_string()) return j.get<std::string>();
     if (j.is_discarded()) return "";
     return j.dump();
+}
+
+// discovery (log_all_invokes=1): every invoke name on any movie, rate-limited so per-frame HUD traffic
+// (health bars etc.) shows its shape without flooding the log
+static void logDiscovery(const char* channel, const std::string& name, GValue* args, unsigned argc) {
+    static std::map<std::string, unsigned> seen;
+    unsigned c = ++seen[name];
+    if (c > 8 && c % 200 != 0) return;
+    std::string line = std::string(channel) + " " + name + " argc=" + std::to_string(argc);
+    for (unsigned i = 0; i < argc && i < 4; i++) line += " | " + argStr(args + i).substr(0, 300);
+    if (c > 1) line += " (#" + std::to_string(c) + ")";
+    logLine(line);
 }
 
 static void deliverFocus(json&& rec) {
@@ -145,9 +161,11 @@ static void runPending() {
 // ---- detours ----
 using DispatcherFn = uint64_t (*)(void* wrapper, const char* method, GValue* args, unsigned argc);
 using RootInvokeFn = uint8_t (*)(void* self, const char* name, GValue* result, GValue* args, unsigned argc);
+using ObjInvokeFn = uint8_t (*)(void* iface, void* pdata, GValue* result, const char* name, GValue* args, uint64_t nargs, uint8_t isdobj);
 using AdvanceFn = float (*)(void* self, float deltaT, unsigned frameCatchUp, bool capture);
 static DispatcherFn s_origDispatcher = nullptr;
 static RootInvokeFn s_origRootInvoke = nullptr;
+static ObjInvokeFn s_origObjInvoke = nullptr;
 static AdvanceFn s_origAdvance = nullptr;
 
 static uint64_t hookDispatcher(void* wrapper, const char* method, GValue* args, unsigned argc) {
@@ -203,6 +221,8 @@ static uint8_t hookRootInvoke(void* self, const char* name, GValue* result, GVal
             if (a[0] == "Popup.swf" && a[1] == "Close" && s_currentSwf == "Popup.swf" && !s_prevSwf.empty()) s_currentSwf = s_prevSwf;   // popup closed
             std::lock_guard<std::recursive_mutex> g(g_lock);
             s_nar->on_inv(a[0], a[1], a[2]);
+        } else if (g_cfg.logAllInvokes && g_cfg.logEvents && !gfx::g_selfDepth) {
+            logDiscovery("rinv", n, args, argc);
         }
     }
     uint8_t ret = s_origRootInvoke(self, name, result, args, argc);
@@ -211,6 +231,12 @@ static uint8_t hookRootInvoke(void* self, const char* name, GValue* result, GVal
         schedule(a[0], "inv:" + a[1]);
     }
     return ret;
+}
+
+static uint8_t hookObjInvoke(void* iface, void* pdata, GValue* result, const char* name, GValue* args, uint64_t nargs, uint8_t isdobj) {
+    if (s_enabled && g_cfg.logAllInvokes && g_cfg.logEvents && name && !gfx::g_selfDepth)
+        logDiscovery("oinv", name, args, (unsigned)nargs);
+    return s_origObjInvoke(iface, pdata, result, name, args, nargs, isdobj);
 }
 
 static float hookAdvance(void* self, float deltaT, unsigned frameCatchUp, bool capture) {
@@ -225,7 +251,8 @@ bool install(Narrator* nar) {
     if (MH_Initialize() != MH_OK) { logLine("MH_Initialize failed"); return false; }
     if (MH_CreateHook((void*)gfx::g_fn.dispatcher, (void*)hookDispatcher, (void**)&s_origDispatcher) != MH_OK ||
         MH_CreateHook((void*)gfx::g_fn.rootInvoke, (void*)hookRootInvoke, (void**)&s_origRootInvoke) != MH_OK ||
-        MH_CreateHook((void*)gfx::g_fn.advance, (void*)hookAdvance, (void**)&s_origAdvance) != MH_OK) {
+        MH_CreateHook((void*)gfx::g_fn.advance, (void*)hookAdvance, (void**)&s_origAdvance) != MH_OK ||
+        MH_CreateHook((void*)gfx::g_fn.objInvoke, (void*)hookObjInvoke, (void**)&s_origObjInvoke) != MH_OK) {
         logLine("MH_CreateHook failed");
         return false;
     }

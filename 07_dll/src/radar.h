@@ -19,6 +19,11 @@ void setRoundGetter(uintptr_t fn);
 void setLevelGetter(uintptr_t fn);
 int32_t levelId();            // 0 when unavailable
 void setMatchLiveCallback(void (*cb)(int32_t levelId));   // called from the radar thread when a match becomes live
+// Shadow Lords (GAssault) loot-collect phase. hooks.cpp passes the manager global (known build only, so the feature
+// is inert on an unrecognised build). The radar thread watches the WillAwardLootRewards counter inside it: it jumps
+// 0->N at the KO and holds through the collect phase, then drops to 0 on leaving.
+void setLootManagerGlobal(uintptr_t global);
+void setLootCallback(void (*cb)(int ev, int count));     // ev 0 = loot phase start (count items on the ground), 1 = end
 bool start();                 // starts the pulse thread (no-op without a decoded match global)
 void stop();
 void setEnabled(bool on);     // Ctrl+Shift+P

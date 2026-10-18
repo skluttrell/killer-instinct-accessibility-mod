@@ -22,6 +22,8 @@ struct Config {
     int verbosity = 1;
     bool speech = true;
     bool logEvents = false;     // log every ei/inv event (large log)
+    bool logAllInvokes = false; // discovery: also log every rootInvoke name and engine objInvoke (rate-limited per name)
+    bool lootProbe = false;     // discovery: log the Shadow Lords (GAssault) loot-collect state + a memory window on change
     bool dumpPopulate = false;  // write data/populate_<swf>.json for reader development
     // opponent radar (radar.cpp)
     bool radar = true;          // pulse on at start (Ctrl+Shift+P toggles)

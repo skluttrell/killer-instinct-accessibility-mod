@@ -9,9 +9,9 @@ namespace snap {
 // index mode: the screen's public getter (indexFn, default GetSelectionIndex) + the item at that index;
 // scan mode: every item's state label, the focused one reported with its position among visible, labelled items.
 static const char* SCREENS_JSON = R"JSON({
- "MainMenu.swf": {"probe": {"buildState": "currentLabel", "menuState": "mcMenuGroup.currentLabel"},
-    "groups": {"main": {"item": "mcMenuGroup.mcMenuBtn{i}.mcBtn",
-    "fields": {"label": "mcTxt.txtButton.text", "desc": "mcDescription.mcDescriptionContainer.txtDescription.text", "state": "currentLabel"}}}},
+ "MainMenu.swf": {"scan": true, "probe": {"buildState": "currentLabel", "menuState": "mcMenuGroup.currentLabel"},
+    "groups": {"main": {"item": "mcMenuGroup.mcMenuBtn{i}.mcBtn", "count": 5,
+    "fields": {"label": "mcTxt.txtButton.text", "desc": "mcDescription.mcDescriptionContainer.txtDescription.text", "state": "currentLabel", "visible": "visible"}}}},
  "OptionsMenu.swf": {"groups": {
     "entries": {"item": "mcMenuGroup.mcOptionsMain.mcBtn{i}", "fields": {"label": "mcTxtLarge.txt.text", "desc": "mcTextDesc.mcTextHolder.txtDescription.text", "state": "currentLabel"}},
     "toggles": {"item": "mcMenuGroup.mcToggleMenu.mcBtn{i}", "fields": {"label": "mcTxtLarge.txt.text", "desc": "mcTextDesc.mcTextHolder.txtDescription.text",
@@ -181,7 +181,46 @@ static const char* SCREENS_JSON = R"JSON({
     "music": {"item": "mcMusicSelect.mcTrackText{i}", "count": 15, "fields": {"label": "mcText.txtItem.text", "state": "currentLabel", "visible": "visible"}}}},
  "GameSettingsPopUp.swf": {"scan": true, "groups": {"settings": {"item": "mcGSPopUpText.mcBtn{i}", "count": 3,
     "fields": {"label": "mcTxt.TxtItem.text", "value": "mcValue.TxtItem.text", "state": "currentLabel", "visible": "visible"}}}},
- "MultiplayerLobby.swf": {"indexFn": "GetSelectionIndex"}
+ "MultiplayerLobby.swf": {"scan": true, "probe": {"screen": "mcLobby.currentLabel"}, "groups": {
+    "main": {"item": "mcLobby.mcLobbyMain.mcBtn{i}", "count": 2,
+       "fields": {"label": "mcTxt.txtButton.text", "state": "currentLabel", "visible": "visible"}},
+    "create": {"item": "mcLobby.mcLobbyCreate.mcToggle{i}", "count": 8,
+       "fields": {"label": "mcTxt.txt.text", "value": "mcValue.txt.text", "state": "currentLabel", "visible": "visible"}},
+    "search": {"item": "mcLobby.mcLobbySearching.mcToggle{i}", "count": 5,
+       "fields": {"label": "mcTxt.txt.text", "value": "mcValue.txt.text", "state": "currentLabel", "visible": "visible"}},
+    "lobby": {"item": "mcLobby.mcLobbyInside.mcGamerTag{i}", "count": 8,
+       "fields": {"label": "mcTxt.txtButton.text", "ratio": "mcWinsLosses.txtButton.text", "crown": "mcCrown.visible",
+          "state": "currentLabel", "visible": "visible"}}}},
+ "MultiplayerExhibition.swf": {"indexFn": "GetSelectionIndex", "probe": {
+    "s0": "mcExhibitionMain.mcExhibition.mcBtn0.currentLabel", "s1": "mcExhibitionMain.mcExhibition.mcToggle1.currentLabel",
+    "s2": "mcExhibitionMain.mcExhibition.mcToggle2.currentLabel", "s3": "mcExhibitionMain.mcExhibition.mcToggle3.currentLabel",
+    "s4": "mcExhibitionMain.mcExhibition.mcToggle4.currentLabel", "s5": "mcExhibitionMain.mcExhibition.mcToggle5.currentLabel",
+    "s6": "mcExhibitionMain.mcExhibition.mcBtn2.currentLabel",
+    "v1": "mcExhibitionMain.mcExhibition.mcToggle1.mcValue.txt.text", "v2": "mcExhibitionMain.mcExhibition.mcToggle2.mcValue.txt.text",
+    "v3": "mcExhibitionMain.mcExhibition.mcToggle3.mcValue.txt.text", "v4": "mcExhibitionMain.mcExhibition.mcToggle4.mcValue.txt.text",
+    "v5": "mcExhibitionMain.mcExhibition.mcToggle5.mcValue.txt.text"}},
+ "MultiplayerLadder.swf": {"scan": true,
+    "probe": {"tutState": "mcTutotialScreen.currentLabel",
+       "wT": "mcTutotialScreen.mcWelcomeTitle.txtItem.text", "wB": "mcTutotialScreen.mcWelcomeBody.txtItem.text",
+       "qT": "mcTutotialScreen.mcTimeToQualifyTitle.txtItem.text", "qB": "mcTutotialScreen.mcTimeToQualifyBody.txtItem.text",
+       "oT": "mcTutotialScreen.mcOnTrackTitle.txtItem.text", "oB": "mcTutotialScreen.mcOnTrackBody.txtItem.text",
+       "r1T": "mcTutotialScreen.mcRules01Title.txtItem.text", "r1B": "mcTutotialScreen.mcRules01Body.txtItem.text",
+       "r2T": "mcTutotialScreen.mcRules02Title.txtItem.text", "r2B": "mcTutotialScreen.mcRules02Body.txtItem.text",
+       "r3T": "mcTutotialScreen.mcRules03Title.txtItem.text", "r3B": "mcTutotialScreen.mcRules03Body.txtItem.text",
+       "kcT": "mcTutotialScreen.mcKillerCongratsTitle.txtItem.text", "kcB": "mcTutotialScreen.mcKillerCongratsBody.txtItem.text",
+       "krT": "mcTutotialScreen.mcKillerRulesTitle.txtItem.text", "krB": "mcTutotialScreen.mcKillerRulesBody.txtItem.text",
+       "rsT": "mcTutotialScreen.mcResetTitle.txtItem.text", "rsB": "mcTutotialScreen.mcResetBody.txtItem.text",
+       "psT": "mcTutotialScreen.mcProStatusTitle.txtItem.text", "psB": "mcTutotialScreen.mcProStatusBody.txtItem.text",
+       "pwT": "mcTutotialScreen.mcProbationWarningTitle.txtItem.text", "pwB": "mcTutotialScreen.mcProbationWarningBody.txtItem.text",
+       "ipT": "mcTutotialScreen.mcInProbationTitle.txtItem.text", "ipB": "mcTutotialScreen.mcInProbationBody.txtItem.text",
+       "mrT": "mcTutotialScreen.mcMonthlyResetTitle.txtItem.text", "mrB": "mcTutotialScreen.mcMonthlyResetBody.txtItem.text",
+       "idT": "mcTutotialScreen.mcInProbationDetailsTitle.txtItem.text", "idB": "mcTutotialScreen.mcInProbationDetailsBody.txtItem.text"},
+    "groups": {
+    "menu": {"when": "mcPlayerCardP1.visible",
+       "items": ["mcMenuGroup.mcMenuGroup.mcMenuBtn0.mcBtn0", "mcMenuGroup.mcMenuGroup.mcMenuBtn1.mcBtn0",
+                 "mcMenuGroup.mcMenuGroup.mcMenuBtn3.mcBtn0", "mcMenuGroup.mcMenuGroup.mcMenuBtn4.mcBtn0"],
+       "fields": {"label": "mcTxt.txtButton.text", "desc": "mcDescription.mcDescriptionContainer.txtDescription.text",
+          "state": "currentLabel", "visible": "visible"}}}}
 })JSON";
 
 static json SCREENS;

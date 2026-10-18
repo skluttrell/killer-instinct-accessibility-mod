@@ -19,6 +19,7 @@ public:
     void on_inv(const std::string& swf, const std::string& fn, const std::string& js);
     void on_focus(const json& rec);
     void on_match_live(int32_t levelId);   // from the radar thread (under g_lock): announce the stage when it was not chosen explicitly
+    void on_loot(int ev, int count);       // from the radar thread (under g_lock): Shadow Lords loot-collect phase start (ev 0) / end (ev 1)
 
     // hotkeys
     void repeat();
@@ -45,6 +46,9 @@ private:
     std::string review_src_;               // the announcement the review cursor was built from (beta report 2026-10-16 item 5)
     std::vector<std::string> review_lines_;
     int review_idx_ = -1;
+    bool review_is_command_ = false;       // the review cursor holds a move's input tokens, not sentences (Command List)
+    std::vector<std::string> cmd_tokens_;  // the focused move's input tokens ("down", "down-forward", "heavy punch", ...)
+    std::string cmd_tokens_src_;           // the announcement those tokens belong to (ties them to the current move)
     json last_focus_;                      // {swf,index,label,desc,value} or null
     std::string ticker_, motd_, current_swf_;
     std::map<int, std::string> cs_stage_{{0, "fighter"}, {1, "fighter"}};
@@ -64,6 +68,8 @@ private:
     std::string skip_value_once_;
     bool hasSkip_ = false;
     std::vector<std::string> mm_state_;
+    std::string mp_screen_name_;   // MultiplayerExhibition entry name ("Exhibition" / "Shadow Lords MP"), spoken as a prefix on the first focus read
+    std::string lobby_sub_;        // MultiplayerLobby active subscreen last read ("main"/"create"/"search"), to name it once on entry
     json fighter_names_ = json::object();
     std::map<std::string, std::string> fighter_levels_;   // code -> "level 3, next unlock at level 5" (from the player card entries)
     json fighter_appearance_ = json::object();   // code -> {"default": text, "retro": text} (data\fighter_appearance.json)
@@ -110,6 +116,7 @@ private:
     void learn_fighter_names(const json& data);
     void say_popup(const json& data);
     void say_match_outcome(const json& data);
+    void say_perf_result(const json& data);   // online performance test results (PerfResult_Popup.swf)
     void on_stage_changed(const std::string& js, int64_t t);
     void on_story_focus(const json& rec, int64_t t);
     void on_store_preview(const std::string& js, int64_t t);
