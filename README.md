@@ -1,5 +1,5 @@
 ﻿Killer Instinct Accessibility Mod
-v.0.2.8
+v.0.2.9
 
 Purpose:
 
@@ -8,7 +8,8 @@ Adds screen reader output to the menus of Killer Instinct (Steam version, free b
 Known Issues:
 
 * This is a TEST BUILD. The mod writes kiaccess\speech.log in your Killer Instinct folder each session with every announcement. If anything goes wrong, please attach that file to your bug report.
-* Shadow Lords: the leaderboard, the items dropped on the arena floor after some fights, and the Spirit Lair's excess-guardian popup are not read yet. The hub's daily rewards overlay reader has not been heard live yet (it only appears right after a daily reward is earned); if it stays silent for you, please attach kiaccess\speech.log. The subtitles of the story cinematics are not spoken either; the cinematics are voiced.
+* Shadow Lords: the leaderboard, the items dropped on the arena floor after some fights, and the Spirit Lair's excess-guardian popup are not read yet. The full text of a branching quest dialogue is not read yet either (only the focused choice; reported in the 2026-10-19 beta report — a capture of one is still needed). The hub's daily rewards overlay reader has not been heard live yet (it only appears right after a daily reward is earned); if it stays silent for you, please attach kiaccess\speech.log. The subtitles of the story cinematics are not spoken either; the cinematics are voiced.
+* Everything new in this version was built from captures and the game's own data but has not been heard live yet. If one of the new announcements stays silent or reads wrong, please attach kiaccess\speech.log. Players joining or leaving a lobby, and the lobby player list with real opponents, additionally need a second player to verify.
 * The mural screen's announcement after finishing a ladder is built from a captured run but has not been re-heard live yet; if it stays silent after your next ladder, please attach kiaccess\speech.log.
 * When a popup opens, the first thing spoken can be a button of the previous popup (for example "Purchase 300 KI Gold" just before "Exit Shadow Lords?"). The popup itself follows at once.
 * The whole Store is read. The online multiplayer menus are now read too (see below); a few screens that only appear in specific conditions are built but have not been heard live yet: the Ranked rank-change tutorial pages (promotion, probation, reaching Killer, monthly reset), and the lobby and leaderboard views reached after matchmaking connects you. If any of these stay silent, please attach kiaccess\speech.log.
@@ -22,6 +23,23 @@ Known Issues:
 * If a future game update changes the executable so that the mod can no longer find its hook points, the narrator stays silent and writes the reason to kiaccess\speech.log. The game itself still runs normally.
 
 New in this version:
+
+* Shadow Lords fixes from the 2026-10-19 beta report:
+  - Barracks: after using an artifact, closing the inventory names the selected fighter again instead of repeating the last item used.
+  - Owning two of the same guardian no longer reports the first one's energy for both: the mission guardian picker reads the energy of the exact copy under the cursor, and the Spirit Lair reads each card's own energy ("card 2 of 3, energy 0 of 4").
+  - Emporium: every pack in the carousel is read while scrolling Left/Right (only the first three were; the rest needed Enter on each).
+  - Emporium Craft tab: each item reads whether it can be crafted, how many you own, and the full recipe with your stock ("needs 2 Umbral Shards (have 1), 1 Astral Core (have 3)").
+  - Emporium Storage tab: each material reads how many you own.
+* Online screens you can reach without an opponent:
+  - Ranked Leagues Leaderboards are read: each row with its named columns as you move and page (LT/RT skip a page, Y returns to the top), the category on LB/RB, the All/Friends filter on X, "in the top 32" where shown, and your own entry ("You: rank ..." or "You have no entry on this board").
+  - Entering the Ranked Leagues hub announces your rank ("Rank Gold. Search For Match, 1 of 4").
+  - Creating or entering a lobby announces the lobby's name, host, slots, rank limit and player count, and the real options: Y to queue battle or spectate, X to remap controls, B to leave. Pressing Y announces "Queued to battle" or "Spectating" (the game itself gives no feedback). Players joining or leaving the lobby are announced by name with the new player count.
+* Story mode:
+  - Rivals (Story Mode Season 2): the chapter text before each fight is read on the loading screen, ending with "Press a button to continue" (reported by Sightless Kombat as silence before each battle). The first TJ Combo chapter has no text in the game's own data; the story starts reading from fight 2.
+  - Season 1 ladder endings: the ending text is read as the ending plays (it is drawn by the game engine outside the menus, which is why it was silent).
+* Controller config (Options, Controls): entering the panel explains the forced-remap flow — "Press Up for the Save and Reset to Default buttons, or press another key to rebind" (the panel drops you straight onto rebinding, which could look like a dead keyboard).
+
+New in v0.2.8:
 
 * The online multiplayer menus are now read:
   - The Performance Test results screen (required before ranked play): pass or fail, your score, your CPU, graphics card and current graphics settings, and whether you may play Ranked Leagues.
