@@ -1,0 +1,274 @@
+{
+ "tjcombo": [
+  {
+   "vs": "fulgore",
+   "key": "S2_TJ_LOADSCREEN_1"
+  },
+  {
+   "vs": "sadira",
+   "key": "S2_TJ_LOADSCREEN_2"
+  },
+  {
+   "vs": "orchid",
+   "key": "S2_TJ_LOADSCREEN_3"
+  },
+  {
+   "vs": "spinal",
+   "key": "S2_TJ_LOADSCREEN_4"
+  },
+  {
+   "vs": "cinder",
+   "key": "S2_TJ_LOADSCREEN_5"
+  },
+  {
+   "vs": "riptor",
+   "key": "S2_TJ_LOADSCREEN_6"
+  },
+  {
+   "vs": "fulgore",
+   "key": "S2_TJ_LOADSCREEN_7"
+  },
+  {
+   "vs": "aria",
+   "key": "S2_TJ_LOADSCREEN_8"
+  }
+ ],
+ "maya": [
+  {
+   "vs": "cinder",
+   "key": "S2_Maya_LOADSCREEN_1"
+  },
+  {
+   "vs": "riptor",
+   "key": "S2_Maya_LOADSCREEN_2"
+  },
+  {
+   "vs": "hisako",
+   "key": "S2_Maya_LOADSCREEN_3"
+  },
+  {
+   "vs": "sabrewulf",
+   "key": "S2_Maya_LOADSCREEN_4"
+  },
+  {
+   "vs": "fulgore",
+   "key": "S2_Maya_LOADSCREEN_5"
+  },
+  {
+   "vs": "glacius",
+   "key": "S2_Maya_LOADSCREEN_6"
+  },
+  {
+   "vs": "aganos",
+   "key": "S2_Maya_LOADSCREEN_7"
+  },
+  {
+   "vs": "gauze",
+   "key": "S2_TJ_LOADSCREEN_1"
+  }
+ ],
+ "gauze": [
+  {
+   "vs": "glacius",
+   "key": "S2_KanRa_LOADSCREEN_1"
+  },
+  {
+   "vs": "fulgore",
+   "key": "S2_KanRa_LOADSCREEN_2"
+  },
+  {
+   "vs": "hisako",
+   "key": "S2_KanRa_LOADSCREEN_3"
+  },
+  {
+   "vs": "spinal",
+   "key": "S2_KanRa_LOADSCREEN_4"
+  },
+  {
+   "vs": "cinder",
+   "key": "S2_KanRa_LOADSCREEN_5"
+  },
+  {
+   "vs": "thunder",
+   "key": "S2_KanRa_LOADSCREEN_6"
+  },
+  {
+   "vs": "nox",
+   "key": "S2_KanRa_LOADSCREEN_7"
+  },
+  {
+   "vs": "aganos",
+   "key": "S2_TJ_LOADSCREEN_1"
+  }
+ ],
+ "aganos": [
+  {
+   "vs": "fulgore",
+   "key": "S2_Aganos_LOADSCREEN_1"
+  },
+  {
+   "vs": "maya",
+   "key": "S2_Aganos_LOADSCREEN_2"
+  },
+  {
+   "vs": "gauze",
+   "key": "S2_Aganos_LOADSCREEN_3"
+  },
+  {
+   "vs": "sadira",
+   "key": "S2_Aganos_LOADSCREEN_4"
+  },
+  {
+   "vs": "orchid",
+   "key": "S2_Aganos_LOADSCREEN_5"
+  },
+  {
+   "vs": "jago",
+   "key": "S2_Aganos_LOADSCREEN_6"
+  },
+  {
+   "vs": "thunder",
+   "key": "S2_Aganos_LOADSCREEN_7"
+  },
+  {
+   "vs": "cinder",
+   "key": "S2_Aganos_LOADSCREEN_8"
+  }
+ ],
+ "riptor": [
+  {
+   "vs": "sadira",
+   "key": "S2_Riptor_LOADSCREEN_1"
+  },
+  {
+   "vs": "jago",
+   "key": "S2_Riptor_LOADSCREEN_2"
+  },
+  {
+   "vs": "tjcombo",
+   "key": "S2_Riptor_LOADSCREEN_3"
+  },
+  {
+   "vs": "orchid",
+   "key": "S2_Riptor_LOADSCREEN_4"
+  },
+  {
+   "vs": "riptor",
+   "key": "S2_Riptor_LOADSCREEN_5"
+  },
+  {
+   "vs": "aganos",
+   "key": "S2_Riptor_LOADSCREEN_6"
+  },
+  {
+   "vs": "sabrewulf",
+   "key": "S2_Riptor_LOADSCREEN_7"
+  },
+  {
+   "vs": "maya",
+   "key": "S2_Riptor_LOADSCREEN_8"
+  }
+ ],
+ "hisako": [
+  {
+   "vs": "sadira",
+   "key": "S2_Hisako_LOADSCREEN_1"
+  },
+  {
+   "vs": "riptor",
+   "key": "S2_Hisako_LOADSCREEN_2"
+  },
+  {
+   "vs": "thunder",
+   "key": "S2_Hisako_LOADSCREEN_3"
+  },
+  {
+   "vs": "sabrewulf",
+   "key": "S2_Hisako_LOADSCREEN_4"
+  },
+  {
+   "vs": "maya",
+   "key": "S2_Hisako_LOADSCREEN_5"
+  },
+  {
+   "vs": "spinal",
+   "key": "S2_Hisako_LOADSCREEN_6"
+  },
+  {
+   "vs": "cinder",
+   "key": "S2_Hisako_LOADSCREEN_7"
+  },
+  {
+   "vs": "aria",
+   "key": "S2_Hisako_LOADSCREEN_8"
+  }
+ ],
+ "cinder": [
+  {
+   "vs": "orchid",
+   "key": "S2_Cinder_LOADSCREEN_1"
+  },
+  {
+   "vs": "spinal",
+   "key": "S2_Cinder_LOADSCREEN_2"
+  },
+  {
+   "vs": "hisako",
+   "key": "S2_Cinder_LOADSCREEN_3"
+  },
+  {
+   "vs": "fulgore",
+   "key": "S2_Cinder_LOADSCREEN_4"
+  },
+  {
+   "vs": "aganos",
+   "key": "S2_Cinder_LOADSCREEN_5"
+  },
+  {
+   "vs": "thunder",
+   "key": "S2_Cinder_LOADSCREEN_6"
+  },
+  {
+   "vs": "glacius",
+   "key": "S2_TJ_LOADSCREEN_1"
+  },
+  {
+   "vs": "sadira",
+   "key": "S2_Cinder_LOADSCREEN_8"
+  }
+ ],
+ "aria": [
+  {
+   "vs": "glacius",
+   "key": "S2_Aria_LOADSCREEN_1"
+  },
+  {
+   "vs": "sadira",
+   "key": "S2_Aria_LOADSCREEN_2"
+  },
+  {
+   "vs": "fulgore",
+   "key": "S2_Aria_LOADSCREEN_3"
+  },
+  {
+   "vs": "thunder",
+   "key": "S2_Aria_LOADSCREEN_4"
+  },
+  {
+   "vs": "cinder",
+   "key": "S2_Aria_LOADSCREEN_5"
+  },
+  {
+   "vs": "orchid",
+   "key": "S2_Aria_LOADSCREEN_6"
+  },
+  {
+   "vs": "gauze",
+   "key": "S2_Aria_LOADSCREEN_7"
+  },
+  {
+   "vs": "nox",
+   "key": "S2_Aria_LOADSCREEN_8"
+  }
+ ]
+}

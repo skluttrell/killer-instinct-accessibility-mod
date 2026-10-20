@@ -181,7 +181,9 @@ static const char* SCREENS_JSON = R"JSON({
     "music": {"item": "mcMusicSelect.mcTrackText{i}", "count": 15, "fields": {"label": "mcText.txtItem.text", "state": "currentLabel", "visible": "visible"}}}},
  "GameSettingsPopUp.swf": {"scan": true, "groups": {"settings": {"item": "mcGSPopUpText.mcBtn{i}", "count": 3,
     "fields": {"label": "mcTxt.TxtItem.text", "value": "mcValue.TxtItem.text", "state": "currentLabel", "visible": "visible"}}}},
- "MultiplayerLobby.swf": {"scan": true, "probe": {"screen": "mcLobby.currentLabel"}, "groups": {
+ "MultiplayerLobby.swf": {"scan": true, "probe": {"screen": "mcLobby.currentLabel",
+    "lobTitle": "mcLobby.mcLobbyInside.txtLobbyTitle.text", "lobHost": "mcLobby.mcLobbyInside.txtGamerTag.text",
+    "lobSlots": "mcLobby.mcLobbyInside.txtSlotsPublicPrivate.text", "lobRank": "mcLobby.mcLobbyInside.txtButton.text"}, "groups": {
     "main": {"item": "mcLobby.mcLobbyMain.mcBtn{i}", "count": 2,
        "fields": {"label": "mcTxt.txtButton.text", "state": "currentLabel", "visible": "visible"}},
     "create": {"item": "mcLobby.mcLobbyCreate.mcToggle{i}", "count": 8,
@@ -200,7 +202,12 @@ static const char* SCREENS_JSON = R"JSON({
     "v3": "mcExhibitionMain.mcExhibition.mcToggle3.mcValue.txt.text", "v4": "mcExhibitionMain.mcExhibition.mcToggle4.mcValue.txt.text",
     "v5": "mcExhibitionMain.mcExhibition.mcToggle5.mcValue.txt.text"}},
  "MultiplayerLadder.swf": {"scan": true,
+    "calls": {"lbIdx": {"obj": "mcLeaderboards", "fn": "GetSelectionIndex"}},
     "probe": {"tutState": "mcTutotialScreen.currentLabel",
+       "cardRank": "mcPlayerCardP1.mcProLadderElements.mcProLadderTextAmt.txtItem.text",
+       "lbState": "mcLeaderboards.currentLabel", "lbLoading": "mcLeaderboards.mcLoadingContainer.visible",
+       "lbCat": "mcLeaderboards.mcMenuGroup.mcToggle.txtCategory.text",
+       "lbFilter": "mcLeaderboards.mcMenuGroup.mcFilterLabel.txtItem.text",
        "wT": "mcTutotialScreen.mcWelcomeTitle.txtItem.text", "wB": "mcTutotialScreen.mcWelcomeBody.txtItem.text",
        "qT": "mcTutotialScreen.mcTimeToQualifyTitle.txtItem.text", "qB": "mcTutotialScreen.mcTimeToQualifyBody.txtItem.text",
        "oT": "mcTutotialScreen.mcOnTrackTitle.txtItem.text", "oB": "mcTutotialScreen.mcOnTrackBody.txtItem.text",

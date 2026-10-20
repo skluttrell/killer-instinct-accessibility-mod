@@ -16,6 +16,7 @@ using gfx::GValue;
 static Narrator* s_nar = nullptr;
 static bool s_enabled = true;
 static bool s_installed = false;
+static uintptr_t s_locGet = 0;   // LocalizationManager::GetString (known build only; 0 = feature off)
 
 // ---- address resolution ----
 static std::string sha256File(const std::wstring& path) {
@@ -94,6 +95,11 @@ bool resolveAddresses() {
     // +0x27dc690). Known build only — a fixed data offset, no signature yet, so it stays off on an unrecognised build.
     if (known) { radar::setLootManagerGlobal(base + 0x27dc690); logLine("loot: GAssault manager global at +0x27dc690"); }
     else logLine("loot: unknown build, Shadow Lords loot cue disabled");
+    // Arcade ladder ending text: the Season 1 endings are engine-drawn (no UI traffic at all), so the only way to
+    // read them is the game's own localization lookup (LocalizationManager::GetString, documented in
+    // 01_research/live_session_2026-10-08.md). Known build only, like the loot global; off on an unrecognised build.
+    if (known) { s_locGet = base + 0x1a9640; logLine("loc: localization lookup at +0x1a9640 (ladder ending reader)"); }
+    else logLine("loc: unknown build, ladder ending reader disabled");
     return true;
 }
 
@@ -246,6 +252,22 @@ static float hookAdvance(void* self, float deltaT, unsigned frameCatchUp, bool c
     return r;
 }
 
+// The game's text-table lookup. Only consulted while the narrator has armed it (g_locArmed: the arcade ladder's
+// ending window), and only story-length results are forwarded — everything else returns untouched at full speed.
+using LocGetFn = const char* (*)(void* self, uint32_t hash);
+static LocGetFn s_origLocGet = nullptr;
+static const char* hookLocGet(void* self, uint32_t hash) {
+    const char* r = s_origLocGet(self, hash);
+    if (s_enabled && s_nar && r && g_locArmed.load(std::memory_order_relaxed)) {
+        size_t n = strnlen(r, 1024);
+        if (n >= 100 && n < 1024) {
+            std::lock_guard<std::recursive_mutex> g(g_lock);
+            s_nar->on_locstring(std::string(r, n));
+        }
+    }
+    return r;
+}
+
 bool install(Narrator* nar) {
     s_nar = nar;
     if (MH_Initialize() != MH_OK) { logLine("MH_Initialize failed"); return false; }
@@ -255,6 +277,10 @@ bool install(Narrator* nar) {
         MH_CreateHook((void*)gfx::g_fn.objInvoke, (void*)hookObjInvoke, (void**)&s_origObjInvoke) != MH_OK) {
         logLine("MH_CreateHook failed");
         return false;
+    }
+    if (s_locGet && MH_CreateHook((void*)s_locGet, (void*)hookLocGet, (void**)&s_origLocGet) != MH_OK) {
+        logLine("loc: hook failed, ladder ending reader disabled");   // non-fatal: everything else still works
+        s_locGet = 0;
     }
     if (MH_EnableHook(MH_ALL_HOOKS) != MH_OK) { logLine("MH_EnableHook failed"); return false; }
     s_installed = true;

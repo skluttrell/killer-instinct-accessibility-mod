@@ -8,6 +8,7 @@
 #endif
 #include <windows.h>
 #include <unknwn.h>
+#include <atomic>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -38,6 +39,8 @@ struct Config {
 };
 extern Config g_cfg;
 extern std::recursive_mutex g_lock;   // guards the narrator (UI thread hooks vs. hotkey thread)
+extern std::atomic<bool> g_locArmed;  // the localization hook forwards fetched strings to the narrator only while armed
+                                      // (the arcade ladder's ending window: its text is engine-drawn, no UI traffic)
 
 std::wstring moduleDir();          // directory of this DLL (with trailing backslash)
 std::wstring dataDir();            // moduleDir + L"kiaccess\\"

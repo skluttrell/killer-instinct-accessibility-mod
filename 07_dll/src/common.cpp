@@ -11,6 +11,7 @@ namespace ki {
 
 Config g_cfg;
 std::recursive_mutex g_lock;
+std::atomic<bool> g_locArmed{false};
 
 std::wstring moduleDir() {
     wchar_t buf[MAX_PATH];

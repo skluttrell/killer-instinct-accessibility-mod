@@ -1,0 +1,29 @@
+Me:
+Don't forget, I reset the keyboard so Claude should be able to input directly to the game again.
+When I used an item in the Barracks of Shadow Lords and returned to the main screen, it repeated the last item I used rather than the selected character's name.
+Multiplayer leader boards does not read.
+
+Sightless Kombat:
+* Once you create a lobby, the screen does not correctly read the new options presented - which I believe could be ready and search, though please verify this with a sighted player as it's been a few years since I checked these myself. We'll also have to test the system once you get multiple people in and how the UI handles people spectating as well as naming who's fighting etc when character select starts, on results screens etc.
+* Also the game doesn't appear to read your rank when you go to search for a ranked match.
+* Just had a 1v1 (exhibition) 20 match winning streak against my long-time sparring partner @jukesy1992. I couldn't see my character select/rematch/main menu selection as player 2, but could see Jukesy's selection moving as he changed it.
+Being able to have the names of players 1 and 2 read would massively help in terms of telling who won mirror matches.
+* The main issue we had was actually getting invites to send (Steam's system uses an overlay that doesn't read and isn't part of the game). Not sure how this'll work for multiplayer lobbies with multiple people, but we might test that in a future session).
+* I also noticed that the Season 2 Rivals mode does work (showing all the ending unlock conditions), but the text that preempts a fight dpesn'#t read yet, meaning you're just left with silence before a battle starts and no idea of how to continue unless you understand the game.
+* Additionally, the ending text doesn't read for Season 1, but fortunately it appears to have been transcribed for the various unlock conditions (in terms of whether you ultra your rival or not), not sure how accurate this might be, but thought it might help.
+https://killerinstinct.fandom.com/wiki/Arcade_Mode
+
+jukesy1992:
+* When someone joins a lobby, it doesn't tell you though it does make the game's clunk noise of course.
+* Solo shadow lords, after selecting assemble new team:
+* Imporium only reads the first three packs when scrolling left and right. The current work around is to press the a button on every pack which then does read.
+* If you go into guardians, the screen that lets you pick to charge a guardian doesn't seem to read, i.e: not the one where you pick gems but the one before it wher you can arrow through things. For instance, I think I am picking between two rams. I need verification on this.
+* Quests: if a choice-based dialogue comes up, it reads the first choice but does not read the text of the quest at all, meaning that I've had to use OCR to figure things out. (This is something I have noticed too. It should read the entire quest dialog as well as the choices.)
+for quests, control plus shift plus d reads the mission description, not the quest text, and there seems to be no way to repeat the mission rewards (control plus shift plus d repeats your mission scores, not rewards). The review command only seems to show the last announcement so if you overwright the awards with something else, as I did, those vanish. I will have to try with control plus shift plus r to see if it repeats.
+* The craft tab in the emporium says when something can be crafted but isn't telling me what items I'm using to craft it. The same with the storage tab, doesn't tell me how much of each thing I own.
+
+jukesy1992
+* Shadow lords: The craft tab isn't working properly at all. If you don't have enough materials, it just says missing materials.
+If can craft: Suggested: item name, can craft, total materials listed for the item
+If can't craft: item name, missing materials, total materials for the item.
+* Guardian selection in missions: both guardians if you own multiple report the same energy, so I've got two rams but even though I've just used one with one not being used, both report the energy of the one first item, it seems.

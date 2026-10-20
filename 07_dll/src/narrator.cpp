@@ -192,6 +192,10 @@ void Narrator::loadData() {
         json j = json::parse(txt, nullptr, false);
         if (j.is_object()) sl_prompts_ = j;
     } else logLine("warning: data\\sl_prompts.json missing, Shadow Lords tutorial prompts will not be read");
+    if (readFile(dataDir() + L"data\\s2_story.json", txt)) {
+        json j = json::parse(txt, nullptr, false);
+        if (j.is_object()) s2_story_ = j;
+    } else logLine("warning: data\\s2_story.json missing, Rivals story text will not be read");
     // last known Populate payloads (the DLL may be loaded after a screen populated, e.g. when injected)
     WIN32_FIND_DATAW fd;
     std::wstring pat = dataDir() + L"data\\populate_*.json";
@@ -368,7 +372,8 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
             }
             if (swf == "GA_PreLoad.swf") preload_dialog_i_ = 0;
             if (swf == "StoryMuralPopup.swf") {
-                // after finishing an arcade ladder (the voiced ending cinematic has just played): a mural piece
+                g_locArmed.store(false, std::memory_order_relaxed);   // the ending finished: stop reading engine strings
+                // after finishing an arcade ladder (the ending has just played): a mural piece
                 // is revealed; names come from the Story screen's payload, the indices are row * 3 + ending
                 std::vector<std::string> parts;
                 int season = jint(jget(data, "MuralIndex"), 0) + 1;
@@ -445,6 +450,14 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
             }
             if (swf == "ShadowLeaderboards.swf")
                 for (const char* k : {"ShadowLeaderboards.swf|row", "ShadowLeaderboards.swf|cat", "ShadowLeaderboards.swf|filter"}) last_probe_.erase(k);
+            if (swf == "MultiplayerLadder.swf") {
+                // the Ranked hub repopulates on every entry: reset the leaderboard window and the one-shot rank announcement
+                lb_rows_ = json();
+                lb_top_ = 0;
+                ladder_sub_.clear(); ladder_rank_said_.clear(); ladder_cat_.clear(); ladder_prefix_.clear();
+                for (const char* k : {"MultiplayerLadder.swf|row", "MultiplayerLadder.swf|cat", "MultiplayerLadder.swf|filter", "MultiplayerLadder.swf|you"}) last_probe_.erase(k);
+            }
+            if (swf == "MultiplayerLobby.swf") { lobby_seen_ = false; lobby_toggle_ = -1; lobby_names_.clear(); }
             if (swf == "Replays.swf") {
                 replays_fav_ = false;
                 last_probe_.erase("Replays.swf|item");
@@ -478,7 +491,7 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
             if (!isNone(xp) && !(xp.is_string() && xp.get<std::string>().empty())) parts.push_back(S.resolve(xp) + " XP");
             say("Notification. " + join(parts, ". "), false);
         } else if (swf == "LoadingScreen.swf" && data.is_object()) {
-            std::vector<std::string> names;
+            std::vector<std::string> names, codes;
             for (const char* k : {"p1Thumb", "p2Thumb"}) {
                 std::string v = jstr(data, k);
                 if (v.empty()) continue;
@@ -490,8 +503,28 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
                 std::string disp = fighterName(code, "");
                 if (disp.empty()) { disp = code; if (!disp.empty()) disp[0] = (char)toupper((unsigned char)disp[0]); }
                 names.push_back(disp);
+                codes.push_back(code);
             }
             say(names.empty() ? "Loading" : "Loading. " + join(names, " versus "), true);
+            if (story_mode_ && codes.size() == 2) {
+                // Season 2 Rivals: this loading screen carries the chapter's story text, drawn by the engine
+                // (invisible to the UI hooks) from a per-match key in gameinfo\StoryModeS2Definition — shipped as
+                // data\s2_story.json. Beta report 2026-10-19: "the text that preempts a fight doesn't read".
+                // The match is the ladder rung when it agrees on the opponent (TJ meets Fulgore twice), else the
+                // first match against this opponent.
+                const json& list = jget(s2_story_, codes[0].c_str());
+                if (list.is_array()) {
+                    int lvl = jint(jget(jget(jget(populate_, "SinglePlayerLadder.swf"), "Challengers"), "Level"), -1);
+                    int pick = -1;
+                    if (lvl >= 0 && lvl < (int)list.size() && jstr(list[lvl], "vs") == codes[1]) pick = lvl;
+                    else for (int i = 0; i < (int)list.size(); i++) if (jstr(list[i], "vs") == codes[1]) { pick = i; break; }
+                    if (pick >= 0) {
+                        std::string key = jstr(list[pick], "key");
+                        std::string txt = strip(strip_markup(S.resolve(key)));
+                        if (!txt.empty() && txt != key) say(txt + ". Press a button to continue", false);
+                    }
+                }
+            }
         } else if (swf == "StageSelect.swf") {
             last_probe_.erase("StageSelect.swf|stage");
         } else if (swf == "Story.swf") {
@@ -653,10 +686,11 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
     } else if (swf == "Stats.swf" && (fn == "PopulateOverall" || fn == "PopulateBreaker" || fn == "PopulateCombo" ||
                                       fn == "PopulateCombat" || fn == "PopulateCharacters")) {
         say_stats_category(fn, data);
-    } else if (swf == "Leaderboards.swf" && fn == "ReceiveLeaderboardRecords" && data.is_object()) {
+    } else if ((swf == "Leaderboards.swf" || swf == "MultiplayerLadder.swf") && fn == "ReceiveLeaderboardRecords" && data.is_object()) {
+        // the Fight Archive leaderboards and the Ranked Leagues leaderboards page the same way (15-row windows here)
         lb_rows_ = jget(data, "data");
         lb_top_ = jint(jget(data, "topIndex"), 0);
-        last_probe_.erase("Leaderboards.swf|row");   // a new page: the focused row is news even if the text repeats
+        last_probe_.erase(swf + "|row");   // a new page: the focused row is news even if the text repeats
     } else if (swf == "Leaderboards.swf" && fn == "PopulateColumnHeaders" && data.is_object()) {
         lb_headers_ = json::array();
         for (const char* k : {"Column1", "Column2", "Column3"}) lb_headers_.push_back(strip(S.resolve(jget(data, k))));
@@ -680,12 +714,61 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
             last_probe_["Leaderboards.swf|you"] = text;
             say(text, false);
         }
-    } else if (swf == "Leaderboards.swf" && fn == "ReceiveColumnUpdate" && data.is_object()) {
+    } else if (swf == "MultiplayerLadder.swf" && fn == "PopulatePlayerData" && data.is_object()) {
+        // the Ranked Leagues leaderboards footer with your own entry (columns are lower-case here, up to six)
+        const json& p = jget(data, "PlayerData");
+        std::string rank = strip(S.resolve(jget(p, "Rank")));
+        std::vector<std::string> parts;
+        if (rank.empty() || rank == "-") parts.push_back("You have no entry on this board");
+        else {
+            parts.push_back("You: rank " + rank);
+            json cols = ladder_lb_cols();
+            for (int c = 0; c < 6; c++) {
+                std::string v = strip(S.resolve(jget(p, ("column" + std::to_string(c + 1)).c_str())));
+                if (v.empty() || v == "-") continue;
+                std::string h = cols.is_array() && c < (int)cols.size() && cols[c].is_string() ? cols[c].get<std::string>() : "";
+                parts.push_back(h.empty() ? v : h + " " + v);
+            }
+        }
+        std::string text = join(parts, ", ");
+        if (!last_probe_.count("MultiplayerLadder.swf|you") || last_probe_["MultiplayerLadder.swf|you"] != text) {
+            last_probe_["MultiplayerLadder.swf|you"] = text;
+            say(text, false);
+        }
+    } else if ((swf == "Leaderboards.swf" || swf == "MultiplayerLadder.swf") && fn == "ReceiveColumnUpdate" && data.is_object()) {
         // async column fill (time / score arrive late): patch the stored window, the next snapshot re-reads if focused
         int row = jint(jget(data, "row"), -1), col = jint(jget(data, "column"), -1);
         if (jtruthy(jget(data, "forPlayer"))) {}   // footer: spoken from PopulatePlayerData
-        else if (lb_rows_.is_array() && row >= 0 && row < (int)lb_rows_.size() && col >= 0 && col < 3)
+        else if (lb_rows_.is_array() && row >= 0 && row < (int)lb_rows_.size() && col >= 0 && col < 6)
             lb_rows_[row]["column" + std::to_string(col + 1)] = jget(data, "text");
+    } else if (swf == "MultiplayerLobby.swf" && fn == "UpdateLobbyInfo" && data.is_object() && current_swf_ == "MultiplayerLobby.swf") {
+        // streams ~4x a second while inside a lobby. Announce only changes: your battle/spectate state (the Y toggle
+        // gives no other feedback) and players joining or leaving (the game only plays a clunk) — beta reports 2026-10-19.
+        int nt = jtruthy(jget(data, "LocalPlayerToggled")) ? 1 : 0;
+        std::set<std::string> names;
+        const json& pl = jget(data, "Players");
+        if (pl.is_array()) for (const auto& p : pl) {
+            if (!jtruthy(jget(p, "Visible"))) continue;
+            std::string n = strip(S.resolve(jget(p, "name")));
+            if (!n.empty()) names.insert(n);
+        }
+        if (!lobby_seen_) {   // first update of this lobby: baseline, nothing to announce yet
+            lobby_seen_ = true;
+            lobby_toggle_ = nt;
+            lobby_names_ = names;
+        } else {
+            if (nt != lobby_toggle_) {
+                lobby_toggle_ = nt;
+                say(nt ? "Queued to battle" : "Spectating", false);
+            }
+            if (names != lobby_names_) {
+                std::vector<std::string> msg;
+                for (const auto& n : names) if (!lobby_names_.count(n)) msg.push_back(n + " joined");
+                for (const auto& n : lobby_names_) if (!names.count(n)) msg.push_back(n + " left");
+                lobby_names_ = names;
+                if (!msg.empty()) say(join(msg, ". ") + ". " + std::to_string(names.size()) + (names.size() == 1 ? " player in lobby" : " players in lobby"), false);
+            }
+        }
     } else if (swf == "ShadowLeaderboards.swf" && fn == "ReceiveLeaderboardRecords") {
         last_probe_.erase("ShadowLeaderboards.swf|row");   // new page: re-read the focused row from the screen
     } else if (swf == "StoreContentOverview.swf" && fn == "PopulateItems" && data.is_object()) {
@@ -740,6 +823,7 @@ void Narrator::say_match_outcome(const json& data) {
     std::vector<std::string> parts{"Match results"}, stats;
     const json& w = jget(data, "Winner");
     if (jisInt(w) && (w.get<int>() == 0 || w.get<int>() == 1)) parts.push_back("Player " + std::to_string(w.get<int>() + 1) + " wins");
+    last_match_p1win_ = jisInt(w) && w.get<int>() == 0;   // with the final ladder rung, Advance leads into the ending
     for (int side = 0; side < 2; side++) {
         std::string pk = "Player" + std::to_string(side + 1) + "State", sk = "p" + std::to_string(side + 1) + "ShowStats";
         const json& st = jget(data, pk.c_str());
@@ -969,6 +1053,39 @@ json Narrator::replays_list() const {
     return out;
 }
 
+bool Narrator::ladder_final_fight() {
+    // the stored tower payload: Level is the rung about to be (or just) fought, Opponents the whole climb
+    const json& ch = jget(jget(populate_, "SinglePlayerLadder.swf"), "Challengers");
+    const json& opp = jget(ch, "Opponents");
+    int lvl = jint(jget(ch, "Level"), -1);
+    return opp.is_array() && !opp.empty() && lvl == (int)opp.size() - 1;
+}
+
+void Narrator::on_locstring(const std::string& text) {
+    // called from the localization hook only inside the ladder's ending window. The ending slides fetch their
+    // paragraphs as they appear; everything else fetched in the window (menu text preloading behind the scenes)
+    // is filtered by the hook's length floor, this dedup, and the cap.
+    if (loc_spoken_.count(text) || loc_spoken_.size() >= 4) return;
+    loc_spoken_.insert(text);
+    std::string t = strip(strip_markup(replaceAll(replaceAll(text, "\\n", " "), "\n", " ")));
+    if (t.size() < 100) return;
+    say(t, false);
+}
+
+json Narrator::ladder_lb_cols() {
+    // the Ranked Leagues leaderboards' column headers live in the hub's Populate payload, one set per category
+    // (LeaderboardsPopulateObject.CategoryInfo); the category on screen is matched by its displayed label
+    const json& cats = jget(jget(populate_["MultiplayerLadder.swf"], "LeaderboardsPopulateObject"), "CategoryInfo");
+    if (!cats.is_array() || cats.empty()) return json();
+    int ci = 0;
+    if (!ladder_cat_.empty()) for (int i = 0; i < (int)cats.size(); i++)
+        if (strip(S.resolve(jget(jget(cats[i], "CategoryLabel"), "key"))) == ladder_cat_) { ci = i; break; }
+    json out = json::array();
+    const json& cl = jget(cats[ci], "ColumnLabels");
+    if (cl.is_array()) for (const auto& c : cl) out.push_back(strip(S.resolve(jget(c, "key"))));
+    return out;
+}
+
 void Narrator::on_ei(const std::string& script, const std::string& fn, const std::string& js, int64_t t) {
     if (fn == "LoadDestination") {
         json j = json::parse(js, nullptr, false, true);
@@ -980,6 +1097,16 @@ void Narrator::on_ei(const std::string& script, const std::string& fn, const std
             current_swf_ = dest;
             hasLast_ = false;
             ga_announced_.clear();   // so the next ScreenShown of any GA screen is announced again (the loadout popup reopened from the War Room)
+            // Arcade ladder (Story mode) context: tells the next loading screen to speak its Rivals story text, and
+            // arms the localization hook for the ending window — after the final rung is won, the Season 1 ending
+            // plays as engine-drawn slides with no UI traffic at all (beta report 2026-10-19: "the ending text
+            // doesn't read for Season 1"), so their text is caught at the game's own string lookup instead.
+            if (dest == "SinglePlayerLadder.swf") story_mode_ = true;
+            else if (dest != "LoadingScreen.swf" && dest != "MatchOutcome.swf" && dest != "StoryMuralPopup.swf" &&
+                     dest != "Popup.swf" && dest != "Advance.swf") story_mode_ = false;
+            bool endingWindow = story_mode_ && dest == "Advance.swf" && last_match_p1win_ && ladder_final_fight();
+            if (endingWindow) loc_spoken_.clear();
+            g_locArmed.store(endingWindow, std::memory_order_relaxed);
             if (dest == "MultiplayerRanked.swf") {
                 // a standalone full-screen spinner with no named text fields: its "Ranked Leagues / Syncing ladder
                 // information with the server." text is injected by Lua, so the generic reader sees nothing. The screen
@@ -1042,8 +1169,10 @@ void Narrator::on_ei(const std::string& script, const std::string& fn, const std
             std::string recd = strip(S.resolve(jget(c, "record")));
             if (jtruthy(jget(c, "showRecord")) && !recd.empty()) parts.push_back(recd);
             last_focus_ = json{{"swf", "GA_Barracks.swf"}, {"label", parts[0]}, {"desc", ""}};
-            if (current_swf_ != "GA_Barracks.swf" || ga_announced_ != "GA_Barracks.swf") barracks_pending_ = join(parts, ", ");   // arrives just before ScreenShown
-            else say(join(parts, ", "), true, t);
+            barracks_roster_line_ = join(parts, ", ");   // kept so closing the artifact popup can name the fighter again
+            barracks_roster_name_ = parts[0];
+            if (current_swf_ != "GA_Barracks.swf" || ga_announced_ != "GA_Barracks.swf") barracks_pending_ = barracks_roster_line_;   // arrives just before ScreenShown
+            else say(barracks_roster_line_, true, t);
         }
     } else if (script == "GA_WarRoom" && fn == "AS_UpdateMissionSelection") {
         // the mission list reports every cursor move (and its initial position) to Lua
@@ -1885,7 +2014,68 @@ void Narrator::on_focus(const json& rec) {
             say(text, true, t);
             return;
         }
-        // no tutorial page up: fall through to the generic menu scan
+        // Leaderboards subscreen (the hub's "Leaderboards" item): the same ReceiveLeaderboardRecords window flow as
+        // the Fight Archive's Leaderboards.swf, 15 rows a page; the column headers per category come from the hub's
+        // own Populate payload. Beta report 2026-10-19: "Multiplayer leaderboards does not read".
+        std::string lbState = jstr(pr, "lbState");
+        if (lbState == "BuildOn" || lbState == "Loop") {
+            std::string prefix;
+            if (ladder_sub_ != "lb") {
+                ladder_sub_ = "lb";
+                last_probe_.erase(swf + "|row");
+                prefix = "Leaderboards. ";
+            }
+            json fil = clean(jget(pr, "lbFilter"));
+            if (!isNone(fil)) {   // "Current Filter: All" / "Current Filter: Friends" (X): announced when it changes
+                std::string f = sv(fil), fk = swf + "|filter";
+                bool had = last_probe_.count(fk) > 0;
+                if (had && last_probe_[fk] != f) say(f, true, t);
+                last_probe_[fk] = f;
+            }
+            if (jget(pr, "lbLoading").is_boolean() && jget(pr, "lbLoading").get<bool>()) {
+                if (!prefix.empty()) say("Leaderboards", true, t);
+                return;
+            }
+            json cat = clean(jget(pr, "lbCat"));
+            if (!isNone(cat)) {   // the category toggle (LB/RB): named when it changes, selects the column headers
+                ladder_cat_ = sv(cat);
+                std::string ck = swf + "|cat";
+                if (!last_probe_.count(ck) || last_probe_[ck] != ladder_cat_) {
+                    last_probe_[ck] = ladder_cat_;
+                    prefix += ladder_cat_ + ". ";
+                }
+            }
+            int bidx = jint(jget(pr, "lbIdx"), -1);
+            if (!lb_rows_.is_array() || bidx < 0 || bidx >= (int)lb_rows_.size() || !lb_rows_[bidx].is_object()) {
+                if (!prefix.empty()) say(prefix.substr(0, prefix.size() - 2), true, t);
+                return;
+            }
+            const json& r = lb_rows_[bidx];
+            std::vector<std::string> parts;
+            std::string rank = strip(S.resolve(jget(r, "rank"))), tag = strip(S.resolve(jget(r, "gamertag")));
+            parts.push_back((rank.empty() ? "rank " + std::to_string(lb_top_ + bidx + 1) : "rank " + rank) + (tag.empty() ? "" : ", " + tag));
+            json cols = ladder_lb_cols();
+            for (int c = 0; c < 6; c++) {
+                std::string v = strip(S.resolve(jget(r, ("column" + std::to_string(c + 1)).c_str())));
+                if (v.empty() || v.find_first_not_of('-') == std::string::npos) continue;
+                std::string h = cols.is_array() && c < (int)cols.size() && cols[c].is_string() ? cols[c].get<std::string>() : "";
+                parts.push_back(h.empty() ? v : h + " " + v);
+            }
+            if (jtruthy(jget(r, "withinThreshold"))) parts.push_back("in the top 32");
+            std::string rowText = join(parts, ", ");
+            std::string rk = swf + "|row";
+            if (prefix.empty() && last_probe_.count(rk) && last_probe_[rk] == rowText) return;
+            last_probe_[rk] = rowText;
+            last_focus_ = json{{"swf", swf}, {"index", bidx}, {"label", parts[0]}, {"desc", ""}, {"value", nullptr}};
+            say(prefix + rowText, true, t);
+            return;
+        }
+        // front menu: announce the player card's rank once per visit, as a prefix on the next menu read (beta report
+        // 2026-10-19: "doesn't read your rank when you go to search for a ranked match")
+        json cr = clean(jget(pr, "cardRank"));
+        if (!isNone(cr) && sv(cr) != ladder_rank_said_) { ladder_rank_said_ = sv(cr); ladder_prefix_ = "Rank " + sv(cr) + ". "; }
+        ladder_sub_ = "menu";
+        // fall through to the generic menu scan
     }
     if (swf == "MultiplayerLobby.swf") {
         // one movie, three in-movie subscreens (main / create / search) sharing one cursor. Inactive subscreens keep
@@ -1898,8 +2088,33 @@ void Narrator::on_focus(const json& rec) {
             // wears a crown. Navigation moves the cursor; the live player list streams in via UpdateLobbyInfo (not a
             // snapshot trigger), so reads fire only on a move.
             const json& g = jget(jget(rec, "groups"), "lobby");
+            int lcount0 = jint(jget(g, "count"), 0);
+            std::string enter;
+            if (lobby_sub_ != "lobby") {
+                // name the lobby and its options once on entry: the header texts are on screen but the game says
+                // nothing (beta report 2026-10-19: "once you create a lobby, the screen does not correctly read the
+                // new options presented"). The real options here are the legend buttons, not cursor items.
+                lobby_sub_ = "lobby";
+                last_probe_.erase(swf + "|item");
+                const json& pp = jget(rec, "probe");
+                std::vector<std::string> hdr;
+                json lt = clean(jget(pp, "lobTitle"));
+                hdr.push_back(isNone(lt) ? "Lobby" : "Lobby " + sv(lt));
+                json lh = clean(jget(pp, "lobHost"));
+                if (!isNone(lh)) hdr.push_back("host " + sv(lh));
+                json lsl = clean(jget(pp, "lobSlots"));
+                if (!isNone(lsl)) hdr.push_back("slots " + sv(lsl));
+                json lrk = clean(jget(pp, "lobRank"));
+                if (!isNone(lrk)) hdr.push_back("rank limit " + sv(lrk));
+                if (lcount0 > 0) hdr.push_back(std::to_string(lcount0) + (lcount0 == 1 ? " player" : " players"));
+                hdr.push_back(key_labels_["YBUTTON"] + ": queue battle or spectate, " + key_labels_["XBUTTON"] + ": remap controls, " + key_labels_["BBUTTON"] + ": leave");
+                enter = join(hdr, ". ") + ". ";
+            }
             json name = clean(jget(g, "label"));
-            if (isNone(name)) return;   // no focused player yet
+            if (isNone(name)) {   // no focused player yet: the entry announcement still reads
+                if (!enter.empty()) say(enter.substr(0, enter.size() - 2), true, t);
+                return;
+            }
             std::string nameS = S.resolve(name);
             std::vector<std::string> parts{nameS};
             json ratio = clean(jget(g, "ratio"));
@@ -1914,12 +2129,6 @@ void Narrator::on_focus(const json& rec) {
             if (jget(g, "crown").is_boolean() && jget(g, "crown").get<bool>()) parts.push_back("next to fight");
             int lpos = jint(jget(g, "pos"), -1), lcount = jint(jget(g, "count"), 0);
             if (lcount > 0 && lpos >= 0 && verbosity_ >= 1) parts.push_back(std::to_string(lpos + 1) + " of " + std::to_string(lcount));
-            std::string enter;
-            if (lobby_sub_ != "lobby") {   // name the player count once on entering the lobby
-                lobby_sub_ = "lobby";
-                last_probe_.erase(swf + "|item");
-                if (lcount > 0) enter = std::to_string(lcount) + (lcount == 1 ? " player in lobby. " : " players in lobby. ");
-            }
             std::string itemKey = nameS + "|" + std::to_string(lpos);
             std::string k = swf + "|item";
             if (enter.empty() && last_probe_.count(k) && last_probe_[k] == itemKey) return;
@@ -1938,6 +2147,7 @@ void Narrator::on_focus(const json& rec) {
         if (si->second != lobby_sub_) {   // name the subscreen once on entry, then reset the item dedup so it reads
             lobby_sub_ = si->second;
             last_probe_.erase(swf + "|item");
+            lobby_seen_ = false; lobby_toggle_ = -1; lobby_names_.clear();   // left the lobby: next one starts a fresh UpdateLobbyInfo baseline
             if (si->second == "create") enter = "Create Lobby. ";
             else if (si->second == "search") enter = "Search Lobby. ";
         }
@@ -2179,6 +2389,7 @@ void Narrator::on_focus(const json& rec) {
         return;
     }
     std::string text = prefix + labelS;
+    if (!ladder_prefix_.empty() && swf == "MultiplayerLadder.swf") { text = ladder_prefix_ + text; ladder_prefix_.clear(); }   // "Rank Gold. Search For Match..."
     if (haveValue) text += ", " + valueS;
     if (!flags.empty()) text += ", " + join(flags, ", ");
     if (jtruthy(count) && !isNone(pos) && verbosity_ >= 1) text += ", " + std::to_string(jint(pos) + 1) + " of " + std::to_string(jint(count));
@@ -2444,17 +2655,25 @@ void Narrator::on_ga_focus(const std::string& swf, const json& rec, const std::s
             } else if (isNone(name)) parts.push_back("no guardians" + (isNone(cat) ? std::string() : " in " + sv(cat)));
             else {
                 parts.push_back(sv(name));
-                // energy from the payload entry with this name (the card only shows it as a meter)
+                // energy from the payload entry for THIS instance (the card only shows it as a meter). Two guardians of the
+                // same name must not both report the first one's energy (beta report 2026-10-19): identify the tier by the
+                // category text and the pet by its 1-based position within that tier, falling back to a name match.
                 const json& tiers = jget(data, "spiritPetData");
+                int pi = isNone(pos) ? -1 : atoi(sv(pos).c_str()) - 1;   // "n/m" -> index n-1
+                const json* pp = nullptr;
                 if (tiers.is_array()) for (const auto& tier : tiers) {
+                    if (!isNone(cat) && S.resolve(jget(tier, "name")) != sv(cat)) continue;
                     const json& pets = jget(tier, "pets");
                     if (!pets.is_array()) continue;
-                    for (const auto& p : pets) if (S.resolve(jget(p, "name")) == sv(name)) {
-                        int cur = jint(jget(p, "currentAstralEnergy"), -1), mx = jint(jget(p, "maxAstralEnergy"), -1);
-                        if (cur >= 0 && mx > 0) parts.push_back("energy " + std::to_string(cur) + " of " + std::to_string(mx));
-                        if (!jtruthy(jget(p, "available"))) parts.push_back("unavailable");
-                        break;
-                    }
+                    if (pi >= 0 && pi < (int)pets.size()) pp = &pets[pi];
+                    else for (const auto& p : pets) if (S.resolve(jget(p, "name")) == sv(name)) { pp = &p; break; }
+                    if (!isNone(cat)) break;        // the category named the tier: do not scan the others
+                    if (pp) break;
+                }
+                if (pp) {
+                    int cur = jint(jget(*pp, "currentAstralEnergy"), -1), mx = jint(jget(*pp, "maxAstralEnergy"), -1);
+                    if (cur >= 0 && mx > 0) parts.push_back("energy " + std::to_string(cur) + " of " + std::to_string(mx));
+                    if (!jtruthy(jget(*pp, "available"))) parts.push_back("unavailable");
                 }
                 if (!isNone(cat)) parts.push_back(sv(cat));
                 if (verbosity_ >= 1 && !isNone(pos)) parts.push_back(posText(sv(pos)));
@@ -2516,7 +2735,18 @@ void Narrator::on_ga_focus(const std::string& swf, const json& rec, const std::s
         // name, description and "n/m" are the popup's own text (the roster itself is read from the rotation event)
         auto open = [](const std::string& l) { return !l.empty() && l != "Off" && l != "BuildOff"; };
         std::string lk = swf + "|inv";
-        if (!open(jstr(probe, "invState"))) { last_probe_.erase(lk); return; }
+        if (!open(jstr(probe, "invState"))) {
+            // the artifact popup just closed (e.g. after using an item): the roster view is back but sends no rotation
+            // event, so name the centre fighter again — otherwise the last thing said stays the used item (beta report 2026-10-19)
+            if (last_probe_.count(lk)) {
+                last_probe_.erase(lk);
+                if (!barracks_roster_line_.empty()) {
+                    last_focus_ = json{{"swf", swf}, {"label", barracks_roster_name_}, {"desc", ""}};
+                    say(barracks_roster_line_, true, t);
+                }
+            }
+            return;
+        }
         json title = clean(jget(probe, "invTitle")), cat = clean(jget(probe, "invCat")), pos = clean(jget(probe, "invPos"));
         std::vector<std::string> parts;
         bool first = last_probe_.find(lk) == last_probe_.end();
@@ -2624,19 +2854,31 @@ void Narrator::on_ga_focus(const std::string& swf, const json& rec, const std::s
         int i = jint(jget(dg, "index"));
         std::vector<std::string> parts;
         std::string name, desc;
+        json inv;   // the focused deck's cards (one per owned copy of this guardian)
         if (pets.is_array() && i >= 0 && i < (int)pets.size()) {
             const json& p = pets[i];
             name = S.resolve(jget(p, "name"));
             parts.push_back(name);
             std::string type = S.resolve(jget(p, "desc"));
             if (!type.empty()) parts.push_back(lower(type));
-            const json& inv = jget(p, "inventory");
-            if (inv.is_array()) parts.push_back(inv.empty() ? "none owned" : std::to_string(inv.size()) + " owned");
+            inv = jget(p, "inventory");
+            int n = inv.is_array() ? (int)inv.size() : 0;
+            parts.push_back(n == 0 ? "none owned" : std::to_string(n) + " owned");
             desc = S.resolve(jget(p, "instructions"));
         } else parts.push_back("guardian " + std::to_string(i + 1));
         if (verbosity_ >= 1) parts.push_back(std::to_string(jint(jget(dg, "pos")) + 1) + " of " + std::to_string(jint(jget(dg, "count"))));
         int card = jint(jget(probe, "cardIdx"), -1);
-        if (card > 0) parts.push_back("card " + std::to_string(card + 1));
+        // the focused card's own energy, so two copies of the same guardian can be told apart before charging
+        // (beta report 2026-10-19). Up/Down move cardIdx within the deck; each card is a distinct instance.
+        {
+            int cn = inv.is_array() ? (int)inv.size() : 0;
+            int c = (card >= 0 && card < cn) ? card : 0;
+            if (cn > 0 && inv[c].is_object()) {
+                if (cn > 1) parts.push_back("card " + std::to_string(c + 1) + " of " + std::to_string(cn));
+                int cur = jint(jget(inv[c], "currentAstralEnergy"), -1), mx = jint(jget(inv[c], "maxAstralEnergy"), -1);
+                if (cur >= 0 && mx > 0) parts.push_back("energy " + std::to_string(cur) + " of " + std::to_string(mx));
+            }
+        }
         if (verbosity_ >= 2 && !desc.empty()) parts.push_back(desc);
         std::string key = std::to_string(i) + "|" + std::to_string(card) + "|" + name;
         std::string fk = swf + "|focus";
@@ -2846,7 +3088,8 @@ void Narrator::on_ga_focus(const std::string& swf, const json& rec, const std::s
         json tabText = clean(jget(probe, ("tab" + std::to_string(tab) + "Text").c_str()));
         std::string tabName = isNone(tabText) ? std::string(tab == 0 ? "Packs" : tab == 1 ? "KI Gold" : tab == 2 ? "Craft" : "Storage") : sv(tabText);
         const json& tabs = jget(jget(populate_, swf.c_str()), "navigationTabData");
-        const json& items = tabs.is_array() && tab < (int)tabs.size() ? jget(tabs[tab], "data") : json();
+        json items = tabs.is_array() && tab < (int)tabs.size() ? jget(tabs[tab], "data") : json();
+        if (tab == 3 && items.is_object()) items = items.value("entries", json());   // Storage: data is {entries, ...}, not an array
         const char* idxKey[] = {"packIdx", "goldIdx", nullptr, nullptr};
         int idx = idxKey[tab] ? jint(jget(probe, idxKey[tab]), -1) : -1;
         if (tab == 2) {   // the craft screen's getter does not match its "1/6" counter: use the counter
@@ -2856,20 +3099,59 @@ void Narrator::on_ga_focus(const std::string& swf, const json& rec, const std::s
         std::string name, desc, extra;
         json title = clean(jget(probe, tab == 2 ? "craftTitle" : tab == 3 ? "storageTitle" : "none"));
         if (!isNone(title)) name = sv(title);
+        if (tab == 0 && items.is_array()) {
+            // the pack carousel's GetSelectedPackIndex is a non-linear cell index, out of range for most packs (so they
+            // went silent): identify the focused pack by its fixed-path drop list instead (beta report 2026-10-19)
+            std::string pd = ptext("packDesc");
+            if (!pd.empty()) for (int k = 0; k < (int)items.size(); k++)
+                if (strip_markup(S.resolve(jget(items[k], "description"))) == pd) { idx = k; break; }
+        }
+        if ((tab == 2 || tab == 3) && items.is_array() && !isNone(title)) {
+            // match the focused item by its on-screen title, so the recipe materials (craft) / owned count (storage) are
+            // read from the right entry rather than trusting the counter-to-array order (beta report 2026-10-19)
+            std::string st = strip_markup(sv(title));
+            if (!st.empty()) for (int k = 0; k < (int)items.size(); k++)
+                if (strip_markup(S.resolve(jget(items[k], "name"))) == st) { idx = k; break; }
+        }
         if (items.is_array() && idx >= 0 && idx < (int)items.size()) {
             const json& it = items[idx];
             if (name.empty()) name = strip_markup(S.resolve(jget(it, "name")));
+            std::vector<std::string> bits;
+            std::string tc = S.resolve(jget(it, "tokenCost")), gc = S.resolve(jget(it, "kiGoldCost"));
             std::vector<std::string> costs;
-            std::string tc = S.resolve(jget(it, "tokenCost")), gc = S.resolve(jget(it, "kiGoldCost")), q = S.resolve(jget(it, "quantity"));
             if (!tc.empty() && tc != "0") costs.push_back(tc + " gems");
             if (!gc.empty() && gc != "0") costs.push_back(gc + " KI gold");
-            if (!costs.empty()) extra = join(costs, " or ");
+            if (!costs.empty()) bits.push_back(join(costs, " or "));
             std::string amount = S.resolve(jget(it, "amount")), price = S.resolve(jget(it, "price"));   // KI gold bundles
-            if (!amount.empty()) extra += (extra.empty() ? "" : ", ") + amount + " KI gold";
-            if (!price.empty()) extra += (extra.empty() ? "" : ", ") + price;
-            if (!q.empty()) extra += (extra.empty() ? "" : ", ") + std::string("quantity ") + q;
+            if (!amount.empty()) bits.push_back(amount + " KI gold");
+            if (!price.empty()) bits.push_back(price);
+            if (tab == 3) {   // Storage: how many of the material you own (beta report 2026-10-19)
+                std::string q = jtostr(clean(jget(it, "quantity")));
+                if (!q.empty() && q != "null") bits.push_back(q + " owned");
+            } else {
+                std::string q = S.resolve(jget(it, "quantity"));
+                if (!q.empty()) bits.push_back("quantity " + q);
+            }
             const json& cc = jget(it, "canCraft");
-            if (cc.is_boolean()) extra += (extra.empty() ? "" : ", ") + std::string(cc.get<bool>() ? "can craft" : "missing materials");
+            if (cc.is_boolean()) bits.push_back(cc.get<bool>() ? "can craft" : "missing materials");
+            if (tab == 2) {   // Craft: how many you already own, then the recipe with what you have (beta report 2026-10-19)
+                std::string own = S.resolve(jget(it, "numOwned"));
+                if (!own.empty() && own != "0") bits.push_back(own + " owned");
+                const json& mats = jget(it, "materials");
+                if (mats.is_array() && !mats.empty()) {
+                    std::vector<std::string> ms;
+                    for (const auto& m : mats) {
+                        std::string mn = strip_markup(S.resolve(jget(m, "name")));
+                        if (mn.empty()) continue;
+                        int need = jint(jget(m, "numNeeded"), -1), have = jint(jget(m, "numOwned"), -1);
+                        std::string s = (need >= 0 ? std::to_string(need) + " " : "") + mn;
+                        if (have >= 0) s += " (have " + std::to_string(have) + ")";
+                        ms.push_back(s);
+                    }
+                    if (!ms.empty()) bits.push_back("needs " + join(ms, ", "));
+                }
+            }
+            extra = join(bits, ", ");
             for (const char* dk : {"description", "description1", "description2"}) { std::string d = strip_markup(S.resolve(jget(it, dk))); if (!d.empty()) desc += (desc.empty() ? "" : " ") + d; }
         }
         if (desc.empty()) {

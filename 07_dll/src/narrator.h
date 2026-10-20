@@ -18,6 +18,7 @@ public:
     void on_ei(const std::string& script, const std::string& fn, const std::string& js, int64_t t);
     void on_inv(const std::string& swf, const std::string& fn, const std::string& js);
     void on_focus(const json& rec);
+    void on_locstring(const std::string& text);   // from the localization hook while g_locArmed (arcade ladder ending text)
     void on_match_live(int32_t levelId);   // from the radar thread (under g_lock): announce the stage when it was not chosen explicitly
     void on_loot(int ev, int count);       // from the radar thread (under g_lock): Shadow Lords loot-collect phase start (ev 0) / end (ev 1)
 
@@ -70,7 +71,14 @@ private:
     bool hasSkip_ = false;
     std::vector<std::string> mm_state_;
     std::string mp_screen_name_;   // MultiplayerExhibition entry name ("Exhibition" / "Shadow Lords MP"), spoken as a prefix on the first focus read
-    std::string lobby_sub_;        // MultiplayerLobby active subscreen last read ("main"/"create"/"search"), to name it once on entry
+    std::string lobby_sub_;        // MultiplayerLobby active subscreen last read ("main"/"create"/"search"/"lobby"), to name it once on entry
+    bool lobby_seen_ = false;      // LobbyInside: baseline of the UpdateLobbyInfo stream captured (joins/leaves/toggle announce only changes)
+    int lobby_toggle_ = -1;        // LobbyInside: LocalPlayerToggled last seen (1 = queued to battle, 0 = spectating, -1 = no baseline)
+    std::set<std::string> lobby_names_;   // LobbyInside: visible player names, to announce who joined or left
+    std::string ladder_sub_;       // MultiplayerLadder active subscreen last read ("menu"/"lb"), to name the leaderboards once on entry
+    std::string ladder_rank_said_; // card rank already announced this Ranked hub visit (one-shot)
+    std::string ladder_cat_;       // leaderboard category text on screen (selects the column headers from the Populate payload)
+    std::string ladder_prefix_;    // one-shot prefix ("Rank Gold. ") for the next generic menu read on the Ranked hub
     json fighter_names_ = json::object();
     std::map<std::string, std::string> fighter_levels_;   // code -> "level 3, next unlock at level 5" (from the player card entries)
     json fighter_appearance_ = json::object();   // code -> {"default": text, "retro": text} (data\fighter_appearance.json)
@@ -87,11 +95,21 @@ private:
     json encounter_;                       // last War Room encounter popup payload (title, description, options / rewards / results)
     int mission_idx_ = -1;                 // War Room mission under the cursor (AS_UpdateMissionSelection), re-read when the loadout popup closes
     std::string barracks_pending_;         // centre fighter reported before the Barracks screen was shown (spoken with the screen name)
+    std::string barracks_roster_line_;     // the centre fighter's full roster line, re-announced when the artifact popup closes (beta report 2026-10-19)
+    std::string barracks_roster_name_;     // that fighter's name alone, to restore last_focus_ after the popup closes
     json music_options_;                   // Stage Select music menu options (Lua_PopulateMusicOptions arrives before the screen's own Populate)
     std::string last_sound_;               // last PlaySoundString name: the Shadow Lords popups navigate in AS3 only, their sounds tell what moved
     json pack_items_;                      // Emporium: the cards of the pack bought last (PackPurchased payload), revealed one by one
     int pack_card_ = 0;                    // index of the card under the cursor in that reveal
     bool hub_daily_open_ = false;          // the hub's daily rewards overlay is on screen (it swallows the hub's keys)
+
+    // Arcade ladder story text (Story mode S1/S2): the Rivals pre-fight text is engine-drawn over the loading
+    // screen (keys from gameinfo\StoryModeS2Definition), the S1 endings are engine-drawn slides after the ladder
+    json s2_story_ = json::object();   // data\s2_story.json: fighter code -> [{vs: opponent code, key: text key}] per match
+    bool story_mode_ = false;          // inside the arcade ladder flow (SinglePlayerLadder and its fights)
+    bool last_match_p1win_ = false;    // last MatchOutcome winner was Player 1 (with the final rung, arms the ending window)
+    std::set<std::string> loc_spoken_; // engine strings spoken in the current ending window (dedup + cap)
+    bool ladder_final_fight();         // the stored tower payload says the fight just played was the last rung
 
     // Store content pages (StoreContentOverview.swf: Fighters, Skins, Boosters, ...)
     json store_page_items_;                // current window of PopulateItems
@@ -109,6 +127,7 @@ private:
     void say_stats_summary(const json& data);                    // the Fight Stats landing page
     void say_stats_category(const std::string& fn, const json& data);   // one All Stats page (PopulateOverall, ...)
     json replays_list() const;             // the list the cursor moves in (all replays, or favorites only)
+    json ladder_lb_cols();                 // Ranked Leagues leaderboards: resolved column headers of the category on screen
     std::string ga_summary(const std::string& swf);   // what to say after the screen name
     void on_ga_focus(const std::string& swf, const json& rec, const std::string& base_why, bool deferred, int64_t t);
     void on_preload_dialogue(int64_t t);
