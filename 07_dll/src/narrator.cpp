@@ -454,8 +454,8 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
                 // the Ranked hub repopulates on every entry: reset the leaderboard window and the one-shot rank announcement
                 lb_rows_ = json();
                 lb_top_ = 0;
-                ladder_sub_.clear(); ladder_rank_said_.clear(); ladder_cat_.clear(); ladder_prefix_.clear();
-                for (const char* k : {"MultiplayerLadder.swf|row", "MultiplayerLadder.swf|cat", "MultiplayerLadder.swf|filter", "MultiplayerLadder.swf|you"}) last_probe_.erase(k);
+                ladder_sub_.clear(); ladder_rank_said_.clear(); ladder_cat_.clear();
+                for (const char* k : {"MultiplayerLadder.swf|row", "MultiplayerLadder.swf|cat", "MultiplayerLadder.swf|filter", "MultiplayerLadder.swf|you", "MultiplayerLadder.swf|lbmsg"}) last_probe_.erase(k);
             }
             if (swf == "MultiplayerLobby.swf") { lobby_seen_ = false; lobby_toggle_ = -1; lobby_names_.clear(); }
             if (swf == "Replays.swf") {
@@ -2023,6 +2023,7 @@ void Narrator::on_focus(const json& rec) {
             if (ladder_sub_ != "lb") {
                 ladder_sub_ = "lb";
                 last_probe_.erase(swf + "|row");
+                last_probe_.erase(swf + "|lbmsg");
                 prefix = "Leaderboards. ";
             }
             json fil = clean(jget(pr, "lbFilter"));
@@ -2032,10 +2033,7 @@ void Narrator::on_focus(const json& rec) {
                 if (had && last_probe_[fk] != f) say(f, true, t);
                 last_probe_[fk] = f;
             }
-            if (jget(pr, "lbLoading").is_boolean() && jget(pr, "lbLoading").get<bool>()) {
-                if (!prefix.empty()) say("Leaderboards", true, t);
-                return;
-            }
+            bool loading = jget(pr, "lbLoading").is_boolean() && jget(pr, "lbLoading").get<bool>();
             json cat = clean(jget(pr, "lbCat"));
             if (!isNone(cat)) {   // the category toggle (LB/RB): named when it changes, selects the column headers
                 ladder_cat_ = sv(cat);
@@ -2046,8 +2044,19 @@ void Narrator::on_focus(const json& rec) {
                 }
             }
             int bidx = jint(jget(pr, "lbIdx"), -1);
-            if (!lb_rows_.is_array() || bidx < 0 || bidx >= (int)lb_rows_.size() || !lb_rows_[bidx].is_object()) {
-                if (!prefix.empty()) say(prefix.substr(0, prefix.size() - 2), true, t);
+            bool haveRow = lb_rows_.is_array() && bidx >= 0 && bidx < (int)lb_rows_.size() && lb_rows_[bidx].is_object();
+            if (!haveRow) {
+                // no focused row: either still loading, or the board came back empty (the records event never arrived,
+                // e.g. an unranked account or Steam returned nothing). Say so once instead of leaving the user in silence.
+                std::string msg = prefix;
+                if (loading) { if (msg.empty()) return; msg += "Loading"; }
+                else if (!lb_rows_.is_array() || lb_rows_.empty()) msg += "No entries on this leaderboard";
+                else if (!prefix.empty()) msg = prefix.substr(0, prefix.size() - 2);
+                else return;
+                std::string ek = swf + "|lbmsg";
+                if (last_probe_.count(ek) && last_probe_[ek] == msg) return;
+                last_probe_[ek] = msg;
+                say(msg, true, t);
                 return;
             }
             const json& r = lb_rows_[bidx];
@@ -2070,11 +2079,13 @@ void Narrator::on_focus(const json& rec) {
             say(prefix + rowText, true, t);
             return;
         }
-        // front menu: announce the player card's rank once per visit, as a prefix on the next menu read (beta report
-        // 2026-10-19: "doesn't read your rank when you go to search for a ranked match")
-        json cr = clean(jget(pr, "cardRank"));
-        if (!isNone(cr) && sv(cr) != ladder_rank_said_) { ladder_rank_said_ = sv(cr); ladder_prefix_ = "Rank " + sv(cr) + ". "; }
+        // front menu: announce the player card's rank once per visit (beta report 2026-10-19: "doesn't read your rank
+        // when you go to search for a ranked match"). Spoken as its own line and returning, rather than as a prefix on
+        // the next menu read: the first menu read fires during the hub's BuildOn animation and is often dropped, which
+        // would lose a one-shot prefix. The menu item reads on the next focus event (one always follows on entry).
         ladder_sub_ = "menu";
+        json cr = clean(jget(pr, "cardRank"));
+        if (!isNone(cr) && sv(cr) != ladder_rank_said_) { ladder_rank_said_ = sv(cr); say("Rank " + sv(cr), true, t); return; }
         // fall through to the generic menu scan
     }
     if (swf == "MultiplayerLobby.swf") {
@@ -2093,14 +2104,16 @@ void Narrator::on_focus(const json& rec) {
             if (lobby_sub_ != "lobby") {
                 // name the lobby and its options once on entry: the header texts are on screen but the game says
                 // nothing (beta report 2026-10-19: "once you create a lobby, the screen does not correctly read the
-                // new options presented"). The real options here are the legend buttons, not cursor items.
+                // new options presented"). The real options here are the legend buttons, not cursor items. Entering a
+                // lobby fires no navigation focus event; the UpdateLobbyInfo stream (an inv trigger) delivers the
+                // snapshot that gets us here, so wait until the header texts are actually populated before announcing.
+                const json& pp = jget(rec, "probe");
+                json lt = clean(jget(pp, "lobTitle")), lh = clean(jget(pp, "lobHost"));
+                if (isNone(lt) && isNone(lh)) return;   // lobby not populated yet; a later UpdateLobbyInfo will fill it
                 lobby_sub_ = "lobby";
                 last_probe_.erase(swf + "|item");
-                const json& pp = jget(rec, "probe");
                 std::vector<std::string> hdr;
-                json lt = clean(jget(pp, "lobTitle"));
                 hdr.push_back(isNone(lt) ? "Lobby" : "Lobby " + sv(lt));
-                json lh = clean(jget(pp, "lobHost"));
                 if (!isNone(lh)) hdr.push_back("host " + sv(lh));
                 json lsl = clean(jget(pp, "lobSlots"));
                 if (!isNone(lsl)) hdr.push_back("slots " + sv(lsl));
@@ -2389,7 +2402,6 @@ void Narrator::on_focus(const json& rec) {
         return;
     }
     std::string text = prefix + labelS;
-    if (!ladder_prefix_.empty() && swf == "MultiplayerLadder.swf") { text = ladder_prefix_ + text; ladder_prefix_.clear(); }   // "Rank Gold. Search For Match..."
     if (haveValue) text += ", " + valueS;
     if (!flags.empty()) text += ", " + join(flags, ", ");
     if (jtruthy(count) && !isNone(pos) && verbosity_ >= 1) text += ", " + std::to_string(jint(pos) + 1) + " of " + std::to_string(jint(count));

@@ -117,7 +117,7 @@ static const std::set<std::string> TRIGGERS = {"PlayScroll", "PlayPauseMenuButto
     "PlayMetalSlide", "PlayMetal_HitLarge", "TutorialPopup"};
 static const std::set<std::string> INV_TRIGGERS = {"Populate", "Lua_Populate", "PopulateEntries", "PopulateStatesOnly", "RefreshPage",
     "Lua_ChangeSelectionTo", "Lua_ReceiveAnyKeyPress", "CancelMapping", "UpdatePlayerMenuIndex",
-    "ReceiveLeaderboardRecords", "PopulatePlayerData", "PopulateTitleDetails"};
+    "ReceiveLeaderboardRecords", "PopulatePlayerData", "PopulateTitleDetails", "UpdateLobbyInfo"};
 static const int SETTLE_FRAMES[] = {1, 30, 180};   // +1 frame, +0.5 s, +3 s (menus that build on with an animation)
 
 static std::string s_currentSwf, s_prevSwf;

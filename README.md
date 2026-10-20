@@ -1,5 +1,5 @@
 ﻿Killer Instinct Accessibility Mod
-v.0.2.9
+v.0.2.10
 
 Purpose:
 
@@ -23,6 +23,13 @@ Known Issues:
 * If a future game update changes the executable so that the mod can no longer find its hook points, the narrator stays silent and writes the reason to kiaccess\speech.log. The game itself still runs normally.
 
 New in this version:
+
+* Fixed from the first test of v0.2.9:
+  - Entering the Ranked Leagues hub now reliably says your rank ("Rank Qualifier") as its own line (it was being lost under the screen's build-on animation).
+  - Creating or entering a lobby now announces the lobby's name, host, slots, rank limit and the Y / X / B options right away, instead of only when you moved the cursor.
+  - The Ranked Leaderboards no longer stay silent when the board has no data: they say "No entries on this leaderboard" (or "Loading"). When Steam returns a populated board, each row reads as before.
+
+New in v0.2.9:
 
 * Shadow Lords fixes from the 2026-10-19 beta report:
   - Barracks: after using an artifact, closing the inventory names the selected fighter again instead of repeating the last item used.

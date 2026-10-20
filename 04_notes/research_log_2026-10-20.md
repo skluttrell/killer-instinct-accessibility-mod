@@ -110,7 +110,47 @@ ending) is filtered by the 100-char floor.
 ## State
 
 Built clean, installed 17:02 (game closed), s2_story.json copied to build and game data folders. NOT
-verified live. Verify: Story mode → Season 2 → any S2 fighter (TJ's FIRST fight is silent by the game's
+verified live (superseded by the fixes below).
+
+# 2026-10-20 (later) — three fixes from the first live test of v0.2.9 (speech.log analysed)
+
+User tested Ranked hub + lobby creation. Diagnosed from the installed speech.log (log_events on).
+
+## Ranked leaderboards read nothing — ROOT CAUSE: no data arrived (not a reader bug)
+
+The ladder movie received only Populate/PopulateResetTimer/UpdateCurrentScreen/HideLadderScreens/Hide.
+`ReceiveLeaderboardRecords` NEVER fired (0 occurrences for any swf in the whole log), though the game
+sent `ei RequestLeaderboardRecords` for SteamLb_RankedLadder_KillerRating_KillerID140V1. The spinner
+(lbLoading) went false 34 times but no rows ever came — Steam returned nothing (unranked Qualifier
+account and/or flaky online state; the session was full of "Connecting to Matchmaking"/"Syncing"
+popups). So the game itself showed an empty board; there was nothing to read. The row reader is the
+same proven path as the Fight Archive's Leaderboards.swf (verified live in v0.2.7), so it should work
+when the board actually returns data. FIX: on an empty/loading board the reader now says "Leaderboards.
+Loading" or "Leaderboards. No entries on this leaderboard" (deduped on swf|lbmsg, reset on entry and on
+the hub Populate) instead of going silent. Cannot verify row reading until a session where Steam
+delivers the board.
+
+## Rank not announced on the hub — one-shot lost during BuildOn
+
+cardRank="Qualifier" was present from the first front-menu focus, but the "Rank Qualifier" prefix never
+spoke. Cause: the hub's BuildOn animation drops the first menu reads (no SAY between 56.4-58.1 s while
+the menu built on), and the prefix was a one-shot that set ladder_rank_said_ on the first front-menu
+focus even though the prefixed read was dropped — so it never regenerated. FIX: speak the rank as its
+own interrupt line and return (`say("Rank " + rank); return;`) rather than as a prefix on the next menu
+read; the menu item then reads on the following focus event. Removed ladder_prefix_ entirely.
+
+## Lobby options not announced on entry — no focus trigger
+
+The only focus snapshot with screen=LobbyInside in the whole lobby visit fired at 17:29:21 when the user
+pressed B to leave; the header+options announcement did fire then, proving the reader works — but it
+never fired on entry because entering a lobby produces no navigation focus event. The lobby is driven by
+`UpdateLobbyInfo` (inv, ~4/s), which was not a snapshot trigger. FIX: added "UpdateLobbyInfo" to
+INV_TRIGGERS (hooks.cpp) so the stream delivers focus snapshots while in a lobby; the LobbyInside header
+now waits until lobTitle or lobHost is populated (SetupLobbyHeaders fired at 17:28:50 with the title
+hash #192495132 and rank limit, before the stream) before announcing, so it fires once with real data.
+Dedup (lobby_sub_ guard, name+pos on players) keeps the 4/s stream from spamming.
+
+Built clean (34 screens), installed 17:42 (game closed). NOT verified live. Verify: Story mode → Season 2 → any S2 fighter (TJ's FIRST fight is silent by the game's
 own data — start text appears from fight 2) → hear the chapter text after "Loading. X versus Y"; and
 finish any S1 ladder (Beginner) → the ending slides should read before the mural popup. S2 LOADSCREEN
 texts spot-checked against the table; ending texts unverified against real endings (hook reads whatever

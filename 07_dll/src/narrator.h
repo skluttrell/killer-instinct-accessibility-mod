@@ -78,7 +78,6 @@ private:
     std::string ladder_sub_;       // MultiplayerLadder active subscreen last read ("menu"/"lb"), to name the leaderboards once on entry
     std::string ladder_rank_said_; // card rank already announced this Ranked hub visit (one-shot)
     std::string ladder_cat_;       // leaderboard category text on screen (selects the column headers from the Populate payload)
-    std::string ladder_prefix_;    // one-shot prefix ("Rank Gold. ") for the next generic menu read on the Ranked hub
     json fighter_names_ = json::object();
     std::map<std::string, std::string> fighter_levels_;   // code -> "level 3, next unlock at level 5" (from the player card entries)
     json fighter_appearance_ = json::object();   // code -> {"default": text, "retro": text} (data\fighter_appearance.json)
