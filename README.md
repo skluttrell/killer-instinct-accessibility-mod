@@ -1,5 +1,5 @@
 ﻿Killer Instinct Accessibility Mod
-v.0.2.10
+v.0.2.11
 
 Purpose:
 
@@ -8,8 +8,8 @@ Adds screen reader output to the menus of Killer Instinct (Steam version, free b
 Known Issues:
 
 * This is a TEST BUILD. The mod writes kiaccess\speech.log in your Killer Instinct folder each session with every announcement. If anything goes wrong, please attach that file to your bug report.
-* Shadow Lords: the leaderboard, the items dropped on the arena floor after some fights, and the Spirit Lair's excess-guardian popup are not read yet. The full text of a branching quest dialogue is not read yet either (only the focused choice; reported in the 2026-10-19 beta report — a capture of one is still needed). The hub's daily rewards overlay reader has not been heard live yet (it only appears right after a daily reward is earned); if it stays silent for you, please attach kiaccess\speech.log. The subtitles of the story cinematics are not spoken either; the cinematics are voiced.
-* Everything new in this version was built from captures and the game's own data but has not been heard live yet. If one of the new announcements stays silent or reads wrong, please attach kiaccess\speech.log. Players joining or leaving a lobby, and the lobby player list with real opponents, additionally need a second player to verify.
+* Shadow Lords: the leaderboard, the items dropped on the arena floor after some fights, and the Spirit Lair's excess-guardian popup are not read yet. The full text of a branching quest dialogue is not read yet either (only the focused choice; reported in the 2026-10-19 beta report — a capture of one is still needed). The subtitles of the story cinematics are not spoken either; the cinematics are voiced.
+* Players joining or leaving a lobby, and the lobby player list with real opponents, still need a second player to verify. If one of those announcements stays silent or reads wrong, please attach kiaccess\speech.log.
 * The mural screen's announcement after finishing a ladder is built from a captured run but has not been re-heard live yet; if it stays silent after your next ladder, please attach kiaccess\speech.log.
 * When a popup opens, the first thing spoken can be a button of the previous popup (for example "Purchase 300 KI Gold" just before "Exit Shadow Lords?"). The popup itself follows at once.
 * The whole Store is read. The online multiplayer menus are now read too (see below); a few screens that only appear in specific conditions are built but have not been heard live yet: the Ranked rank-change tutorial pages (promotion, probation, reaching Killer, monthly reset), and the lobby and leaderboard views reached after matchmaking connects you. If any of these stay silent, please attach kiaccess\speech.log.
@@ -23,6 +23,13 @@ Known Issues:
 * If a future game update changes the executable so that the mod can no longer find its hook points, the narrator stays silent and writes the reason to kiaccess\speech.log. The game itself still runs normally.
 
 New in this version:
+
+* The Multiplayer menu's daily loot overlay (the panel that opens by itself once a day) is now read in full and is no longer cut off by the menu behind it: today's reward with its day ("Today's reward, day 8 of 10: Shadow Points, 800, collected"), the next-reward note, and the daily gauntlet objectives with their Astral Gem rewards. Escape closes it ("Daily loot closed"), and Ctrl+Shift+Down/Up review the announcement line by line. (From the 2026-10-21 beta report: "the daily reward isn't read entering Multiplayer".)
+* Exhibition and Shadow Lords MP: the ready screen after an invite or a found match reads its own options ("Match ready. Ready, 1 of 2" / "Search Again, 2 of 2") instead of the search screen's settings. (From the 2026-10-21 beta report.)
+* Trials: each trial in the menu now reads its XP reward and its goal ("Survival. Reward 100 XP, 1 of 4. Defeat 1 enemies in a Single Survival Match with Sabrewulf" — the goal wording is the game's own).
+* Hardening from a code review of these changes: the ready screen can no longer fall back to the search settings when the screen refreshes itself; the Multiplayer menu and Shadow Lords hub daily overlays now share one reader; a trial can no longer read another trial's reward if the menu order differs from the game's data; and untranslated text keys are no longer read aloud.
+
+New in v0.2.10:
 
 * Fixed from the first test of v0.2.9:
   - Entering the Ranked Leagues hub now reliably says your rank ("Rank Qualifier") as its own line (it was being lost under the screen's build-on animation).

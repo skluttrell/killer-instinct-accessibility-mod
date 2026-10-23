@@ -71,6 +71,7 @@ private:
     bool hasSkip_ = false;
     std::vector<std::string> mm_state_;
     std::string mp_screen_name_;   // MultiplayerExhibition entry name ("Exhibition" / "Shadow Lords MP"), spoken as a prefix on the first focus read
+    std::string exh_sub_;          // MultiplayerExhibition active subscreen: "" / "front" / "lobby" (ready screen) / "lb" — from EnterFrontScreen/EnterLobbyScreen/EnterLeaderboardScreen
     std::string lobby_sub_;        // MultiplayerLobby active subscreen last read ("main"/"create"/"search"/"lobby"), to name it once on entry
     bool lobby_seen_ = false;      // LobbyInside: baseline of the UpdateLobbyInfo stream captured (joins/leaves/toggle announce only changes)
     int lobby_toggle_ = -1;        // LobbyInside: LocalPlayerToggled last seen (1 = queued to battle, 0 = spectating, -1 = no baseline)

@@ -322,6 +322,23 @@ static std::string repair_json(const std::string& js) {
 }
 
 // ---------------- events ----------------
+// Shared by the MainMenu daily-loot overlay and the hub's daily-rewards overlay: both payloads carry the same
+// currentRewardData shape (day / displayName / quantity / completed), with previewRewardData as the day list.
+static std::string daily_reward_line(const json& cur, const json& pr, const char* collectHint, const Strings& S) {
+    if (!cur.is_object()) return "";
+    std::string line = "Today's reward";
+    std::string day = strip(S.resolve(jget(cur, "day")));   // resolve stringifies a numeric day too
+    if (!day.empty()) {
+        line += ", day " + day;
+        if (pr.is_array() && !pr.empty()) line += " of " + std::to_string(pr.size());
+    }
+    std::string nm = strip(S.resolve(jget(cur, "displayName"))), q = strip(S.resolve(jget(cur, "quantity")));
+    if (!nm.empty()) line += ": " + nm;
+    if (!q.empty()) line += (nm.empty() ? ": " : ", ") + q;
+    line += jtruthy(jget(cur, "completed")) ? ", collected" : collectHint;
+    return line;
+}
+
 void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::string& js) {
     json data;
     if (!js.empty()) {
@@ -363,6 +380,11 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
                 // The front-screen focus read fires in this same event with interrupt, so stash the name and let that
                 // read speak it as a prefix ("Shadow Lords MP. Search, 1 of 7") instead of saying it here to be cut off.
                 mp_screen_name_ = jtruthy(jget(data, "IsShadowLords")) ? S.resolve(std::string("MP_MULTIPLAYER_MENU_TITLE")) : screenName(swf);
+                // the payload names the active subscreen (EnterScreen:"MainScreen" on the front search screen); respect
+                // it instead of assuming "front", or a Populate landing while the ready/lobby screen is up (matchmade
+                // flow, outside invite) flips the focus reader back to the front options — the 2026-10-21 beta bug
+                std::string es = jstr(data, "EnterScreen");
+                exh_sub_ = es == "LobbyScreen" ? "lobby" : es == "LeaderboardScreen" ? "lb" : "front";
             }
             if (swf == "StartScreen.swf") {
                 // cold start: the first screen arrives without a LoadDestination, so announce it here (on-screen text: "PRESS MENU / SPACE")
@@ -637,10 +659,40 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
     } else if (swf == "CharacterSelect.swf" && fn == "Lua_PopulateColorData" && data.is_object()) {
         cs_colors_[jint(jget(data, "PlayerIndex"))] = jget(data, "ColorList").is_array() ? jget(data, "ColorList") : json::array();
     } else if (fn == "Lua_PopulateDailyLootExpanded" && data.is_object()) {
-        std::vector<std::string> days;
-        const json& pr = jget(data, "previewRewardData");
-        if (pr.is_array()) for (const auto& d : pr) if (d.is_object()) { std::string n = S.resolve(jget(d, "name")); if (!n.empty()) days.push_back(n); }
-        say("Daily rewards panel. " + S.resolve(jget(data, "resetText")) + ". " + join(days, ", ") + ". Escape to close", true);
+        // The daily-loot overlay auto-opens on the first Multiplayer/hub entry of the day. It swallows the menu's keys,
+        // so set hub_daily_open_ to suppress the MainMenu focus reads that build on behind it (they used to interrupt
+        // this announcement ~280 ms in). Read today's actual reward and the gauntlet objectives, not "Day 1..Day 10".
+        hub_daily_open_ = true;
+        auto currency = [](std::string p) -> std::string {
+            size_t cut = p.find_last_of("/\\");   // classify on the icon's basename: "XP" etc. can appear in folder names
+            if (cut != std::string::npos) p = p.substr(cut + 1);
+            if (p.find("AstralGem") != std::string::npos) return " Astral Gems";
+            if (p.find("ShadowPoints") != std::string::npos) return " Shadow Points";
+            if (p.find("KIGold") != std::string::npos) return " KI Gold";
+            if (p.find("XP") != std::string::npos) return " XP";
+            return "";
+        };
+        std::vector<std::string> parts{"Daily loot"};
+        std::string line = daily_reward_line(jget(data, "currentRewardData"), jget(data, "previewRewardData"), "", S);
+        if (!line.empty()) parts.push_back(line);
+        std::string next = strip(S.resolve(jget(data, "resetText")));   // "NEXT REWARD AVAILABLE IN ..." countdown
+        if (!next.empty()) parts.push_back(next);
+        const json& g = jget(data, "gauntletRewardData");
+        if (g.is_array() && !g.empty()) {
+            std::vector<std::string> gl;
+            for (const auto& it : g) if (it.is_object()) {
+                std::string one = strip(S.resolve(jget(it, "title"))) + ", " + strip(S.resolve(jget(it, "reward")))
+                    + currency(jstr(it, "imagePath")) + (jtruthy(jget(it, "completed")) ? ", complete" : ", not complete");
+                gl.push_back(one);
+            }
+            if (!gl.empty()) parts.push_back("Gauntlet, resets daily. " + join(gl, ". "));
+        }
+        parts.push_back("Escape to close");
+        say(join(parts, ". "), true);
+    } else if (fn == "Lua_PopulateDailyLootContracted" && hub_daily_open_) {
+        // Escape/B collapses the overlay (it also fires once on entry, but hub_daily_open_ is still false then).
+        hub_daily_open_ = false;
+        say("Daily loot closed", true);
     } else if (swf == "SinglePlayerLadder.swf" && fn == "PopulateArcadeInfo" && data.is_object()) {
         // the story dossier before an arcade ladder (the Ultratech databank page): everything is in the payload,
         // the bio ("Description") is a string key into the game's text table
@@ -769,6 +821,14 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
                 if (!msg.empty()) say(join(msg, ". ") + ". " + std::to_string(names.size()) + (names.size() == 1 ? " player in lobby" : " players in lobby"), false);
             }
         }
+    } else if (swf == "MultiplayerExhibition.swf" && (fn == "EnterLobbyScreen" || fn == "EnterFrontScreen" || fn == "EnterLeaderboardScreen")) {
+        // Exhibition is one movie with three subscreens sharing the cursor. The lobby/ready screen reuses the front
+        // screen's buttons (mcBtn0 = "Ready", mcBtn2 = "Search Again") so the on-screen focus looks like the front
+        // screen; track which subscreen is active from these Lua calls so the focus reader picks the right option list
+        // (beta report 2026-10-21: after an invite, the ready screen read "Search" / "Minimum Rank" instead).
+        exh_sub_ = fn == "EnterLobbyScreen" ? "lobby" : fn == "EnterLeaderboardScreen" ? "lb" : "front";
+        last_probe_.erase("MultiplayerExhibition.swf|item");
+        if (fn == "EnterLobbyScreen") mp_screen_name_ = "Match ready";   // prefix the first read so the new screen is recognizable
     } else if (swf == "ShadowLeaderboards.swf" && fn == "ReceiveLeaderboardRecords") {
         last_probe_.erase("ShadowLeaderboards.swf|row");   // new page: re-read the focused row from the screen
     } else if (swf == "StoreContentOverview.swf" && fn == "PopulateItems" && data.is_object()) {
@@ -778,17 +838,8 @@ void Narrator::on_inv(const std::string& swf, const std::string& fn, const std::
         // the hub's keys while it is up, so say what it is and how to leave
         const json& d = jget(data, "dailyRewardData");
         std::vector<std::string> parts{"Daily rewards"};
-        const json& cur = jget(d, "currentRewardData");
-        if (cur.is_object()) {
-            std::string line = "Today's reward";
-            std::string day = strip(S.resolve(jget(cur, "day")));
-            if (!day.empty()) line += ", day " + day;
-            std::string nm = S.resolve(jget(cur, "displayName")), q = strip(S.resolve(jget(cur, "quantity")));
-            if (!nm.empty()) line += ": " + nm;
-            if (!q.empty()) line += ", " + q;
-            line += jtruthy(jget(cur, "completed")) ? ", collected" : ", play a match to collect";
-            parts.push_back(line);
-        }
+        std::string line = daily_reward_line(jget(d, "currentRewardData"), jget(d, "previewRewardData"), ", play a match to collect", S);
+        if (!line.empty()) parts.push_back(line);
         const json& pr = jget(d, "previewRewardData");
         if (pr.is_array() && !pr.empty()) {
             int done = 0;
@@ -1096,6 +1147,7 @@ void Narrator::on_ei(const std::string& script, const std::string& fn, const std
         if (!dest.empty()) {
             current_swf_ = dest;
             hasLast_ = false;
+            hub_daily_open_ = false;   // a screen load tears down any daily overlay (anti-stuck; the Contracted events clear it normally)
             ga_announced_.clear();   // so the next ScreenShown of any GA screen is announced again (the loadout popup reopened from the War Room)
             // Arcade ladder (Story mode) context: tells the next loading screen to speak its Rivals story text, and
             // arms the localization hook for the ending window — after the final rung is won, the Season 1 ending
@@ -1946,6 +1998,34 @@ void Narrator::on_focus(const json& rec) {
         // screen (the payload's value is only the initial one). Handled only while a front-screen entry holds focus:
         // the lobby and leaderboards subscreens deactivate these and have their own structure.
         const json& pr = jget(rec, "probe");
+        // shared announce tail for the subscreens: dedup on the focused entry (label + index), not the value -- a
+        // Left/Right change keeps the same entry and is announced by the shared-toggle SetVariables event (the bare
+        // value); only a move to a new entry reads in full. The stashed screen name is spoken as a prefix on the
+        // first read after entry, bypassing the dedup so that read always lands.
+        auto sayItem = [&](int i, const std::string& label, const std::string& text, const json& val) {
+            std::string itemKey = label + "|" + std::to_string(i);
+            std::string k = swf + "|item";
+            if (mp_screen_name_.empty() && last_probe_.count(k) && last_probe_[k] == itemKey) return;
+            last_probe_[k] = itemKey;
+            std::string spoken = text;
+            if (!mp_screen_name_.empty()) { spoken = mp_screen_name_ + ". " + text; mp_screen_name_.clear(); }
+            last_focus_ = json{{"swf", swf}, {"index", i}, {"label", label}, {"desc", ""}, {"value", val}};
+            say(spoken, true, t);
+        };
+        if (exh_sub_ == "lobby") {
+            // the ready/lobby screen (after an invite or a match is found): two buttons reusing mcBtn0 ("Ready") and
+            // mcBtn2 ("Search Again") under the shared cursor, options from the payload's LobbyScreen.Options (beta
+            // report 2026-10-21). Index is GetSelectionIndex (0 = Ready, 1 = Search Again).
+            int li = jint(jget(rec, "index"), -1);
+            const json& lopts = jget(jget(jget(populate_, swf.c_str()), "LobbyScreen"), "Options");
+            if (!lopts.is_array() || li < 0 || li >= (int)lopts.size() || !lopts[li].is_object()) return;
+            std::string label = strip(S.resolve(jget(lopts[li], "key")));
+            if (label.empty()) label = "item " + std::to_string(li + 1);
+            std::string text = label;
+            if (verbosity_ >= 1) text += ", " + std::to_string(li + 1) + " of " + std::to_string((int)lopts.size());
+            sayItem(li, label, text, nullptr);
+            return;
+        }
         bool frontActive = false;
         for (const char* sk : {"s0", "s1", "s2", "s3", "s4", "s5", "s6"}) {
             const json& st = jget(pr, sk);
@@ -1972,16 +2052,7 @@ void Narrator::on_focus(const json& rec) {
             if (!value.empty()) text += ", " + value;
         }
         if (verbosity_ >= 1) text += ", " + std::to_string(idx + 1) + " of " + std::to_string((int)options.size());
-        // dedup on the focused entry (label + index), not the value: a Left/Right change keeps the same entry and is
-        // announced by the shared-toggle SetVariables event (the bare value); only a move to a new entry reads in full.
-        std::string itemKey = label + "|" + std::to_string(idx);
-        std::string k = swf + "|item";
-        if (mp_screen_name_.empty() && last_probe_.count(k) && last_probe_[k] == itemKey) return;
-        last_probe_[k] = itemKey;
-        std::string spoken = text;
-        if (!mp_screen_name_.empty()) { spoken = mp_screen_name_ + ". " + text; mp_screen_name_.clear(); }   // name the screen on entry
-        last_focus_ = json{{"swf", swf}, {"index", idx}, {"label", label}, {"desc", ""}, {"value", value.empty() ? json(nullptr) : json(value)}};
-        say(spoken, true, t);
+        sayItem(idx, label, text, value.empty() ? json(nullptr) : json(value));
         return;
     }
     if (swf == "MultiplayerLadder.swf") {
@@ -2228,6 +2299,9 @@ void Narrator::on_focus(const json& rec) {
         if ((bs.is_string() && bs.get<std::string>() == "BuildOff") || jtruthy(jget(probe, "transitioning"))) return;
     }
     if (swf == "MainMenu.swf") {
+        // while the daily-loot overlay is up it swallows the menu's keys, but the menu still builds on behind it and
+        // fires GainFocus: don't read it, or it cuts off the daily announcement (and leaves "Fight" as the review text).
+        if (hub_daily_open_) return;
         // a state switch inside the menu (Enter / Escape) plays mcMenuGroup off, and only when that animation has
         // finished does StateEnter reset the cursor to 0 and repopulate the buttons: a snapshot in between reads the
         // new state's list at the old index (beta report 2026-10-16: "Practice" just before "Dojo" entering Master).
@@ -2372,6 +2446,32 @@ void Narrator::on_focus(const json& rec) {
         }
     }
     std::string descS = jtruthy(desc) ? S.resolve(desc) : "";
+    std::string trialReward;
+    bool forceDesc = false;
+    if (swf == "Trials.swf") {
+        // Each Master trial offers a reward (XP) for completing its goal. The scan reads the button name; the
+        // reward and goal come from the Populate payload's TrialList, matched by Mode (spaces ignored, so the
+        // display text "Combo Breaker" still finds mode "ComboBreaker") so a different button order can't
+        // mislabel it. The focused index is trusted only when there is no label to match -- an unmatched labeled
+        // button (e.g. Back) must not get a trial's data glued on. Read the goal here at any verbosity.
+        forceDesc = true;   // a trial entry is meaningless without the task it asks for
+        const json& tl = jget(jget(populate_, "Trials.swf"), "TrialList");
+        if (tl.is_array()) {
+            auto norm = [](const std::string& s) { std::string o; for (char c : lower(strip(s))) if (c != ' ') o += c; return o; };
+            int k = -1;
+            if (!labelS.empty()) for (int i = 0; i < (int)tl.size(); i++)
+                if (norm(jstr(tl[i], "Mode")) == norm(labelS)) { k = i; break; }
+            if (k < 0 && labelS.empty() && idx >= 0 && idx < (int)tl.size()) k = idx;
+            if (k >= 0) {
+                const json& e = tl[k];
+                if (descS.empty()) {
+                    std::string dr = S.resolve(jget(e, "Description"));
+                    if (dr != jstr(e, "Description")) descS = dr;   // an unresolved key read aloud is noise, not a goal
+                }
+                if (jget(e, "XP").is_number()) trialReward = std::to_string(jint(jget(e, "XP"))) + " XP";
+            }
+        }
+    }
     bool haveValue = jtruthy(value);
     std::string valueS = haveValue ? S.resolve(value) : "";
     std::string stateKey = swf == "OptionsMenu.swf" ? options_state_.back() : (haveGname ? gname : "");
@@ -2402,10 +2502,11 @@ void Narrator::on_focus(const json& rec) {
         return;
     }
     std::string text = prefix + labelS;
+    if (!trialReward.empty()) text += ". Reward " + trialReward;
     if (haveValue) text += ", " + valueS;
     if (!flags.empty()) text += ", " + join(flags, ", ");
     if (jtruthy(count) && !isNone(pos) && verbosity_ >= 1) text += ", " + std::to_string(jint(pos) + 1) + " of " + std::to_string(jint(count));
-    if (!descS.empty() && verbosity_ >= 2) text += ". " + descS;
+    if (!descS.empty() && (verbosity_ >= 2 || forceDesc)) text += ". " + descS;
     say(text, true, t);
 }
 

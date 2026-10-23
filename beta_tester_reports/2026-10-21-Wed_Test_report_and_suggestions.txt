@@ -1,0 +1,13 @@
+Me:
+It did not read the daily reward when I went to multiplayer.
+
+jukesy1992
+Multiplayer bug: Exhibition does not read correctly.
+Exhibition, invite: says creating lobby, this is fine. However, what happens next isn't. Once in this screen, it says search, and qualifiers. It should be saying ready, and something else. Exhibition mode is different to lobby mode. It automatically makes a lobby for two and puts you on the ready screen. You have two options, the first is ready, the second I don't know. I'm trying to see the keyboard button for invite. (edited)
+Relevant screenshot: "C:\Users\sklut\Documents\Programming\Claude\killer_instinct\Screenshots\2026-10-21_09-56-20-multiplayer-exhibition-invite_screen.jpg"
+
+a thing has popped up after a mission, but the war room stuff is reading instead, so whilst my focus is saying I can dismantle a relic, pressing control plus shift plus d no longer is reading the new mission stuff and thus, I don't know what's going on.
+I beat a mimic
+Post mission thing has popped up. A sighted person says: as you exit the ultratech facility, you notice a strange device mounted to the wall. There's three options, dismantle it, activate it, leave it. If I go up and down, I can read the options, but if I press control plus shift plus d, it's reading a war room mission description instead.
+
+Shadow lords major bug: mission rewards no longer read. This worked fine in the last build. IT's only saying the fight results.
