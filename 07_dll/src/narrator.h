@@ -4,6 +4,7 @@
 #pragma once
 #include "common.h"
 #include "strings.h"
+#include "radar.h"
 #include <map>
 #include <set>
 
@@ -21,6 +22,8 @@ public:
     void on_locstring(const std::string& text);   // from the localization hook while g_locArmed (arcade ladder ending text)
     void on_match_live(int32_t levelId);   // from the radar thread (under g_lock): announce the stage when it was not chosen explicitly
     void on_loot(int ev, int count);       // from the radar thread (under g_lock): Shadow Lords loot-collect phase start (ev 0) / end (ev 1)
+
+    void on_training(const std::vector<radar::TrainingCmd>& cmds, const std::string& title);   // from the radar thread (under g_lock): Dojo lesson task list / counters changed
 
     // hotkeys
     void repeat();
@@ -102,6 +105,10 @@ private:
     json pack_items_;                      // Emporium: the cards of the pack bought last (PackPurchased payload), revealed one by one
     int pack_card_ = 0;                    // index of the card under the cursor in that reveal
     bool hub_daily_open_ = false;          // the hub's daily rewards overlay is on screen (it swallows the hub's keys)
+
+    std::vector<radar::TrainingCmd> training_;   // Dojo lesson: the task list on screen ("Neutral Jump 0/2"), empty outside a lesson step
+    std::string training_title_;                 // that step's title ("Walking")
+    std::string training_line(const radar::TrainingCmd& c) const;
 
     // Arcade ladder story text (Story mode S1/S2): the Rivals pre-fight text is engine-drawn over the loading
     // screen (keys from gameinfo\StoryModeS2Definition), the S1 endings are engine-drawn slides after the ladder

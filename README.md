@@ -1,5 +1,5 @@
 ﻿Killer Instinct Accessibility Mod
-v.0.2.11
+v.0.2.12
 
 Purpose:
 
@@ -23,6 +23,10 @@ Known Issues:
 * If a future game update changes the executable so that the mod can no longer find its hook points, the narrator stays silent and writes the reason to kiaccess\speech.log. The game itself still runs normally.
 
 New in this version:
+
+* Dojo lessons: the task list the game draws on screen after each lesson popup is now spoken, with its counters. When a step starts you hear its name and tasks ("Walking. Walk Forward: forward, 0 of 2"), every time a counter moves you hear the new count ("Walk Forward: forward, 1 of 2"), and a task that is added to the step is read as it appears ("Walk Backwards: back, 0 of 2"). Ctrl+Shift+I repeats the current tasks and counts at any time during a lesson. Note: the game itself re-opens the lesson's help popup when Left Ctrl is pressed, so a narrator hotkey pressed with Left Ctrl during a lesson also brings that popup back (Enter closes it).
+
+New in v0.2.11:
 
 * The Multiplayer menu's daily loot overlay (the panel that opens by itself once a day) is now read in full and is no longer cut off by the menu behind it: today's reward with its day ("Today's reward, day 8 of 10: Shadow Points, 800, collected"), the next-reward note, and the daily gauntlet objectives with their Astral Gem rewards. Escape closes it ("Daily loot closed"), and Ctrl+Shift+Down/Up review the announcement line by line. (From the 2026-10-21 beta report: "the daily reward isn't read entering Multiplayer".)
 * Exhibition and Shadow Lords MP: the ready screen after an invite or a found match reads its own options ("Match ready. Ready, 1 of 2" / "Search Again, 2 of 2") instead of the search screen's settings. (From the 2026-10-21 beta report.)

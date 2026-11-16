@@ -28,6 +28,7 @@ const int PULSE_MS = 90, STALL_MS = 3000;
 uintptr_t s_global = 0, s_roundGlobal = 0, s_levelGlobal = 0, s_lootGlobal = 0;
 static void (*s_onMatchLive)(int32_t) = nullptr;   // narrator hook for the stage announcement
 static void (*s_onLoot)(int, int) = nullptr;       // narrator hook: loot phase start (count) / end
+static void (*s_onTraining)(const std::vector<TrainingCmd>&, const std::string&) = nullptr;   // narrator hook: Dojo lesson task list changed
 // GAssault loot sub-state: manager + 0x6490; the WillAwardLootRewards counter (total ground loot) is u32 at +0x2cc of
 // that, i.e. manager + 0x675c. OFF_FLAGS (0x48) / FLAG_LIVE (0x8000) are the engine's standard liveness, as for the match.
 const uintptr_t OFF_LOOT_AWARD = 0x675c;
@@ -173,7 +174,68 @@ void probeLoot(const Pos& me, const Pos& opp, bool haveFighters) {
 }
 }  // namespace
 
+// ---- Dojo lesson objectives (read-only) ----
+// Decoded from the Lua bindings (exe RVAs GetNumberTrainingCommands 0x68b4b0, GetTrainingCommandText 0x5ecc40,
+// GetCurrentTrainingStep 0x5eeca0, GetTrainingObjectiveTitle 0x68c140); all read the object behind the level global:
+//   G = *levelGlobal; std::vector<uiTrainingCommand> at G+0x8e0 (begin) / +0x8e8 (end), element size 0x60
+//   element: text A at +0x00, text B at +0x28 (MSVC std::string + allocator pointer, 0x28 bytes each; the byte at
+//   G+0xc30 selects B), required count i32 +0x50, current count i32 +0x54, "closed" byte +0x5c
+//   objective title: std::string at G+0x900
+// The game thread may be rewriting the list while we look, so every read is guarded and the list is only accepted when
+// two reads in a row agree.
+namespace {
+const uintptr_t TR_VEC = 0x8e0, TR_ALT = 0xc30, TR_TITLE = 0x900, TR_ELEM = 0x60;
+
+bool readStdString(uintptr_t at, std::string& out) {
+    uint64_t size = 0, cap = 0;
+    out.clear();
+    if (!readT(at + 0x10, size) || !readT(at + 0x18, cap)) return false;
+    if (size > 400 || cap < 15 || cap > 0x10000 || size > cap) return false;
+    uintptr_t p = at;
+    if (cap >= 0x10 && (!readT(at, p) || !p)) return false;
+    if (!size) return true;
+    out.resize((size_t)size);
+    if (!readBytes(p, &out[0], (size_t)size)) return false;
+    for (unsigned char c : out) if (c < 0x20 && c != 9 && c != 10 && c != 13) return false;
+    return true;
+}
+
+bool readTrainingOnce(std::vector<TrainingCmd>& cmds, std::string& title, int& alt) {
+    cmds.clear();
+    title.clear();
+    uintptr_t g = 0, b = 0, e = 0, b2 = 0, e2 = 0;
+    if (!s_levelGlobal || !readT(s_levelGlobal, g) || !g) return false;
+    if (!readT(g + TR_VEC, b) || !readT(g + TR_VEC + 8, e)) return false;
+    if (!b || e == b) return true;   // no task list
+    if (e < b || (e - b) % TR_ELEM || (e - b) / TR_ELEM > 12) return false;
+    uint8_t a = 0;
+    if (!readT(g + TR_ALT, a)) return false;
+    alt = a;
+    for (uintptr_t el = b; el < e; el += TR_ELEM) {
+        TrainingCmd c;
+        int32_t req = 0, cur = 0;
+        uint8_t fl = 0;
+        if (!readStdString(el + (a ? 0x28 : 0), c.text) || !readT(el + 0x50, req) || !readT(el + 0x54, cur) || !readT(el + 0x5c, fl)) return false;
+        if (req < 0 || req > 999 || cur < 0 || cur > 9999) return false;
+        c.required = req;
+        c.current = cur;
+        c.flag = fl != 0;
+        cmds.push_back(c);
+    }
+    if (!readStdString(g + TR_TITLE, title)) title.clear();
+    return readT(g + TR_VEC, b2) && readT(g + TR_VEC + 8, e2) && b2 == b && e2 == e;
+}
+
+bool readTraining(std::vector<TrainingCmd>& cmds, std::string& title, int& alt) {
+    std::vector<TrainingCmd> again;
+    std::string t2;
+    int a2 = 0;
+    return readTrainingOnce(cmds, title, alt) && readTrainingOnce(again, t2, a2) && again == cmds && t2 == title;
+}
+}  // namespace
+
 DWORD WINAPI thread(LPVOID) {
+    std::vector<TrainingCmd> lastTrain;
     uintptr_t lastMatch = 0;
     FloorTracker floor;
     int64_t lastLog = 0;
@@ -228,6 +290,21 @@ DWORD WINAPI thread(LPVOID) {
         else if (!lootNow && wasLoot) { if (s_onLoot) s_onLoot(1, 0); wasLoot = false; }
         if (lootNow) running = true;
         if (g_cfg.lootProbe) probeLoot(me, opp, live);
+        // Dojo lesson task list: hand every change to the narrator. Outside a match the list counts as empty, so the
+        // same lesson started again is announced again; a read that fails mid-update is simply retried next round.
+        if (s_onTraining) {
+            std::vector<TrainingCmd> tc;
+            std::string tt;
+            int alt = 0;
+            bool ok = !live || readTraining(tc, tt, alt);
+            if (ok && !(tc == lastTrain)) {
+                lastTrain = tc;
+                std::string line = "training: " + std::to_string(tc.size()) + " tasks, title '" + tt + "', alt " + std::to_string(alt);
+                for (auto& c : tc) line += " | '" + c.text + "' " + std::to_string(c.current) + "/" + std::to_string(c.required) + (c.flag ? " closed" : "");
+                logLine(line);
+                s_onTraining(tc, tt);
+            }
+        }
         if (!live || !running || !s_enabled) { floor.reset(); Sleep(150); continue; }
         if (m != lastMatch) { lastMatch = m; floor.reset(); }
         const int H = g_cfg.radarAxisH, V = g_cfg.radarAxisV;
@@ -280,6 +357,7 @@ void setLevelGetter(uintptr_t fn) { s_levelGlobal = decodeGlobal(fn, "level"); }
 void setMatchLiveCallback(void (*cb)(int32_t)) { s_onMatchLive = cb; }
 void setLootManagerGlobal(uintptr_t global) { s_lootGlobal = global; }
 void setLootCallback(void (*cb)(int, int)) { s_onLoot = cb; }
+void setTrainingCallback(void (*cb)(const std::vector<TrainingCmd>&, const std::string&)) { s_onTraining = cb; }
 int32_t levelId() {
     uintptr_t lv = 0;
     int32_t id = 0;

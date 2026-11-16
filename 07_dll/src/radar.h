@@ -4,6 +4,8 @@
 // Position source: the match state the game's own Lua bindings Opponent_GetPosX/Y/Z read (see radar.cpp).
 #pragma once
 #include "common.h"
+#include <string>
+#include <vector>
 
 namespace ki {
 namespace radar {
@@ -24,6 +26,16 @@ void setMatchLiveCallback(void (*cb)(int32_t levelId));   // called from the rad
 // 0->N at the KO and holds through the collect phase, then drops to 0 on leaving.
 void setLootManagerGlobal(uintptr_t global);
 void setLootCallback(void (*cb)(int ev, int count));     // ev 0 = loot phase start (count items on the ground), 1 = end
+// Dojo lesson objectives (the engine-drawn task list: "Neutral Jump 0/2"). Read from the list the Lua bindings
+// GetNumberTrainingCommands / GetTrainingCommandText / GetCurrentTrainingStep read (see radar.cpp). The callback fires
+// from the radar thread whenever the list or one of its counters changes; an empty list means "no lesson task".
+struct TrainingCmd {
+    std::string text;         // as the game stores it: display text with <TT>input</TT> tokens (or a string key)
+    int required = 0, current = 0;
+    bool flag = false;        // the byte GetCurrentTrainingStep skips on (step closed)
+    bool operator==(const TrainingCmd& o) const { return text == o.text && required == o.required && current == o.current && flag == o.flag; }
+};
+void setTrainingCallback(void (*cb)(const std::vector<TrainingCmd>& cmds, const std::string& title));
 bool start();                 // starts the pulse thread (no-op without a decoded match global)
 void stop();
 void setEnabled(bool on);     // Ctrl+Shift+P

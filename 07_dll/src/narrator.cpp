@@ -1470,6 +1470,38 @@ void Narrator::on_loot(int ev, int count) {
     say("Enemy defeated. " + n + (count == 1 ? " item" : " items") + " to collect. Walk onto your opponent and press the action button to pick them up.", true);
 }
 
+// Dojo lesson tasks (from the radar thread). During a lesson the engine draws the current tasks with a counter each
+// ("Neutral Jump [up] 0/2") after the lesson popup closes; no UI movie carries them, so radar.cpp reads the list
+// from the game. A new list is read whole; after that only the task whose counter moved is spoken. Never interrupts:
+// the lesson popups before and after a step must stay intact.
+std::string Narrator::training_line(const radar::TrainingCmd& c) const {
+    // "Walk Forward - <TT>FORWARD</TT>": name the input in words, like the Command List does
+    std::string t = replaceAll(humanize_command(json(S.resolve(c.text))), " - ", ": ");
+    if (c.required <= 0) return t;
+    int cur = c.current > c.required ? c.required : c.current;
+    return t + ", " + std::to_string(cur) + " of " + std::to_string(c.required);
+}
+
+void Narrator::on_training(const std::vector<radar::TrainingCmd>& cmds, const std::string& title) {
+    // a step's list grows as its tasks are completed ("Walk Forward 2/2" is joined by "Walk Backwards 0/2"): speak
+    // the tasks that are new or whose counter moved, and name the step ("Walking") when it starts
+    bool fresh = !cmds.empty() && (training_.empty() || title != training_title_);
+    std::vector<std::string> parts;
+    bool allDone = true;
+    for (size_t i = 0; i < cmds.size(); i++) {
+        if (!cmds[i].flag && cmds[i].current < cmds[i].required) allDone = false;
+        if (cmds[i].text.empty()) continue;
+        if (fresh || i >= training_.size() || !(cmds[i] == training_[i])) parts.push_back(training_line(cmds[i]));
+    }
+    training_ = cmds;
+    training_title_ = cmds.empty() ? "" : title;
+    if (parts.empty()) return;
+    // the last count of a step usually brings the next lesson popup straight away: don't trail a stale count after it
+    if (!fresh && allDone && nowMs() - last_popup_ms_ < 1500) return;
+    std::string head = fresh ? strip(S.resolve(title)) : "";
+    say((head.empty() ? "" : head + ". ") + join(parts, ". "), false);
+}
+
 // ---- command list (event-driven: EntrySelected {MoveIndex}; moves from the RefreshPage payload) ----
 void Narrator::on_move_selected(const std::string& js, int64_t t) {
     json j = json::parse(js, nullptr, false, true);
@@ -3382,6 +3414,13 @@ void Narrator::on_preload_dialogue(int64_t t) {
 // as it opens, so they are as fresh as the last screen visited.
 void Narrator::read_status() {
     std::vector<std::string> parts;
+    if (!training_.empty()) {   // in a Dojo lesson: the current tasks and their counters
+        std::string head = strip(S.resolve(training_title_));
+        if (!head.empty()) parts.push_back(head);
+        for (auto& c : training_) if (!c.text.empty()) parts.push_back(training_line(c));
+        say(join(parts, ". "), true);
+        return;
+    }
     for (const char* s : {"GA_HUB.swf", "GA_Barracks.swf", "GA_WarRoom.swf", "GA_Emporium.swf"}) {
         const json& cur = jget(jget(populate_, s), "currency");
         if (!cur.is_object()) continue;
